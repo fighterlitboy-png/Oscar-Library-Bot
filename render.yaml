@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: telegram-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: 7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4
+        sync: false  # You will add this manually on Render dashboard
+        
