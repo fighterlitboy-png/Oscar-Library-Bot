@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     print("🚀 BOT IS RUNNING...")
     app.run_polling()
-allback_data="author_မ"),
+callback_data="author_မ",
                 InlineKeyboardButton("ယ", callback_data="author_ယ")
             ],
             # Row 5: 5 buttons
