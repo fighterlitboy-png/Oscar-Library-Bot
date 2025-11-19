@@ -1,179 +1,165 @@
-import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import telebot
+from telebot import types
+import threading
+import time
+import requests
+import sys
 
-# Telegram Bot Token
-TOKEN = "7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4"
+# ===============================
+#  BOT TOKEN
+# ===============================
+BOT_TOKEN = "7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4"
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 
-# Logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# ===============================
+#  RENDER BURMESE FONT FIX
+# ===============================
+sys.stdout.reconfigure(encoding='utf-8')
 
-# ===========================
-# MAIN MENU
-# ===========================
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user.first_name or "Friend"
+
+# ===============================
+#  UPTIME KEEP-ALIVE PING (Wookhood)
+# ===============================
+PING_URL = "https://your-render-service.onrender.com"
+
+def keep_alive():
+    while True:
+        try:
+            requests.get(PING_URL, timeout=10)
+        except:
+            pass
+        time.sleep(60)
+
+threading.Thread(target=keep_alive, daemon=True).start()
+
+
+# ===============================
+#  /START MESSAGE
+# ===============================
+@bot.message_handler(commands=['start'])
+def start_message(message):
+    first = message.from_user.first_name or "Friend"
 
     text = (
-        f"မင်္ဂလာပါ **{user}** 🥰\n"
-        "🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်\n\n"
+        f"မင်္ဂလာပါ **{first}** 🥰\n"
+        f"🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်\n\n"
         "စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...\n\n"
-        "(**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် — "
-        "ကဏ္ဍအလိုက် နှင့် စာရေးဆရာ ဖြစ်ပါတယ်**\n\n"
-        "**Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့် ကဏ္ဍများဖြင့်သွားရန်** "
-        "→ *ကဏ္ဍအလိုက်* ကိုရွေးပါ\n\n"
-        "**စာရေးဆရာနာမည်ဖြင့်ရှာချင်ရင်** → *စာရေးဆရာ* ကိုရွေးပေးပါ)\n\n"
-        "💢 စာအုပ်ဖတ်နည်းကို အရင်ကြည့်ပါရန်\n\n"
-        "⚠️ အဆင်မပြေမှုရှိပါက ‘အထွေထွေမေးမြန်းရန်’ ကိုနှိပ်ပြီး မေးမြန်းနိုင်ပါတယ်။"
+        "**(စာအုပ်ရှာဖို့ နှစ်ပိုင်း — ကဏ္ဍအလိုက် / စာရေးဆရာအလိုက်)**\n\n"
+        "Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့်ကဏ္ဍများသွားချင်ရင် **ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။\n\n"
+        "စာရေးဆရာအလိုက်ရှာချင်ရင် **စာရေးဆရာ** ကိုနှိပ်ပါ။\n\n"
+        "💢 **စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢\n\n"
+        "⚠️ မေးချင်တာရှိရင် ⚠️\n\n"
+        **အထွေထွေမေးမြန်းရန်**\n\n"
+        ကိုနှိပ်နိုင်ပါတယ်။\n\n"
+        
     )
 
-    keyboard = [
-        [
-            InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="cat"),
-            InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu"),
-        ],
-        [
-            InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", callback_data="read_guide"),
-            InlineKeyboardButton("📂 ချန်နယ်ခွဲများ", callback_data="channels"),
-        ],
-        [
-            InlineKeyboardButton("⭐ Review ရေးရန်", callback_data="review"),
-            InlineKeyboardButton("🛠 စာအုပ်ပြုပြင်ရန်", callback_data="edit_book"),
-        ],
-        [
-            InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", callback_data="qa"),
-        ]
+    kb = types.InlineKeyboardMarkup()
+    kb.row(
+        types.InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="category"),
+        types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu")
+    )
+    kb.row(types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17"))
+    kb.row(types.InlineKeyboardButton("📺 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"))
+    kb.row(types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498"))
+    kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
+    kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
+
+    bot.send_message(message.chat.id, text, reply_markup=kb)
+
+
+# ===============================
+#  CATEGORY REDIRECT
+# ===============================
+@bot.callback_query_handler(func=lambda c: c.data == "category")
+def category_redirect(call):
+    bot.send_message(
+        call.message.chat.id,
+        "📚 **ကဏ္ဍအလိုက် စာအုပ်များ**\n"
+        "https://t.me/oscarhelpservices/4\n\n"
+        "🌼 Oscar's Library 🌼"
+    )
+
+
+# ===============================
+#  AUTHORS MAIN MENU
+# ===============================
+@bot.callback_query_handler(func=lambda c: c.data == "author_menu")
+def author_menu(call):
+    text = "✍️ **စာရေးဆရာနာမည် အစစာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
+
+    rows = [
+        ["က","ခ","ဂ","င"],
+        ["စ","ဆ","ဇ","ည"],
+        ["ဋ္ဌ","တ","ထ","ဒ"],
+        ["ဓ","န","ပ","ဖ"],
+        ["ဗ","ဘ","မ","ယ"],
+        ["ရ","လ","ဝ","သ"],
+        ["ဟ","အ","ဥ","Eng"]
     ]
 
-    await update.message.reply_text(
+    kb = types.InlineKeyboardMarkup()
+
+    for r in rows:
+        kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
+
+    bot.edit_message_text(
         text,
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=kb
     )
 
 
-# ===========================
-# REDIRECT FUNCTIONS
-# ===========================
-async def redirect(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
-    query = update.callback_query
-    await query.answer()
-    await query.message.reply_text(f"👇 အောက်က Link ကိုနှိပ်ပါ\n{url}")
-
-
-# ===========================
-# MAIN MENU CALLBACKS
-# ===========================
-async def handle_main_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    data = query.data
-
-    if data == "cat":
-        await redirect(update, context, "https://t.me/oscarhelpservices/4")
-
-    elif data == "read_guide":
-        await redirect(update, context, "https://t.me/oscarhelpservices/17")
-
-    elif data == "channels":
-        await redirect(update, context, "https://t.me/oscarhelpservices/9")
-
-    elif data == "review":
-        await redirect(update, context, "https://t.me/sharebykosoemoe/13498")
-
-    elif data == "edit_book":
-        await redirect(update, context, "https://t.me/oscarhelpservices/29?single")
-
-    elif data == "qa":
-        await redirect(update, context, "https://t.me/kogyisoemoe")
-
-    elif data == "author_menu":
-        await show_author_menu(update, context)
-
-
-# ===========================
-# AUTHOR MENU
-# ===========================
-author_links = {
-    "က": "5",
-    "ခ": "7",
-    "ဂ": "12",
-    "င": "14",
-    "စ": "16",
-    "ဆ": "18",
-    "ဇ": "20",
-    "ည": "23",
-    "ဋ္ဌ": "25",
-    "တ": "27",
-    "ထ": "33",
-    "ဒ": "35",
-    "ဓ": "37",
-    "န": "39",
-    "ပ": "41",
-    "ဖ": "43",
-    "ဗ": "45",
-    "ဘ": "47",
-    "မ": "49",
-    "ယ": "51",
-    "ရ": "53",
-    "လ": "55",
-    "ဝ": "57",
-    "သ": "59",
-    "ဟ": "61",
-    "အ": "30",
-    "ဥ": "10",
-    "Eng": "920",
+# ===============================
+#  AUTHOR LINK REDIRECTS
+# ===============================
+AUTHOR_LINKS = {
+    "က": "https://t.me/oscarhelpservices/5",
+    "ခ": "https://t.me/oscarhelpservices/7",
+    "ဂ": "https://t.me/oscarhelpservices/12",
+    "င": "https://t.me/oscarhelpservices/14",
+    "စ": "https://t.me/oscarhelpservices/16",
+    "ဆ": "https://t.me/oscarhelpservices/18",
+    "ဇ": "https://t.me/oscarhelpservices/20",
+    "ည": "https://t.me/oscarhelpservices/23",
+    "ဋ္ဌ": "https://t.me/oscarhelpservices/25",
+    "တ": "https://t.me/oscarhelpservices/27",
+    "ထ": "https://t.me/oscarhelpservices/33",
+    "ဒ": "https://t.me/oscarhelpservices/35",
+    "ဓ": "https://t.me/oscarhelpservices/37",
+    "န": "https://t.me/oscarhelpservices/39",
+    "ပ": "https://t.me/oscarhelpservices/41",
+    "ဖ": "https://t.me/oscarhelpservices/43",
+    "ဗ": "https://t.me/oscarhelpservices/45",
+    "ဘ": "https://t.me/oscarhelpservices/47",
+    "မ": "https://t.me/oscarhelpservices/49",
+    "ယ": "https://t.me/oscarhelpservices/51",
+    "ရ": "https://t.me/oscarhelpservices/53",
+    "လ": "https://t.me/oscarhelpservices/55",
+    "ဝ": "https://t.me/oscarhelpservices/57",
+    "သ": "https://t.me/oscarhelpservices/59",
+    "ဟ": "https://t.me/oscarhelpservices/61",
+    "အ": "https://t.me/oscarhelpservices/30",
+    "ဥ": "https://t.me/oscarhelpservices/10",
+    "Eng": "https://t.me/sharebykosoemoe/920"
 }
 
-async def show_author_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+@bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
+def author_redirect(call):
+    key = call.data.replace("author_", "")
+    url = AUTHOR_LINKS.get(key)
 
-    keyboard = []
-    row = []
-
-    for key in author_links.keys():
-        row.append(InlineKeyboardButton(key, callback_data=f"author_{key}"))
-        if len(row) == 4:
-            keyboard.append(row)
-            row = []
-
-    if row:
-        keyboard.append(row)
-
-    await query.message.reply_text(
-        "စာရေးဆရာနာမည် **အစ စလုံးဖြင့်** ရွေးပါ👇",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    if url:
+        bot.answer_callback_query(call.id)
+        bot.send_message(
+            call.message.chat.id,
+            f"➡️ **{key} စာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
+        )
 
 
-# ===========================
-# AUTHOR BUTTON CLICK
-# ===========================
-async def handle_author(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    key = query.data.replace("author_", "")
-    link_id = author_links.get(key)
-
-    if link_id:
-        await redirect(update, context, f"https://t.me/oscarhelpservices/{link_id}")
-
-
-# ===========================
-# MAIN APP
-# ===========================
-def main():
-    app = Application.builder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(handle_main_buttons, pattern="^(cat|read_guide|channels|review|edit_book|qa|author_menu)$"))
-    app.add_handler(CallbackQueryHandler(handle_author, pattern="^author_"))
-
-    app.run_polling()
-
-
-if __name__ == "__main__":
-    main()
+# ===============================
+#  BOT LOOP
+# ===============================
+print("Bot is running…")
+bot.infinity_polling(skip_pending=True)
