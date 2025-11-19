@@ -45,21 +45,23 @@ threading.Thread(target=keep_alive, daemon=True).start()
 def start_message(message):
     first = message.from_user.first_name or "Friend"
 
-    text = f"""မင်္ဂလာပါ **{first}** 🥰
+    text = f"""သာယာသောနေလေးဖြစ်ပါစေ **{first}** 🥰
+    
 🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
 
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
 
-**(စာအုပ်ရှာဖို့ နှစ်ပိုင်း — ကဏ္ဍအလိုက် / စာရေးဆရာအလိုက်)**
+**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ်
+📚ကဏ္ဍအလိုက် / ✍️စာရေးဆရာအလိုက်**
 
 Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့်ကဏ္ဍများသွားချင်ရင် **ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
 
 စာရေးဆရာအလိုက်ရှာချင်ရင် **စာရေးဆရာ** ကိုနှိပ်ပါ။
 
-💢 **စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
+💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
 
-⚠️ မေးချင်တာရှိရင် ⚠️
-**အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါတယ်။
+⚠️ အဆင်မပြေတာရှိရင် ⚠️
+**❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါတယ်။
 """
 
     kb = types.InlineKeyboardMarkup()
@@ -92,7 +94,7 @@ def category_redirect(call):
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
-    text = "✍️ **စာရေးဆရာနာမည် အစစာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
+    text = "✍️ **စာရေးဆရာနာမည် "အစ" စာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
     rows = [
         ["က","ခ","ဂ","င"],
         ["စ","ဆ","ဇ","ည"],
@@ -149,7 +151,7 @@ def author_redirect(call):
         bot.answer_callback_query(call.id)
         bot.send_message(
             call.message.chat.id,
-            f"➡️ **{key} စာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
+            f"➡️ **{key} ဖြင့်စသောစာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
         )
 
 # ===============================
