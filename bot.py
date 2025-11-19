@@ -2,145 +2,176 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-# ===== Your Bot Token =====
+# Telegram Bot Token
 TOKEN = "7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4"
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+# Logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-
-# =======================
-#      /start handler
-# =======================
+# ===========================
+# MAIN MENU
+# ===========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user.first_name
+    user = update.effective_user.first_name or "Friend"
 
     text = (
         f"မင်္ဂလာပါ **{user}** 🥰\n"
-        "🌼 **Oscar's Library** 🌼 မှကြိုဆိုပါတယ်\n\n"
-        "**စာအုပ်များရှာဖွေရန်လမ်းညွှန်ပေးမယ်...**\n"
-        "(**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် — ကဏ္ဍအလိုက် / စာရေးဆရာ**)\n\n"
-        "💢 **စာအုပ်ဖတ်နည်းကိုအရင်ကြည့်ပါရန်**\n"
-        "⚠️ အဆင်မပြေမှုများရှိပါက **အထွေထွေမေးမြန်းရန်** ကိုနှိပ်ပြီးမေးမြန်းနိုင်ပါတယ်။"
+        "🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်\n\n"
+        "စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...\n\n"
+        "(**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် — "
+        "ကဏ္ဍအလိုက် နှင့် စာရေးဆရာ ဖြစ်ပါတယ်**\n"
+        "**Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့် ကဏ္ဍများဖြင့်သွားရန်** "
+        "→ *ကဏ္ဍအလိုက်* ကိုရွေးပါ\n"
+        "**စာရေးဆရာနာမည်ဖြင့်ရှာချင်ရင်** → *စာရေးဆရာ* ကိုရွေးပေးပါ)\n\n"
+        "💢 စာအုပ်ဖတ်နည်းကို အရင်ကြည့်ပါရန်\n"
+        "⚠️ အဆင်မပြေမှုရှိပါက ‘အထွေထွေမေးမြန်းရန်’ ကိုနှိပ်ပြီး မေးမြန်းနိုင်ပါတယ်။"
     )
 
     keyboard = [
-        [InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="cat_main")],
-        [InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_main")],
-        [InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", callback_data="read_method")],
-        [InlineKeyboardButton("📂 ချန်နယ်ခွဲများ", callback_data="channels")],
-        [InlineKeyboardButton("⭐ Review ရေးရန်", callback_data="review")],
-        [InlineKeyboardButton("🛠 စာအုပ်ပြုပြင်ရန်", callback_data="edit_book")],
-        [InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", callback_data="faq")],
+        [
+            InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="cat"),
+            InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu"),
+        ],
+        [
+            InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", callback_data="read_guide"),
+            InlineKeyboardButton("📂 ချန်နယ်ခွဲများ", callback_data="channels"),
+        ],
+        [
+            InlineKeyboardButton("⭐ Review ရေးရန်", callback_data="review"),
+            InlineKeyboardButton("🛠 စာအုပ်ပြုပြင်ရန်", callback_data="edit_book"),
+        ],
+        [
+            InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", callback_data="qa"),
+        ]
     ]
 
     await update.message.reply_text(
-        text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard)
+        text,
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
 
-# =======================
-#    Callback Handler
-# =======================
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ===========================
+# REDIRECT FUNCTIONS
+# ===========================
+async def redirect(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
+    query = update.callback_query
+    await query.answer()
+    await query.message.reply_text(f"👇 အောက်က Link ကိုနှိပ်ပါ\n{url}")
+
+
+# ===========================
+# MAIN MENU CALLBACKS
+# ===========================
+async def handle_main_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
 
+    if data == "cat":
+        await redirect(update, context, "https://t.me/oscarhelpservices/4")
+
+    elif data == "read_guide":
+        await redirect(update, context, "https://t.me/oscarhelpservices/17")
+
+    elif data == "channels":
+        await redirect(update, context, "https://t.me/oscarhelpservices/9")
+
+    elif data == "review":
+        await redirect(update, context, "https://t.me/sharebykosoemoe/13498")
+
+    elif data == "edit_book":
+        await redirect(update, context, "https://t.me/oscarhelpservices/29?single")
+
+    elif data == "qa":
+        await redirect(update, context, "https://t.me/kogyisoemoe")
+
+    elif data == "author_menu":
+        await show_author_menu(update, context)
+
+
+# ===========================
+# AUTHOR MENU
+# ===========================
+author_links = {
+    "က": "5",
+    "ခ": "7",
+    "ဂ": "12",
+    "င": "14",
+    "စ": "16",
+    "ဆ": "18",
+    "ဇ": "20",
+    "ည": "23",
+    "ဋ္ဌ": "25",
+    "တ": "27",
+    "ထ": "33",
+    "ဒ": "35",
+    "ဓ": "37",
+    "န": "39",
+    "ပ": "41",
+    "ဖ": "43",
+    "ဗ": "45",
+    "ဘ": "47",
+    "မ": "49",
+    "ယ": "51",
+    "ရ": "53",
+    "လ": "55",
+    "ဝ": "57",
+    "သ": "59",
+    "ဟ": "61",
+    "အ": "30",
+    "ဥ": "10",
+    "Eng": "920",
+}
+
+async def show_author_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
     await query.answer()
 
-    # ========= CATEGORY =========
-    if data == "cat_main":
-        await query.edit_message_text(
-            "👉 **ကဏ္ဍအလိုက်ရှာရန် ဒီနေရာ**\nhttps://t.me/oscarhelpservices/4",
-            parse_mode="Markdown"
-        )
+    keyboard = []
+    row = []
 
-    # ========= READ METHOD =========
-    elif data == "read_method":
-        await query.edit_message_text(
-            "📖 **စာအုပ်ဖတ်နည်း**\nhttps://t.me/oscarhelpservices/17",
-            parse_mode="Markdown",
-        )
-
-    # ========= CHANNELS =========
-    elif data == "channels":
-        await query.edit_message_text(
-            "📂 **ချန်နယ်ခွဲများ**\nhttps://t.me/oscarhelpservices/9",
-            parse_mode="Markdown",
-        )
-
-    # ========= REVIEW =========
-    elif data == "review":
-        await query.edit_message_text(
-            "⭐ **Review ရေးရန်**\nhttps://t.me/sharebykosoemoe/13498",
-            parse_mode="Markdown",
-        )
-
-    # ========= EDIT BOOK =========
-    elif data == "edit_book":
-        await query.edit_message_text(
-            "🛠 **စာအုပ်ပြုပြင်ရန်**\nhttps://t.me/oscarhelpservices/29?single",
-            parse_mode="Markdown",
-        )
-
-    # ========= FAQ =========
-    elif data == "faq":
-        await query.edit_message_text(
-            "❓ **အထွေထွေမေးမြန်းရန်**\nhttps://t.me/kogyisoemoe",
-            parse_mode="Markdown",
-        )
-
-    # ========= AUTHOR MAIN =========
-    elif data == "author_main":
-        letters = [
-            "က","ခ","ဂ","ဃ","င","စ","ဆ","ဇ","ည","ဋ္ဌ","တ","ထ","ဒ","ဓ","န",
-            "ပ","ဖ","ဗ","ဘ","မ","ယ","ရ","လ","ဝ","သ","ဟ","အ","ဥ","Eng"
-        ]
-
-        keyboard = []
-        row = []
-        for i, l in enumerate(letters, start=1):
-            row.append(InlineKeyboardButton(l, callback_data=f"author_{l}"))
-            if i % 4 == 0:
-                keyboard.append(row)
-                row = []
-        if row:
+    for key in author_links.keys():
+        row.append(InlineKeyboardButton(key, callback_data=f"author_{key}"))
+        if len(row) == 4:
             keyboard.append(row)
+            row = []
 
-        await query.edit_message_text(
-            "✍️ **စာရေးဆရာနာမည် အစစလုံးဖြင့်ရွေးပါ**",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
+    if row:
+        keyboard.append(row)
 
-    # ========= AUTHOR REDIRECT =========
-    elif data.startswith("author_"):
-        letter = data.split("_")[1]
-
-        links = {
-            "က": 5, "ခ": 7, "ဂ": 12, "င": 14, "စ": 16, "ဆ": 18, "ဇ": 20, "ည": 23,
-            "ဋ္ဌ": 25, "တ": 27, "ထ": 33, "ဒ": 35, "ဓ": 37, "န": 39, "ပ": 41,
-            "ဖ": 43, "ဗ": 45, "ဘ": 47, "မ": 49, "ယ": 51, "ရ": 53, "လ": 55,
-            "ဝ": 57, "သ": 59, "ဟ": 61, "အ": 30, "ဥ": 10, "Eng": 920
-        }
-
-        if letter in links:
-            await query.edit_message_text(
-                f"👉 https://t.me/oscarhelpservices/{links[letter]}",
-                disable_web_page_preview=True
-            )
-        else:
-            await query.edit_message_text("Link မရှိသေးပါ")
+    await query.message.reply_text(
+        "စာရေးဆရာနာမည် **အစ စလုံးဖြင့်** ရွေးပါ👇",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 
-# =======================
-#      MAIN
-# =======================
+# ===========================
+# AUTHOR BUTTON CLICK
+# ===========================
+async def handle_author(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    key = query.data.replace("author_", "")
+    link_id = author_links.get(key)
+
+    if link_id:
+        await redirect(update, context, f"https://t.me/oscarhelpservices/{link_id}")
+
+
+# ===========================
+# MAIN APP
+# ===========================
 def main():
     app = Application.builder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(button_callback))
+    app.add_handler(CallbackQueryHandler(handle_main_buttons, pattern="^(cat|read_guide|channels|review|edit_book|qa|author_menu)$"))
+    app.add_handler(CallbackQueryHandler(handle_author, pattern="^author_"))
+
     app.run_polling()
 
 
