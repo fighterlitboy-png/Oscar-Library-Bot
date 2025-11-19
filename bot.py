@@ -14,13 +14,15 @@ bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 # ===============================
 #  RENDER BURMESE FONT FIX
 # ===============================
-sys.stdout.reconfigure(encoding='utf-8')
-
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except:
+    pass  # Python version 3.6 이하이면 pass လုပ်
 
 # ===============================
 #  UPTIME KEEP-ALIVE PING (Wookhood)
 # ===============================
-PING_URL = "https://your-render-service.onrender.com"
+PING_URL = "https://your-render-service.onrender.com"  # သင့် Render URL ဖြည့်ပါ
 
 def keep_alive():
     while True:
@@ -32,7 +34,6 @@ def keep_alive():
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
-
 # ===============================
 #  /START MESSAGE
 # ===============================
@@ -40,19 +41,22 @@ threading.Thread(target=keep_alive, daemon=True).start()
 def start_message(message):
     first = message.from_user.first_name or "Friend"
 
-    text = (
-        f"မင်္ဂလာပါ **{first}** 🥰\n"
-        f"🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်\n\n"
-        "စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...\n\n"
-        "**(စာအုပ်ရှာဖို့ နှစ်ပိုင်း — ကဏ္ဍအလိုက် / စာရေးဆရာအလိုက်)**\n\n"
-        "Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့်ကဏ္ဍများသွားချင်ရင် **ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။\n\n"
-        "စာရေးဆရာအလိုက်ရှာချင်ရင် **စာရေးဆရာ** ကိုနှိပ်ပါ။\n\n"
-        "💢 **စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢\n\n"
-        "⚠️ မေးချင်တာရှိရင် ⚠️\n\n"
-        **အထွေထွေမေးမြန်းရန်**\n\n"
-        ကိုနှိပ်နိုင်ပါတယ်။\n\n"
-        
-    )
+    text = f"""မင်္ဂလာပါ **{first}** 🥰
+🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
+
+စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
+
+**(စာအုပ်ရှာဖို့ နှစ်ပိုင်း — ကဏ္ဍအလိုက် / စာရေးဆရာအလိုက်)**
+
+Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့်ကဏ္ဍများသွားချင်ရင် **ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
+
+စာရေးဆရာအလိုက်ရှာချင်ရင် **စာရေးဆရာ** ကိုနှိပ်ပါ။
+
+💢 **စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
+
+⚠️ မေးချင်တာရှိရင် ⚠️
+**အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါတယ်။
+"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
@@ -79,7 +83,6 @@ def category_redirect(call):
         "https://t.me/oscarhelpservices/4\n\n"
         "🌼 Oscar's Library 🌼"
     )
-
 
 # ===============================
 #  AUTHORS MAIN MENU
@@ -109,7 +112,6 @@ def author_menu(call):
         call.message.message_id,
         reply_markup=kb
     )
-
 
 # ===============================
 #  AUTHOR LINK REDIRECTS
@@ -156,7 +158,6 @@ def author_redirect(call):
             call.message.chat.id,
             f"➡️ **{key} စာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
         )
-
 
 # ===============================
 #  BOT LOOP
