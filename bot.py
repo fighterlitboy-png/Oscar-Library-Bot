@@ -1,14 +1,18 @@
 import telebot
 from telebot import types
+from flask import Flask, request
 import threading
 import time
 import requests
 import sys
 
 # ===============================
-#  BOT TOKEN
+#  BOT TOKEN & URL
 # ===============================
 BOT_TOKEN = "7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4"
+WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
+PING_URL = "https://oscar-library-bot.onrender.com"  # Render free plan idle timeout မဖြစ်အောင် ping
+
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 
 # ===============================
@@ -17,13 +21,11 @@ bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 try:
     sys.stdout.reconfigure(encoding='utf-8')
 except:
-    pass  # Python version 3.6 이하이면 pass လုပ်
+    pass
 
 # ===============================
-#  UPTIME KEEP-ALIVE PING (Wookhood)
+#  KEEP-ALIVE PING THREAD
 # ===============================
-PING_URL = "https://your-render-service.onrender.com"  # သင့် Render URL ဖြည့်ပါ
-
 def keep_alive():
     while True:
         try:
@@ -71,9 +73,8 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စ�
 
     bot.send_message(message.chat.id, text, reply_markup=kb)
 
-
 # ===============================
-#  CATEGORY REDIRECT
+# CATEGORY REDIRECT
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "category")
 def category_redirect(call):
@@ -85,12 +86,11 @@ def category_redirect(call):
     )
 
 # ===============================
-#  AUTHORS MAIN MENU
+# AUTHORS MAIN MENU
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
     text = "✍️ **စာရေးဆရာနာမည် အစစာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
-
     rows = [
         ["က","ခ","ဂ","င"],
         ["စ","ဆ","ဇ","ည"],
@@ -100,21 +100,13 @@ def author_menu(call):
         ["ရ","လ","ဝ","သ"],
         ["ဟ","အ","ဥ","Eng"]
     ]
-
     kb = types.InlineKeyboardMarkup()
-
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-
-    bot.edit_message_text(
-        text,
-        call.message.chat.id,
-        call.message.message_id,
-        reply_markup=kb
-    )
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb)
 
 # ===============================
-#  AUTHOR LINK REDIRECTS
+# AUTHOR LINK REDIRECTS
 # ===============================
 AUTHOR_LINKS = {
     "က": "https://t.me/oscarhelpservices/5",
@@ -151,7 +143,6 @@ AUTHOR_LINKS = {
 def author_redirect(call):
     key = call.data.replace("author_", "")
     url = AUTHOR_LINKS.get(key)
-
     if url:
         bot.answer_callback_query(call.id)
         bot.send_message(
@@ -160,7 +151,28 @@ def author_redirect(call):
         )
 
 # ===============================
-#  BOT LOOP
+#  FLASK WEBHOOK SERVER
 # ===============================
-print("Bot is running…")
-bot.infinity_polling(skip_pending=True)
+app = Flask(__name__)
+
+bot.remove_webhook()
+bot.set_webhook(url=WEBHOOK_URL)
+
+@app.route(f"/{BOT_TOKEN}", methods=['POST'])
+def webhook():
+    json_data = request.get_json(force=True)
+    if json_data:
+        update = telebot.types.Update.de_json(json_data)
+        bot.process_new_updates([update])
+    return "OK", 200
+
+@app.route("/", methods=['GET'])
+def index():
+    return "Bot is running…", 200
+
+# ===============================
+#  RUN FLASK SERVER
+# ===============================
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
