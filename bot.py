@@ -45,7 +45,8 @@ threading.Thread(target=keep_alive, daemon=True).start()
 def start_message(message):
     first = message.from_user.first_name or "Friend"
 
-    text = f"""သာယာသောနေလေးဖြစ်ပါစေ **{first}** 🥰
+    text = f"""သာယာသောနေလေးဖြစ်ပါစေ... 
+    **{first}** 🥰
     
 🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
 
@@ -55,10 +56,10 @@ def start_message(message):
 📚ကဏ္ဍအလိုက် / ✍️စာရေးဆရာအလိုက်**
 
 Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
-စသည့်ကဏ္ဍများသွားချင်ရင်
+စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင်
 **📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
 
-စာရေးဆရာအလိုက်ရှာချင်ရင်
+စာရေးဆရာအလိုက်ရှာဖတ်ဖတ်ချင်ရင်
 **✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
 
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
@@ -73,7 +74,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
         types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu")
     )
     kb.row(types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17"))
-    kb.row(types.InlineKeyboardButton("📺 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"))
+    kb.row(types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"))
     kb.row(types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498"))
     kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
@@ -134,13 +135,13 @@ AUTHOR_LINKS = {
     "ဖ": "https://t.me/oscarhelpservices/43",
     "ဗ": "https://t.me/oscarhelpservices/45",
     "ဘ": "https://t.me/oscarhelpservices/47",
-    "မ": "https://t.me/oscarhelpservices/49",
-    "ယ": "https://t.me/oscarhelpservices/51",
-    "ရ": "https://t.me/oscarhelpservices/53",
-    "လ": "https://t.me/oscarhelpservices/55",
-    "ဝ": "https://t.me/oscarhelpservices/57",
-    "သ": "https://t.me/oscarhelpservices/59",
-    "ဟ": "https://t.me/oscarhelpservices/61",
+    "မ": "https://t.me/oscarhelpservices/58",
+    "ယ": "https://t.me/oscarhelpservices/59",
+    "ရ": "https://t.me/oscarhelpservices/61",
+    "လ": "https://t.me/oscarhelpservices/63",
+    "ဝ": "https://t.me/oscarhelpservices/65",
+    "သ": "https://t.me/oscarhelpservices/67",
+    "ဟ": "https://t.me/oscarhelpservices/69",
     "အ": "https://t.me/oscarhelpservices/30",
     "ဥ": "https://t.me/oscarhelpservices/10",
     "Eng": "https://t.me/sharebykosoemoe/920"
