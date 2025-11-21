@@ -37,11 +37,10 @@ def keep_alive():
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
-
 # ======================================================
-# 1️⃣ GROUP WELCOME SYSTEM (NEW)
+# 1️⃣ GROUP WELCOME SYSTEM
 # ======================================================
-WELCOME_IMAGE = "/mnt/data/photo_2025-10-13_19-11-04.jpg"
+WELCOME_IMAGE = "/mnt/data/welcome_photo.jpg"
 
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
@@ -49,40 +48,39 @@ def welcome_new_member(message):
         caption = (
             f"နွေးထွေးစွာကြိုဆိုပါတယ် {user.first_name} 🥰\n\n"
             "📚 Oscar Library Group မှ\n"
-            "မင်းရဲ့ စာဖတ်ခရီးအတွက် အမြဲသင့်တင့်နေပါတယ် 🤓\n\n"
+            "မင်းရဲ့ စာဖတ်ခရီးအတွက် အမြဲအသင့်ရှိပါတယ် 🤓\n\n"
             "✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ ရွေးဖတ်ဖို့ Menu ကိုနှိပ်ပါ ✨"
         )
-
         try:
             with open(WELCOME_IMAGE, "rb") as img:
                 bot.send_photo(message.chat.id, img, caption=caption)
         except:
             bot.reply_to(message, caption)
 
+# ======================================================
+# 2️⃣ LINK BLOCKER (GROUP ONLY)
+# ======================================================
+def is_link(text):
+    return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/"])
 
-# ======================================================
-# 2️⃣ LINK BLOCKER (NEW)
-# ======================================================
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and any(x in m.text.lower() for x in ["http", "https", "t.me/", "telegram.me/"]) if m.text else False)
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and m.text and is_link(m.text))
 def block_links(message):
     try:
+        # Admins are not blocked
+        admins = [a.user.id for a in bot.get_chat_administrators(message.chat.id)]
+        if message.from_user.id in admins:
+            return
         bot.delete_message(message.chat.id, message.message_id)
-        bot.send_message(message.chat.id, "⚠️ Link ပို့ရတာပိတ်ထားပါတယ် 🌼")
+        bot.send_message(message.chat.id, "⚠️ Link 💢များကို ပိတ်ထားပါတယ် 🙅🏻\nအရေးကြီးတာဆိုရင် Owner ကို ဆက်သွယ်ပါနော်...")
     except:
         pass
 
-
 # ======================================================
-# 3️⃣ PRIVATE AUTO REPLY (NEW)
+# 3️⃣ PRIVATE AUTO REPLY
 # ======================================================
-@bot.message_handler(func=lambda m: m.chat.type == 'private' and not m.text.startswith('/') )
+@bot.message_handler(func=lambda m: m.chat.type == 'private' and not m.text.startswith('/'))
 def private_reply(message):
     bot.send_message(message.chat.id, f"🤖 Auto Reply:\n{message.text}")
-
-
-# ======================================================
-# =============== OLD CODE BELOW (UNCHANGED) ===========
-# ======================================================
 
 # ===============================
 # /START MESSAGE
@@ -90,29 +88,15 @@ def private_reply(message):
 @bot.message_handler(commands=['start'])
 def start_message(message):
     first = message.from_user.first_name or "Friend"
-
-    text = f"""သာယာသောနေလေးဖြစ်ပါစေ... 
-    **{first}** 🥰
-    
+    text = f"""သာယာသောနေလေးဖြစ်ပါစေ... **{first}** 🥰
 🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
-
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
-
-**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ်
-📚ကဏ္ဍအလိုက် / ✍️စာရေးဆရာအလိုက်**
-
-Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
-စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင်
-**📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
-
-စာရေးဆရာအလိုက်ရှာဖတ်ဖတ်ချင်ရင်
-**✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
+**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 📚ကဏ္ဍအလိုက် / ✍️စာရေးဆရာအလိုက်**
+Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် **📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
+စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် **✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
 
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
-
-⚠️ အဆင်မပြေတာရှိရင် ⚠️
-**❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါတယ်။
-"""
+⚠️ အဆင်မပြေတာရှိရင် ⚠️ **❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါတယ်။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
@@ -127,7 +111,6 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 
     bot.send_message(message.chat.id, text, reply_markup=kb)
 
-
 # ===============================
 # CATEGORY REDIRECT
 # ===============================
@@ -135,11 +118,8 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 def category_redirect(call):
     bot.send_message(
         call.message.chat.id,
-        "📚 **ကဏ္ဍအလိုက် စာအုပ်များ**\n"
-        "https://t.me/oscarhelpservices/4\n\n"
-        "🌼 Oscar's Library 🌼"
+        "📚 **ကဏ္ဍအလိုက် စာအုပ်များ**\nhttps://t.me/oscarhelpservices/4\n\n🌼 Oscar's Library 🌼"
     )
-
 
 # ===============================
 # AUTHORS MENU
@@ -159,9 +139,7 @@ def author_menu(call):
     kb = types.InlineKeyboardMarkup()
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb)
-
 
 # ===============================
 # AUTHOR LINKS
@@ -211,12 +189,10 @@ def author_redirect(call):
             f"➡️ **{key} ဖြင့်စသောစာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
         )
 
-
 # ===============================
 # FLASK SERVER
 # ===============================
 app = Flask(__name__)
-
 bot.remove_webhook()
 bot.set_webhook(url=WEBHOOK_URL)
 
@@ -231,7 +207,6 @@ def webhook():
 @app.route("/", methods=['GET'])
 def index():
     return "Bot is running…", 200
-
 
 # ===============================
 # RUN
