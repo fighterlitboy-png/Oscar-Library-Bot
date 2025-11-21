@@ -8,9 +8,9 @@ import requests
 import sys
 
 # ===============================
-# BOT TOKEN & URL
+# BOT TOKEN & URL (Environment Variables)
 # ===============================
-BOT_TOKEN = "7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4"
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4')
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
 
@@ -47,16 +47,36 @@ def welcome_new_member(message):
     for user in message.new_chat_members:
         caption = (
             f"နွေးထွေးစွာကြိုဆိုပါတယ်\n"
-            {user.first_name} 🥰\n\n"
+            f"{user.first_name} 🥰\n\n"
             "📚 Oscar's Library မှ\n"
             "မင်းရဲ့ စာဖတ်ခြင်းအတွက် အမြဲအသင့်ရှိပါတယ် 🤓\n\n"
             "✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ ရွေးဖတ်ဖို့ Menu ကိုနှိပ်ပါ ✨"
         )
+        
+        # Button ထည့်ရန်
+        welcome_kb = types.InlineKeyboardMarkup()
+        welcome_kb.row(
+            types.InlineKeyboardButton(
+                "စာပေချစ်သူများအတွက်", 
+                url="https://t.me/oscar_libray_bot"
+            )
+        )
+        
         try:
             with open(WELCOME_IMAGE, "rb") as img:
-                bot.send_photo(message.chat.id, img, caption=caption)
-        except:
-            bot.reply_to(message, caption)
+                bot.send_photo(
+                    message.chat.id, 
+                    img, 
+                    caption=caption,
+                    reply_markup=welcome_kb
+                )
+        except Exception as e:
+            print(f"Welcome image error: {e}")
+            bot.send_message(
+                message.chat.id,
+                caption,
+                reply_markup=welcome_kb
+            )
 
 # ======================================================
 # 2️⃣ LINK BLOCKER (GROUP ONLY)
@@ -72,9 +92,10 @@ def block_links(message):
         if message.from_user.id in admins:
             return
         bot.delete_message(message.chat.id, message.message_id)
-        bot.send_message(message.chat.id, "⚠️ {user.first_name} 💢 Link များကို ပိတ်ထားပါတယ် 🙅🏻\n\n အရေးကြီးတာဆိုရင် Owner ကို ဆက်သွယ်ပါနော်...")
-    except:
-        pass
+        warning_msg = f"⚠️ {message.from_user.first_name} 💢 Link များကို ပိတ်ထားပါတယ် 🙅🏻\n\n အရေးကြီးတာဆိုရင် Owner ကို ဆက်သွယ်ပါနော်..."
+        bot.send_message(message.chat.id, warning_msg)
+    except Exception as e:
+        print(f"Link blocker error: {e}")
 
 # ======================================================
 # 3️⃣ PRIVATE AUTO REPLY
@@ -89,8 +110,8 @@ def private_reply(message):
 @bot.message_handler(commands=['start'])
 def start_message(message):
     first = message.from_user.first_name or "Friend"
-    text = f"""သာယာသောနေလေးဖြစ်ပါစေ... **
-    {first}** 🥰
+    text = f"""သာယာသောနေလေးဖြစ်ပါစေ... 
+    **{first}** 🥰
     
 🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
 
@@ -99,9 +120,12 @@ def start_message(message):
 **စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
 📚ကဏ္ဍအလိုက် / ✍️စာရေးဆရာအလိုက်**
 
-Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် **📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
+Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
+စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
+**📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
 
-စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် **✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
+စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
+**✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
 
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
 
