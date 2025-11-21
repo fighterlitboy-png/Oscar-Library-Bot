@@ -40,7 +40,7 @@ threading.Thread(target=keep_alive, daemon=True).start()
 # ======================================================
 # 1️⃣ GROUP WELCOME SYSTEM
 # ======================================================
-WELCOME_IMAGE = "/mnt/data/welcome_photo.jpg"
+WELCOME_IMAGE = "welcome_photo.jpg"
 
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
