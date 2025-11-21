@@ -46,9 +46,10 @@ WELCOME_IMAGE = "/mnt/data/welcome_photo.jpg"
 def welcome_new_member(message):
     for user in message.new_chat_members:
         caption = (
-            f"နွေးထွေးစွာကြိုဆိုပါတယ် {user.first_name} 🥰\n\n"
-            "📚 Oscar Library Group မှ\n"
-            "မင်းရဲ့ စာဖတ်ခရီးအတွက် အမြဲအသင့်ရှိပါတယ် 🤓\n\n"
+            f"နွေးထွေးစွာကြိုဆိုပါတယ်\n"
+            {user.first_name} 🥰\n\n"
+            "📚 Oscar's Library မှ\n"
+            "မင်းရဲ့ စာဖတ်ခြင်းအတွက် အမြဲအသင့်ရှိပါတယ် 🤓\n\n"
             "✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ ရွေးဖတ်ဖို့ Menu ကိုနှိပ်ပါ ✨"
         )
         try:
@@ -71,7 +72,7 @@ def block_links(message):
         if message.from_user.id in admins:
             return
         bot.delete_message(message.chat.id, message.message_id)
-        bot.send_message(message.chat.id, "⚠️ Link 💢များကို ပိတ်ထားပါတယ် 🙅🏻\nအရေးကြီးတာဆိုရင် Owner ကို ဆက်သွယ်ပါနော်...")
+        bot.send_message(message.chat.id, "⚠️ {user.first_name} 💢 Link များကို ပိတ်ထားပါတယ် 🙅🏻\n\n အရေးကြီးတာဆိုရင် Owner ကို ဆက်သွယ်ပါနော်...")
     except:
         pass
 
@@ -89,14 +90,22 @@ def private_reply(message):
 def start_message(message):
     first = message.from_user.first_name or "Friend"
     text = f"""သာယာသောနေလေးဖြစ်ပါစေ... **{first}** 🥰
+    
 🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
+
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
-**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 📚ကဏ္ဍအလိုက် / ✍️စာရေးဆရာအလိုက်**
+
+**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
+📚ကဏ္ဍအလိုက် / ✍️စာရေးဆရာအလိုက်**
+
 Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် **📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
+
 စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် **✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
 
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
-⚠️ အဆင်မပြေတာရှိရင် ⚠️ **❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါတယ်။"""
+
+⚠️ အဆင်မပြေတာရှိရင် ⚠️ **
+❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါတယ်။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
