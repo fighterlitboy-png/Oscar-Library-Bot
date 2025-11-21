@@ -144,11 +144,28 @@ def category_redirect(call):
 # ===============================
 # AUTHORS MENU
 # ===============================
+@bot.callback_query_handler(func=lambda c: c.data == "author_menu")
+def author_menu(call):
+    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
+    rows = [
+        ["က","ခ","ဂ","င"],
+        ["စ","ဆ","ဇ","ည"],
+        ["ဋ္ဌ","တ","ထ","ဒ"],
+        ["ဓ","န","ပ","ဖ"],
+        ["ဗ","ဘ","မ","ယ"],
+        ["ရ","လ","ဝ","သ"],
+        ["ဟ","အ","ဥ","Eng"]
+    ]
+    kb = types.InlineKeyboardMarkup()
+    for r in rows:
+        kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
 
-@author callback etc...
-# (အကျဉ်းချုပ်: မင်းပေးထားတဲ့ AUTHOR_LINKS + handler အကုန် 👇)
-# Same content — no changes
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb)
 
+
+# ===============================
+# AUTHOR LINKS
+# ===============================
 AUTHOR_LINKS = {
     "က": "https://t.me/oscarhelpservices/5",
     "ခ": "https://t.me/oscarhelpservices/7",
@@ -180,6 +197,9 @@ AUTHOR_LINKS = {
     "Eng": "https://t.me/sharebykosoemoe/920"
 }
 
+# ===============================
+# AUTHOR REDIRECT
+# ===============================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
 def author_redirect(call):
     key = call.data.replace("author_", "")
