@@ -89,7 +89,8 @@ def private_reply(message):
 @bot.message_handler(commands=['start'])
 def start_message(message):
     first = message.from_user.first_name or "Friend"
-    text = f"""သာယာသောနေလေးဖြစ်ပါစေ... **{first}** 🥰
+    text = f"""သာယာသောနေလေးဖြစ်ပါစေ... **
+    {first}** 🥰
     
 🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
 
