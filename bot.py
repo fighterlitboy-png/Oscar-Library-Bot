@@ -172,7 +172,7 @@ def category_redirect(call):
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
-    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စစလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
+    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
     rows = [
         ["က","ခ","ဂ","င"],
         ["စ","ဆ","ဇ","ည"],
