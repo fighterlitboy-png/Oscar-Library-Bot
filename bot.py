@@ -38,14 +38,14 @@ def keep_alive():
 threading.Thread(target=keep_alive, daemon=True).start()
 
 # ======================================================
-# 1️⃣ GROUP WELCOME SYSTEM
+# 1️⃣ GROUP WELCOME SYSTEM - IMPROVED
 # ======================================================
 WELCOME_IMAGE = "welcome_photo.jpg"
 
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
     for user in message.new_chat_members:
-        caption = f"""နွေးထွေးစွာကြိုဆိုပါတယ်
+        caption = f"""နွေးထွေးစွာကြိုဆိုပါတယ်...💖
 {user.first_name} ...🥰
 
 📚 Oscar's Library မှ
@@ -73,7 +73,7 @@ def welcome_new_member(message):
                     reply_markup=welcome_kb
                 )
         except Exception as e:
-            print(f"Welcome image error: {e}")
+            print(f"❌ Welcome image error: {e}")
             bot.send_message(
                 message.chat.id,
                 caption,
@@ -81,25 +81,52 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED ADMIN CHECK
+# 2️⃣ LINK BLOCKER (GROUP ONLY) - COMPLETE FIX
 # ======================================================
-def is_link(text):
-    if not text:
+def contains_link(message):
+    """Check if message contains links in text, caption, or forwarded content"""
+    text_to_check = ""
+    
+    # Check main message text
+    if message.text:
+        text_to_check += message.text + " "
+    
+    # Check caption (for media messages, forwarded messages)
+    if message.caption:
+        text_to_check += message.caption + " "
+    
+    # Check if contains links
+    if not text_to_check:
         return False
-    return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com"])
+        
+    link_patterns = [
+        "http://", "https://", "www.", 
+        "t.me/", "telegram.me/", 
+        ".com", ".org", ".net", ".io"
+    ]
+    
+    text_lower = text_to_check.lower()
+    return any(pattern in text_lower for pattern in link_patterns)
 
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and m.text and is_link(m.text))
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and contains_link(m))
 def block_links(message):
     try:
-        # Get all administrators and check if user is admin
-        admins = bot.get_chat_administrators(message.chat.id)
-        admin_ids = [admin.user.id for admin in admins]
+        # REAL-TIME admin check with better error handling
+        try:
+            admins = bot.get_chat_administrators(message.chat.id)
+            admin_ids = [admin.user.id for admin in admins]
+            
+            # If user is admin, don't block
+            if message.from_user.id in admin_ids:
+                return
+                
+        except Exception as admin_error:
+            print(f"❌ Admin check error: {admin_error}")
+            # If can't check admins, block everyone except the message sender is bot itself
+            if message.from_user.id == bot.get_me().id:
+                return
         
-        # If user is admin, don't block
-        if message.from_user.id in admin_ids:
-            return
-        
-        # Delete the message with link
+        # Delete the message with link (including forwarded messages)
         bot.delete_message(message.chat.id, message.message_id)
         
         # Send warning message
@@ -107,7 +134,7 @@ def block_links(message):
         bot.send_message(message.chat.id, warning_msg)
         
     except Exception as e:
-        print(f"Link blocker error: {e}")
+        print(f"❌ Link blocker error: {e}")
 
 # ======================================================
 # 3️⃣ PRIVATE AUTO REPLY
@@ -142,7 +169,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
 
 ⚠️ အဆင်မပြေတာရှိရင် ⚠️ **
-❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါ။"""
+❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်ပါ။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
@@ -156,6 +183,19 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
     bot.send_message(message.chat.id, text, reply_markup=kb)
+
+# ===============================
+# ADMIN CHECK COMMAND (FOR DEBUGGING)
+# ===============================
+@bot.message_handler(commands=['check_admins'])
+def check_admins(message):
+    """Check current admin list for debugging"""
+    try:
+        admins = bot.get_chat_administrators(message.chat.id)
+        admin_list = "\n".join([f"- {admin.user.first_name} (ID: {admin.user.id})" for admin in admins])
+        bot.reply_to(message, f"📋 Current Admins:\n{admin_list}")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error: {e}")
 
 # ===============================
 # CATEGORY REDIRECT
