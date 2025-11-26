@@ -102,6 +102,12 @@ def is_admin(chat_id, user_id):
 def handle_group_messages(message):
     """Handle all group messages including forwarded ones"""
     
+    # Skip if it's a command or new chat members
+    if message.text and message.text.startswith('/'):
+        return
+    if message.new_chat_members:
+        return
+    
     # Check if message contains text (original or forwarded)
     message_text = ""
     
@@ -112,8 +118,6 @@ def handle_group_messages(message):
     elif message.forward_from_chat or message.forward_from:
         if message.caption:  # For media messages with caption
             message_text = message.caption
-        # You can also get forwarded message text if needed
-        # Note: Bot can't access content of forwarded messages from private chats due to privacy restrictions
     
     # If message contains links and user is not admin, block it
     if message_text and is_link(message_text):
@@ -129,46 +133,8 @@ def handle_group_messages(message):
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
-# ======================================================
-# 3️⃣ PRIVATE CHAT LINK HANDLER - FORWARDED LINKS
-# ======================================================
-@bot.message_handler(func=lambda m: m.chat.type == 'private')
-def handle_private_messages(message):
-    """Handle private messages including forwarded links"""
-    
-    # Check for forwarded messages containing links
-    if message.forward_from_chat or message.forward_from:
-        # For forwarded messages with text
-        if message.text and is_link(message.text):
-            bot.send_message(
-                message.chat.id, 
-                f"🔗 Forwarded link detected:\n{message.text}\n\nI can see the forwarded link! ✅"
-            )
-        # For forwarded media messages with captions containing links
-        elif message.caption and is_link(message.caption):
-            bot.send_message(
-                message.chat.id, 
-                f"🔗 Forwarded media with link:\n{message.caption}\n\nI can see the forwarded link! ✅"
-            )
-        else:
-            # Regular forwarded message without links
-            bot.send_message(
-                message.chat.id, 
-                "📩 Forwarded message received!\n\n" +
-                "Note: I can process links from forwarded messages in private chats."
-            )
-    # Regular text messages
-    elif message.text and not message.text.startswith('/'):
-        if is_link(message.text):
-            bot.send_message(
-                message.chat.id, 
-                f"🔗 Link detected:\n{message.text}\n\nThis is a direct link message! ✅"
-            )
-        else:
-            bot.send_message(message.chat.id, f"🤖 Auto Reply:\n{message.text}")
-
 # ===============================
-# /START MESSAGE
+# /START MESSAGE - FIXED
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -207,6 +173,48 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
     bot.send_message(message.chat.id, text, reply_markup=kb)
+
+# ======================================================
+# 3️⃣ PRIVATE CHAT MESSAGE HANDLER - FIXED
+# ======================================================
+@bot.message_handler(func=lambda m: m.chat.type == 'private')
+def handle_private_messages(message):
+    """Handle private messages including forwarded links"""
+    
+    # Skip if it's a command (already handled by start handler)
+    if message.text and message.text.startswith('/'):
+        return
+    
+    # Check for forwarded messages containing links
+    if message.forward_from_chat or message.forward_from:
+        # For forwarded messages with text
+        if message.text and is_link(message.text):
+            bot.send_message(
+                message.chat.id, 
+                f"🔗 Forwarded link detected:\n{message.text}\n\nI can see the forwarded link! ✅"
+            )
+        # For forwarded media messages with captions containing links
+        elif message.caption and is_link(message.caption):
+            bot.send_message(
+                message.chat.id, 
+                f"🔗 Forwarded media with link:\n{message.caption}\n\nI can see the forwarded link! ✅"
+            )
+        else:
+            # Regular forwarded message without links
+            bot.send_message(
+                message.chat.id, 
+                "📩 Forwarded message received!\n\n" +
+                "Note: I can process links from forwarded messages in private chats."
+            )
+    # Regular text messages (not commands)
+    elif message.text and not message.text.startswith('/'):
+        if is_link(message.text):
+            bot.send_message(
+                message.chat.id, 
+                f"🔗 Link detected:\n{message.text}\n\nThis is a direct link message! ✅"
+            )
+        else:
+            bot.send_message(message.chat.id, f"🤖 Auto Reply:\n{message.text}")
 
 # ===============================
 # CATEGORY REDIRECT
