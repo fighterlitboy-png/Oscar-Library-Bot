@@ -81,16 +81,14 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED ADMIN CHECK + BOT API ENTITIES
-#    - Allows plain @mentions (entities type "mention")
-#    - Blocks raw links and entities type "url" or "text_link"
+# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED FOR FORWARDED MESSAGES
 # ======================================================
 
 def is_link(text):
     """Basic raw-text link patterns"""
     if not text:
         return False
-    return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com"])
+    return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com", ".org", ".net"])
 
 def has_link_api(message):
     """Detect links in all message locations including forwarded text/captions"""
@@ -158,7 +156,7 @@ def is_admin(chat_id, user_id):
         print(f"Admin check error: {e}")
         return False
 
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio', 'voice'])
 def handle_group_messages(message):
     """Handle all group messages including forwarded ones"""
     
