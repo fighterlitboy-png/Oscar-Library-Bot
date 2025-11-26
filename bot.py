@@ -81,12 +81,66 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED ADMIN CHECK
+# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED ADMIN CHECK + BOT API ENTITIES
+#    - Allows plain @mentions (entities type "mention")
+#    - Blocks raw links and entities type "url" or "text_link"
 # ======================================================
+
 def is_link(text):
+    """Basic raw-text link patterns"""
     if not text:
         return False
     return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com"])
+
+def has_link_api(message):
+    """
+    Return True if message (or its caption / forwarded content) contains a link
+    Detected by:
+      - raw text patterns (http/https/www/t.me/.com)
+      - Bot API entities of type "url" or "text_link"
+    Mentions (entity type "mention") are NOT considered links and thus allowed.
+    """
+    # 1) Normal text (raw)
+    try:
+        if getattr(message, "text", None) and is_link(message.text):
+            return True
+    except Exception:
+        pass
+
+    # 2) Caption (raw)
+    try:
+        if getattr(message, "caption", None) and is_link(message.caption):
+            return True
+    except Exception:
+        pass
+
+    # 3) Entities inside text: only treat url/text_link as link (NOT "mention")
+    try:
+        ents = getattr(message, "entities", None)
+        if ents:
+            for e in ents:
+                # In telebot MessageEntity, e.type is string like "url", "text_link", "mention", etc.
+                if getattr(e, "type", None) in ["url", "text_link"]:
+                    return True
+    except Exception:
+        pass
+
+    # 4) Caption entities
+    try:
+        cent = getattr(message, "caption_entities", None)
+        if cent:
+            for e in cent:
+                if getattr(e, "type", None) in ["url", "text_link"]:
+                    return True
+    except Exception:
+        pass
+
+    # 5) Forwarded content: forwarded text / caption may exist in same message object.
+    #    (we already checked text and caption above)
+    #    Some forwarded messages may include forward signature fields but telebot keeps text/caption here.
+
+    return False
+
 
 def is_admin(chat_id, user_id):
     """Check if user is admin in the group"""
@@ -107,20 +161,11 @@ def handle_group_messages(message):
         return
     if message.new_chat_members:
         return
-    
-    # Check if message contains text (original or forwarded)
-    message_text = ""
-    
-    # Get text from original message
-    if message.text:
-        message_text = message.text
-    # Get text from forwarded message
-    elif message.forward_from_chat or message.forward_from:
-        if message.caption:  # For media messages with caption
-            message_text = message.caption
-    
-    # If message contains links and user is not admin, block it
-    if message_text and is_link(message_text):
+
+    # 🔥 FULL LINK CHECK (NORMAL + FORWARD + CAPTION + ENTITIES)
+    if has_link_api(message):
+        # If there's also only a mention entity (no url/text_link and no raw link),
+        # has_link_api would have returned False earlier, so this block won't run.
         if not is_admin(message.chat.id, message.from_user.id):
             try:
                 # Delete the message with link
@@ -159,7 +204,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
 
 ⚠️ အဆင်မပြေတာရှိရင် ⚠️ **
-❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါ။"""
+❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်ပါ။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
