@@ -38,14 +38,14 @@ def keep_alive():
 threading.Thread(target=keep_alive, daemon=True).start()
 
 # ======================================================
-# 1️⃣ GROUP WELCOME SYSTEM - IMPROVED
+# 1️⃣ GROUP WELCOME SYSTEM
 # ======================================================
 WELCOME_IMAGE = "welcome_photo.jpg"
 
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
     for user in message.new_chat_members:
-        caption = f"""နွေးထွေးစွာကြိုဆိုပါတယ်...💖
+        caption = f"""နွေးထွေးစွာကြိုဆိုပါတယ်...🧸
 {user.first_name} ...🥰
 
 📚 Oscar's Library မှ
@@ -73,7 +73,7 @@ def welcome_new_member(message):
                     reply_markup=welcome_kb
                 )
         except Exception as e:
-            print(f"❌ Welcome image error: {e}")
+            print(f"Welcome image error: {e}")
             bot.send_message(
                 message.chat.id,
                 caption,
@@ -81,67 +81,91 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY) - COMPLETE FIX
+# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED ADMIN CHECK
 # ======================================================
-def contains_link(message):
-    """Check if message contains links in text, caption, or forwarded content"""
-    text_to_check = ""
-    
-    # Check main message text
-    if message.text:
-        text_to_check += message.text + " "
-    
-    # Check caption (for media messages, forwarded messages)
-    if message.caption:
-        text_to_check += message.caption + " "
-    
-    # Check if contains links
-    if not text_to_check:
+def is_link(text):
+    if not text:
         return False
-        
-    link_patterns = [
-        "http://", "https://", "www.", 
-        "t.me/", "telegram.me/", 
-        ".com", ".org", ".net", ".io"
-    ]
-    
-    text_lower = text_to_check.lower()
-    return any(pattern in text_lower for pattern in link_patterns)
+    return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com"])
 
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and contains_link(m))
-def block_links(message):
+def is_admin(chat_id, user_id):
+    """Check if user is admin in the group"""
     try:
-        # REAL-TIME admin check with better error handling
-        try:
-            admins = bot.get_chat_administrators(message.chat.id)
-            admin_ids = [admin.user.id for admin in admins]
-            
-            # If user is admin, don't block
-            if message.from_user.id in admin_ids:
-                return
-                
-        except Exception as admin_error:
-            print(f"❌ Admin check error: {admin_error}")
-            # If can't check admins, block everyone except the message sender is bot itself
-            if message.from_user.id == bot.get_me().id:
-                return
-        
-        # Delete the message with link (including forwarded messages)
-        bot.delete_message(message.chat.id, message.message_id)
-        
-        # Send warning message
-        warning_msg = f"⚠️ {message.from_user.first_name} 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n ❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
-        bot.send_message(message.chat.id, warning_msg)
-        
+        admins = bot.get_chat_administrators(chat_id)
+        admin_ids = [admin.user.id for admin in admins]
+        return user_id in admin_ids
     except Exception as e:
-        print(f"❌ Link blocker error: {e}")
+        print(f"Admin check error: {e}")
+        return False
+
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
+def handle_group_messages(message):
+    """Handle all group messages including forwarded ones"""
+    
+    # Check if message contains text (original or forwarded)
+    message_text = ""
+    
+    # Get text from original message
+    if message.text:
+        message_text = message.text
+    # Get text from forwarded message
+    elif message.forward_from_chat or message.forward_from:
+        if message.caption:  # For media messages with caption
+            message_text = message.caption
+        # You can also get forwarded message text if needed
+        # Note: Bot can't access content of forwarded messages from private chats due to privacy restrictions
+    
+    # If message contains links and user is not admin, block it
+    if message_text and is_link(message_text):
+        if not is_admin(message.chat.id, message.from_user.id):
+            try:
+                # Delete the message with link
+                bot.delete_message(message.chat.id, message.message_id)
+                
+                # Send warning message
+                warning_msg = f"⚠️ {message.from_user.first_name} 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
+                bot.send_message(message.chat.id, warning_msg)
+                
+            except Exception as e:
+                print(f"Link blocker error: {e}")
 
 # ======================================================
-# 3️⃣ PRIVATE AUTO REPLY
+# 3️⃣ PRIVATE CHAT LINK HANDLER - FORWARDED LINKS
 # ======================================================
-@bot.message_handler(func=lambda m: m.chat.type == 'private' and not m.text.startswith('/'))
-def private_reply(message):
-    bot.send_message(message.chat.id, f"🤖 Auto Reply:\n{message.text}")
+@bot.message_handler(func=lambda m: m.chat.type == 'private')
+def handle_private_messages(message):
+    """Handle private messages including forwarded links"""
+    
+    # Check for forwarded messages containing links
+    if message.forward_from_chat or message.forward_from:
+        # For forwarded messages with text
+        if message.text and is_link(message.text):
+            bot.send_message(
+                message.chat.id, 
+                f"🔗 Forwarded link detected:\n{message.text}\n\nI can see the forwarded link! ✅"
+            )
+        # For forwarded media messages with captions containing links
+        elif message.caption and is_link(message.caption):
+            bot.send_message(
+                message.chat.id, 
+                f"🔗 Forwarded media with link:\n{message.caption}\n\nI can see the forwarded link! ✅"
+            )
+        else:
+            # Regular forwarded message without links
+            bot.send_message(
+                message.chat.id, 
+                "📩 Forwarded message received!\n\n" +
+                "Note: I can process links from forwarded messages in private chats."
+            )
+    # Regular text messages
+    elif message.text and not message.text.startswith('/'):
+        if is_link(message.text):
+            bot.send_message(
+                message.chat.id, 
+                f"🔗 Link detected:\n{message.text}\n\nThis is a direct link message! ✅"
+            )
+        else:
+            bot.send_message(message.chat.id, f"🤖 Auto Reply:\n{message.text}")
 
 # ===============================
 # /START MESSAGE
@@ -157,19 +181,19 @@ def start_message(message):
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
 
 **စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
-📚ကဏ္ဍအလိုက် 🔸 ✍️စာရေးဆရာ**
+📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ**
 
 Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
-**📚ကဏ္ဍအလိုက်** ✨ကိုနှိပ်ပါ။
+**📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
 
 စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
-**✍️စာရေးဆရာ** ✨ကိုနှိပ်ပါ။
+**✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
 
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
 
 ⚠️ အဆင်မပြေတာရှိရင် ⚠️ **
-❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်ပါ။"""
+❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်နိုင်ပါ။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
@@ -183,19 +207,6 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
     bot.send_message(message.chat.id, text, reply_markup=kb)
-
-# ===============================
-# ADMIN CHECK COMMAND (FOR DEBUGGING)
-# ===============================
-@bot.message_handler(commands=['check_admins'])
-def check_admins(message):
-    """Check current admin list for debugging"""
-    try:
-        admins = bot.get_chat_administrators(message.chat.id)
-        admin_list = "\n".join([f"- {admin.user.first_name} (ID: {admin.user.id})" for admin in admins])
-        bot.reply_to(message, f"📋 Current Admins:\n{admin_list}")
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error: {e}")
 
 # ===============================
 # CATEGORY REDIRECT
@@ -212,7 +223,7 @@ def category_redirect(call):
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
-    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
+    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
     rows = [
         ["က","ခ","ဂ","င"],
         ["စ","ဆ","ဇ","ည"],
