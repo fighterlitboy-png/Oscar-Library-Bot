@@ -93,36 +93,30 @@ def is_link(text):
     return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com"])
 
 def has_link_api(message):
-    """
-    Return True if message (or its caption / forwarded content) contains a link
-    Detected by:
-      - raw text patterns (http/https/www/t.me/.com)
-      - Bot API entities of type "url" or "text_link"
-    Mentions (entity type "mention") are NOT considered links and thus allowed.
-    """
-    # 1) Normal text (raw)
+    """Detect links in all message locations including forwarded text/captions"""
+
+    # 1) Normal text
     try:
-        if getattr(message, "text", None) and is_link(message.text):
+        if message.text and is_link(message.text):
             return True
-    except Exception:
+    except:
         pass
 
-    # 2) Caption (raw)
+    # 2) Caption
     try:
-        if getattr(message, "caption", None) and is_link(message.caption):
+        if message.caption and is_link(message.caption):
             return True
-    except Exception:
+    except:
         pass
 
-    # 3) Entities inside text: only treat url/text_link as link (NOT "mention")
+    # 3) Entities (normal message)
     try:
         ents = getattr(message, "entities", None)
         if ents:
             for e in ents:
-                # In telebot MessageEntity, e.type is string like "url", "text_link", "mention", etc.
-                if getattr(e, "type", None) in ["url", "text_link"]:
+                if e.type in ["url", "text_link"]:
                     return True
-    except Exception:
+    except:
         pass
 
     # 4) Caption entities
@@ -130,17 +124,29 @@ def has_link_api(message):
         cent = getattr(message, "caption_entities", None)
         if cent:
             for e in cent:
-                if getattr(e, "type", None) in ["url", "text_link"]:
+                if e.type in ["url", "text_link"]:
                     return True
-    except Exception:
+    except:
         pass
 
-    # 5) Forwarded content: forwarded text / caption may exist in same message object.
-    #    (we already checked text and caption above)
-    #    Some forwarded messages may include forward signature fields but telebot keeps text/caption here.
+    # 5) Forwarded message (Telegram does NOT send entities in forward text)
+    #    So we must check raw text/caption again manually
+    if message.forward_from or message.forward_from_chat:
+        # Forwarded text
+        try:
+            if message.text and is_link(message.text):
+                return True
+        except:
+            pass
+
+        # Forwarded caption
+        try:
+            if message.caption and is_link(message.caption):
+                return True
+        except:
+            pass
 
     return False
-
 
 def is_admin(chat_id, user_id):
     """Check if user is admin in the group"""
