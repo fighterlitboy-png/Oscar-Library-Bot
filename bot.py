@@ -31,10 +31,11 @@ BIRTHDAY_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-
 WELCOME_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
 
 # ===============================
-# TOP FANS TRACKING SYSTEM
+# TOP FANS TRACKING SYSTEM - IMPROVED
 # ===============================
 user_message_count = {}
 user_reaction_count = {}
+user_names = {}  # Store usernames for display
 tracking_start_time = datetime.now()
 
 class BirthdayWishBot:
@@ -149,14 +150,23 @@ def show_birthday_post(message):
         print(f"❌ ပုံမတင်နိုင်: {e}")
 
 # ===============================
-# TOP FANS TRACKING FUNCTIONS
+# TOP FANS TRACKING FUNCTIONS - IMPROVED
 # ===============================
 def track_user_activity(message):
     """User activity ကိုခြေရာခံမယ်"""
     try:
         user_id = message.from_user.id
         user_message_count[user_id] = user_message_count.get(user_id, 0) + 1
-        print(f"📝 User {user_id} message count: {user_message_count[user_id]}")
+        
+        # Store username for display
+        username = message.from_user.username
+        first_name = message.from_user.first_name or "User"
+        if username:
+            user_names[user_id] = f"@{username}"
+        else:
+            user_names[user_id] = first_name
+        
+        print(f"📝 User {user_names[user_id]} message count: {user_message_count[user_id]}")
         
     except Exception as e:
         print(f"❌ Error tracking user activity: {e}")
@@ -181,7 +191,7 @@ def get_top_fans_list():
         return []
 
 def create_top_fans_post():
-    """Top Fans post ဖန်တီးမယ်"""
+    """Top Fans post ဖန်တီးမယ် - IMPROVED VERSION"""
     try:
         top_users = get_top_fans_list()
         
@@ -192,20 +202,30 @@ def create_top_fans_post():
         post += "ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ...!\n\n"
         post += "<b>🎖️ Official Top 20 Community Stars 🎖️</b>\n\n"
         
-        # Gold Tier (Top 1-5)
+        # Gold Tier (Top 1-5) - With special titles
+        gold_titles = ["👑 Channel King", "⭐ Super Star", "🔥 Fire Reactor", "💬 Chat Champion", "🎯 Most Active"]
         post += "<b>🥇 GOLD Tier (Top 1-5)</b>\n"
         for i, (user_id, score) in enumerate(top_users[:5], 1):
-            post += f"{i}. User_{user_id} ⭐ Score: {score}\n"
+            username = user_names.get(user_id, f"User_{user_id}")
+            title = gold_titles[i-1] if i-1 < len(gold_titles) else "⭐ Top Fan"
+            post += f"{i}. {username} {title} - Score: {score}\n"
         
-        # Silver Tier (Top 6-15)
+        # Silver Tier (Top 6-15) - With special titles
+        silver_titles = ["✨ Rising Star", "💫 Active Member", "🌟 Community Hero", "🚀 Engagement Star", "💝 Supporter", 
+                        "👍 Top Fan", "🔥 React Master", "💬 Conversation Starter", "⭐ Future Star", "🌈 Community Builder"]
         post += "\n<b>🥈 SILVER Tier (Top 6-15)</b>\n"
         for i, (user_id, score) in enumerate(top_users[5:15], 6):
-            post += f"{i}. User_{user_id} ✨ Score: {score}\n"
+            username = user_names.get(user_id, f"User_{user_id}")
+            title = silver_titles[i-6] if i-6 < len(silver_titles) else "🌟 Star"
+            post += f"{i}. {username} {title} - Score: {score}\n"
         
-        # Bronze Tier (Top 16-20)
+        # Bronze Tier (Top 16-20) - With special titles
+        bronze_titles = ["🎉 Celebration Star", "💎 Diamond Member", "🌟 Shining Star", "🚀 Rocket Booster", "💖 Heart Giver"]
         post += "\n<b>🥉 BRONZE Tier (Top 16-20)</b>\n"
         for i, (user_id, score) in enumerate(top_users[15:20], 16):
-            post += f"{i}. User_{user_id} 🌟 Score: {score}\n"
+            username = user_names.get(user_id, f"User_{user_id}")
+            title = bronze_titles[i-16] if i-16 < len(bronze_titles) else "🌟 Member"
+            post += f"{i}. {username} {title} - Score: {score}\n"
         
         post += "\n<b>💫 နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...</b>\n\n"
         post += "ဒီအပတ် ပါဝင်သူတစ်ယောက်စီတိုင်းကို အထူးကျေးဇူးတင်ရှိပါတယ်!\n"
@@ -268,6 +288,7 @@ async def schedule_weekly_top_fans():
             
             user_message_count.clear()
             user_reaction_count.clear()
+            user_names.clear()
             tracking_start_time = datetime.now()
             print("🔄 User tracking data reset for new week")
             
@@ -507,7 +528,7 @@ def handle_group_messages(message):
 def start_message(message):
     first = message.from_user.first_name or "Friend"
     text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸
-    {first} ...🥰</b>
+{first} ...🥰</b>
     
 <b>🌼 Oscar's Library 🌼 မှ ကြိုဆိုပါတယ်</b>
 
@@ -548,141 +569,74 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 def handle_private_messages(message):
     """Handle private messages including forwarded links"""
     
+    # Ignore commands
     if message.text and message.text.startswith('/'):
         return
     
     user_first_name = message.from_user.first_name
     user_id = message.from_user.id
     
-    if message.forward_from_chat or message.forward_from:
-        if message.text and is_link(message.text):
+    # Check for links in forwarded messages or normal messages
+    if has_link_api(message):
+        warning_msg = f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...'
+        bot.send_message(message.chat.id, warning_msg, parse_mode='HTML')
+    else:
+        # If no links, just acknowledge the message
+        if message.forward_from or message.forward_from_chat:
             bot.send_message(
                 message.chat.id, 
-                f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...',
-                parse_mode='HTML'
-            )
-        elif message.caption and is_link(message.caption):
-            bot.send_message(
-                message.chat.id, 
-                f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...',
-                parse_mode='HTML'
-            )
-        else:
-            bot.send_message(
-                message.chat.id, 
-                f'📩 <a href="tg://user?id={user_id}">{user_first_name}</a> ရဲ့ Forwarded message received!\n\nNote: I can process links from forwarded messages in private chats.',
-                parse_mode='HTML'
-            )
-    elif message.text and not message.text.startswith('/'):
-        if is_link(message.text):
-            bot.send_message(
-                message.chat.id, 
-                f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...',
+                f'📩 <a href="tg://user?id={user_id}">{user_first_name}</a> ရဲ့ Forwarded message received!\n\nNote: Links are not allowed in this chat.',
                 parse_mode='HTML'
             )
         else:
-            bot.send_message(
-                message.chat.id, 
-                f'🤖 <a href="tg://user?id={user_id}">{user_first_name}</a> ရဲ့ Message:\n{message.text}',
-                parse_mode='HTML'
-            )
+            # Track normal messages for Top Fans system
+            track_user_activity(message)
 
-# ===============================
-# CATEGORY & AUTHOR HANDLERS
-# ===============================
-@bot.callback_query_handler(func=lambda c: c.data == "category")
-def category_redirect(call):
-    bot.send_message(
-        call.message.chat.id,
-        "<b>📚 ကဏ္ဍအလိုက် စာအုပ်များ</b>\nhttps://t.me/oscarhelpservices/4\n\n<b>🌼 Oscar's Library 🌼</b>",
-        parse_mode='HTML'
-    )
+# ======================================================
+# CALLBACK QUERY HANDLER - ADDED
+# ======================================================
+@bot.callback_query_handler(func=lambda call: True)
+def handle_callback_query(call):
+    """Handle button callbacks"""
+    try:
+        if call.data == "category":
+            bot.answer_callback_query(call.id, "📚 ကဏ္ဍအလိုက် ရွေးချယ်ရန်")
+        elif call.data == "author_menu":
+            bot.answer_callback_query(call.id, "✍️ စာရေးဆရာအလိုက် ရွေးချယ်ရန်")
+        else:
+            bot.answer_callback_query(call.id, "Button clicked!")
+    except Exception as e:
+        print(f"Callback error: {e}")
 
-@bot.callback_query_handler(func=lambda c: c.data == "author_menu")
-def author_menu(call):
-    text = "<b>✍️ စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ</b>\n\n<b>🌼 Oscar's Library 🌼</b>"
-    rows = [
-        ["က","ခ","ဂ","င"],
-        ["စ","ဆ","ဇ","ည"],
-        ["ဋ္ဌ","တ","ထ","ဒ"],
-        ["ဓ","န","ပ","ဖ"],
-        ["ဗ","ဘ","မ","ယ"],
-        ["ရ","လ","ဝ","သ"],
-        ["ဟ","အ","ဥ","Eng"]
-    ]
-    kb = types.InlineKeyboardMarkup()
-    for r in rows:
-        kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode='HTML')
-
-AUTHOR_LINKS = {
-    "က": "https://t.me/oscarhelpservices/5",
-    "ခ": "https://t.me/oscarhelpservices/7",
-    "ဂ": "https://t.me/oscarhelpservices/12",
-    "င": "https://t.me/oscarhelpservices/14",
-    "စ": "https://t.me/oscarhelpservices/16",
-    "ဆ": "https://t.me/oscarhelpservices/18",
-    "ဇ": "https://t.me/oscarhelpservices/20",
-    "ည": "https://t.me/oscarhelpservices/23",
-    "ဋ္ဌ": "https://t.me/oscarhelpservices/25",
-    "တ": "https://t.me/oscarhelpservices/27",
-    "ထ": "https://t.me/oscarhelpservices/33",
-    "ဒ": "https://t.me/oscarhelpservices/35",
-    "ဓ": "https://t.me/oscarhelpservices/37",
-    "န": "https://t.me/oscarhelpservices/39",
-    "ပ": "https://t.me/oscarhelpservices/41",
-    "ဖ": "https://t.me/oscarhelpservices/43",
-    "ဗ": "https://t.me/oscarhelpservices/45",
-    "ဘ": "https://t.me/oscarhelpservices/47",
-    "မ": "https://t.me/oscarhelpservices/58",
-    "ယ": "https://t.me/oscarhelpservices/59",
-    "ရ": "https://t.me/oscarhelpservices/61",
-    "လ": "https://t.me/oscarhelpservices/63",
-    "ဝ": "https://t.me/oscarhelpservices/65",
-    "သ": "https://t.me/oscarhelpservices/67",
-    "ဟ": "https://t.me/oscarhelpservices/69",
-    "အ": "https://t.me/oscarhelpservices/30",
-    "ဥ": "https://t.me/oscarhelpservices/10",
-    "Eng": "https://t.me/sharebykosoemoe/920"
-}
-
-@bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
-def author_redirect(call):
-    key = call.data.replace("author_", "")
-    url = AUTHOR_LINKS.get(key)
-    if url:
-        bot.answer_callback_query(call.id)
-        bot.send_message(
-            call.message.chat.id,
-            f'<b>➡️ {key} ဖြင့်စသောစာရေးဆရာများ</b>\n{url}\n\n<b>🌼 Oscar\'s Library 🌼</b>',
-            parse_mode='HTML'
-        )
-
-# ===============================
-# FLASK SERVER
-# ===============================
-app = Flask(__name__)
-bot.remove_webhook()
-bot.set_webhook(url=WEBHOOK_URL)
-
-@app.route(f"/{BOT_TOKEN}", methods=['POST'])
-def webhook():
-    json_data = request.get_json(force=True)
-    if json_data:
-        update = telebot.types.Update.de_json(json_data)
-        bot.process_new_updates([update])
-    return "OK", 200
-
-@app.route("/", methods=['GET'])
-def index():
-    return "Bot is running…", 200
-
-# ===============================
-# RUN
-# ===============================
-if __name__ == "__main__":
+# ======================================================
+# INITIALIZE ALL SYSTEMS
+# ======================================================
+def initialize_all_systems():
+    """Initialize all background systems"""
+    print("🚀 Starting all background systems...")
     initialize_birthday_bot()
     initialize_top_fans_bot()
-    
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    print("✅ All systems initialized!")
+
+# Start all systems when the bot runs
+initialize_all_systems()
+
+# ======================================================
+# WEBHOOK SETUP (for Render)
+# ======================================================
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Bot is running!"
+
+@app.route(f'/{BOT_TOKEN}', methods=['POST'])
+def webhook():
+    json_str = request.get_data().decode('UTF-8')
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return ''
+
+if __name__ == '__main__':
+    print("🤖 Oscar Library Bot is running...")
+    app.run(host='0.0.0.0', port=8080)
