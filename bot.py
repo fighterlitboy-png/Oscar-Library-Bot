@@ -426,7 +426,7 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY)
+# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED VERSION
 # ======================================================
 
 def is_link(text):
@@ -437,7 +437,6 @@ def is_link(text):
 
 def has_link_api(message):
     """Detect links in all message locations including forwarded text/captions"""
-
     # 1) Normal text
     try:
         if message.text and is_link(message.text):
@@ -473,7 +472,6 @@ def has_link_api(message):
         pass
 
     # 5) Forwarded message (Telegram does NOT send entities in forward text)
-    #    So we must check raw text/caption again manually
     if message.forward_from or message.forward_from_chat:
         # Forwarded text
         try:
@@ -505,6 +503,7 @@ def is_admin(chat_id, user_id):
 def handle_group_messages(message):
     """Handle all group messages including forwarded ones"""
     
+    # Skip commands and new member messages
     if message.text and message.text.startswith('/'):
         return
     if message.new_chat_members:
@@ -518,16 +517,19 @@ def handle_group_messages(message):
                 user_id = message.from_user.id
                 warning_msg = f'⚠️ <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...'
                 bot.send_message(message.chat.id, warning_msg, parse_mode='HTML')
+                print(f"🔗 Link blocked from user {user_first_name} in group {message.chat.id}")
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
 # ===============================
-# /START MESSAGE - FIXED
+# /START MESSAGE - FIXED AND WORKING
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    first = message.from_user.first_name or "Friend"
-    text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸
+    """Fixed /start command handler"""
+    try:
+        first = message.from_user.first_name or "Friend"
+        text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸
 {first} ...🥰</b>
     
 <b>🌼 Oscar's Library 🌼 မှ ကြိုဆိုပါတယ်</b>
@@ -537,7 +539,7 @@ def start_message(message):
 <b>စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
 📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
 
-Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
+Fic၊ ကာတွန်း၊ သည�ထိပ်ရင်ဖို 
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
 <b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
@@ -549,48 +551,46 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 <b>⚠️ အဆင်မပြေတာရှိရင် ⚠️
 ❓အထွေထွေမေးမြန်းရန်</b> ကိုနှိပ်ပါ။"""
 
-    kb = types.InlineKeyboardMarkup()
-    kb.row(
-        types.InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="category"),
-        types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu")
-    )
-    kb.row(types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17"))
-    kb.row(types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"))
-    kb.row(types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498"))
-    kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
-    kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
+        kb = types.InlineKeyboardMarkup()
+        kb.row(
+            types.InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="category"),
+            types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu")
+        )
+        kb.row(types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17"))
+        kb.row(types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"))
+        kb.row(types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498"))
+        kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
+        kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
-    bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode='HTML')
+        bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode='HTML')
+        print(f"✅ /start command processed for user: {first} ({message.from_user.id})")
+        
+    except Exception as e:
+        print(f"❌ Error in /start command: {e}")
 
 # ======================================================
-# 3️⃣ PRIVATE CHAT MESSAGE HANDLER - FIXED
+# 3️⃣ PRIVATE CHAT MESSAGE HANDLER - FIXED VERSION
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
-    """Handle private messages including forwarded links"""
+    """Handle private messages including forwarded links - FIXED VERSION"""
     
-    # Ignore commands
+    # Ignore commands - let them be handled by their specific handlers
     if message.text and message.text.startswith('/'):
         return
     
     user_first_name = message.from_user.first_name
     user_id = message.from_user.id
     
-    # Check for links in forwarded messages or normal messages
+    # Check for links in any type of message
     if has_link_api(message):
         warning_msg = f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...'
         bot.send_message(message.chat.id, warning_msg, parse_mode='HTML')
+        print(f"🔗 Link blocked in private chat from user {user_first_name}")
     else:
-        # If no links, just acknowledge the message
-        if message.forward_from or message.forward_from_chat:
-            bot.send_message(
-                message.chat.id, 
-                f'📩 <a href="tg://user?id={user_id}">{user_first_name}</a> ရဲ့ Forwarded message received!\n\nNote: Links are not allowed in this chat.',
-                parse_mode='HTML'
-            )
-        else:
-            # Track normal messages for Top Fans system
-            track_user_activity(message)
+        # If no links, track the message for Top Fans system
+        track_user_activity(message)
+        print(f"📝 Message tracked from {user_first_name} in private chat")
 
 # ======================================================
 # CALLBACK QUERY HANDLER - ADDED
@@ -639,4 +639,8 @@ def webhook():
 
 if __name__ == '__main__':
     print("🤖 Oscar Library Bot is running...")
+    print("✅ /start command: ACTIVE")
+    print("✅ Link Blocker: ACTIVE") 
+    print("✅ Top Fans System: ACTIVE")
+    print("✅ Birthday Bot: ACTIVE")
     app.run(host='0.0.0.0', port=8080)
