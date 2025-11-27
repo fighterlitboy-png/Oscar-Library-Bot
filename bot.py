@@ -7,7 +7,6 @@ import time
 import requests
 import sys
 from datetime import datetime, timedelta
-import pytz
 from collections import defaultdict
 import json
 
@@ -72,7 +71,7 @@ TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 ✅ စကားဝိုင်းမှာ ပါဝင်ပါ...
 ✅ ချန်နယ်ကို အားပေးပါ...
 
-သင့်ရဲ့ တစ်ခုတည်းသော React ကလေးက ကျွန်တော်တို့အတွက် များ�စွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
+သင့်ရဲ့ တစ်ခုတည်းသော React ကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
 
 🌟 **ကျေးဇူးအထူးတင်ပါတယ်...!**
 ဒီချန်နယ်ကို အသက်သွင်းပေးတဲ့ Member တိုင်းကို အထူးကျေးဇူးတင်ပါတယ်။ သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ!
@@ -122,168 +121,6 @@ def process_new_post(message):
 def show_top_post(message):
     """Show the current top fans post"""
     bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='Markdown')
-
-# ===============================
-# WEEKLY TOP FANS SYSTEM CONFIGURATION
-# ===============================
-CHANNEL_ID = -1002150199369  # Your channel ID
-CUSTOM_REACTIONS = ['🔥', '❤️', '👍', '🎉', '👏']
-
-# Tracking data
-user_message_count = defaultdict(int)
-user_reaction_count = defaultdict(int)
-tracking_start_time = datetime.now(pytz.timezone('Asia/Yangon'))
-
-# ===============================
-# WEEKLY TOP FANS FUNCTIONS
-# ===============================
-def reset_tracking():
-    """Reset tracking data for new week"""
-    global user_message_count, user_reaction_count, tracking_start_time
-    user_message_count.clear()
-    user_reaction_count.clear()
-    tracking_start_time = datetime.now(pytz.timezone('Asia/Yangon'))
-    print("📊 Weekly tracking reset")
-
-def get_user_mention(user_id, first_name):
-    """Get user mention in click-to-mention format"""
-    return f"[{first_name}](tg://user?id={user_id})"
-
-def calculate_scores():
-    """Calculate combined scores for users"""
-    user_scores = defaultdict(int)
-    all_user_ids = set(list(user_message_count.keys()) + list(user_reaction_count.keys()))
-    
-    for user_id in all_user_ids:
-        message_score = user_message_count.get(user_id, 0)
-        reaction_score = user_reaction_count.get(user_id, 0)
-        user_scores[user_id] = message_score + reaction_score
-        
-    print(f"📈 Calculated scores for {len(user_scores)} users")
-    return user_scores
-
-async def generate_weekly_post():
-    """Generate the weekly top fans post"""
-    user_scores = calculate_scores()
-    
-    # Get top 20 users
-    top_users = sorted(user_scores.items(), key=lambda x: x[1], reverse=True)[:20]
-    
-    post_content = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
-
-ဒီအပတ်အတွင်း ကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ!
-
-🎖️ **Official Top 20 Community Stars** 🎖️
-ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများ!
-
-🥇 GOLD Tier (Top 1-5)
-"""
-    
-    # Add ranked list with mentions
-    for rank, (user_id, score) in enumerate(top_users, 1):
-        # In a real implementation, you'd fetch user info from Telegram API
-        # For now, using placeholder
-        mention = get_user_mention(user_id, f"User{user_id}")
-        
-        if rank == 1:
-            post_content += f"1. {mention} 👑 Channel King\n"
-        elif rank == 2:
-            post_content += f"2. {mention} ⭐ Super Star\n"
-        elif rank == 3:
-            post_content += f"3. {mention} 🔥 Fire Reactor\n"
-        elif rank == 4:
-            post_content += f"4. {mention} 💬 Chat Champion\n"
-        elif rank == 5:
-            post_content += f"5. {mention} 🎯 Most Active\n"
-        elif rank == 6:
-            post_content += "\n🥈 SILVER Tier (Top 6-15)\n"
-            post_content += f"6. {mention} ✨ Rising Star\n"
-        elif rank == 7:
-            post_content += f"7. {mention} 💫 Active Member\n"
-        elif rank == 8:
-            post_content += f"8. {mention} 🌟 Community Hero\n"
-        elif rank == 9:
-            post_content += f"9. {mention} 🚀 Engagement Star\n"
-        elif rank == 10:
-            post_content += f"10. {mention} 💝 Supporter\n"
-        elif rank == 11:
-            post_content += f"11. {mention} 👍 Top Fan\n"
-        elif rank == 12:
-            post_content += f"12. {mention} 🔥 React Master\n"
-        elif rank == 13:
-            post_content += f"13. {mention} 💬 Conversation Starter\n"
-        elif rank == 14:
-            post_content += f"14. {mention} ⭐ Future Star\n"
-        elif rank == 15:
-            post_content += f"15. {mention} 🌈 Community Builder\n"
-        elif rank == 16:
-            post_content += "\n🥉 BRONZE Tier (Top 16-20)\n"
-            post_content += f"16. {mention} 🎉 Celebration Star\n"
-        elif rank == 17:
-            post_content += f"17. {mention} 💎 Diamond Member\n"
-        elif rank == 18:
-            post_content += f"18. {mention} 🌟 Shining Star\n"
-        elif rank == 19:
-            post_content += f"19. {mention} 🚀 Rocket Booster\n"
-        elif rank == 20:
-            post_content += f"20. {mention} 💖 Heart Giver\n"
-
-    post_content += """
-💫 **နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...*
-
-ဒီအပတ် ပါဝင်သူတစ်ယောက်စီတိုင်းကို အထူးကျေးဇူးတင်ရှိပါတယ်!  
-နောက်အပတ်မှာတော့ သင့်နာမည် ဒီစာရင်းမှာပါအောင်...🥰
-
-✅ React လေးတွေ ပိုပေးပါ...
-✅ စကားဝိုင်းမှာ ပါဝင်ပါ...
-✅ ချန်နယ်ကို အားပေးပါ...
-
-သင့်ရဲ့ တစ်ခုတည်းသော React ကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
-
-🌟 **ကျေးဇူးအထူးတင်ပါတယ်...!**
-ဒီချန်နယ်ကို အသက်သွင်းပေးတဲ့ Member တိုင်းကို အထူးကျေးဇူးတင်ပါတယ်။ သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ!
-
-📅 **နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ**
-ဘယ်သူတွေ Top 20 ထဲဝင်မလဲ စောင့်ကြည့်လိုက်ကြရအောင်! 🎊"""
-
-    return post_content
-
-def schedule_weekly_post():
-    """Schedule weekly post for Sunday 6:00 PM Myanmar Time"""
-    while True:
-        now = datetime.now(pytz.timezone('Asia/Yangon'))
-        
-        # Calculate next Sunday 6:00 PM
-        days_until_sunday = (6 - now.weekday()) % 7
-        next_sunday = now.replace(
-            hour=18, minute=0, second=0, microsecond=0
-        ) + timedelta(days=days_until_sunday)
-        
-        # If today is Sunday but past 6 PM, schedule for next Sunday
-        if now.weekday() == 6 and now.hour >= 18:
-            next_sunday += timedelta(days=7)
-        
-        wait_seconds = (next_sunday - now).total_seconds()
-        
-        print(f"⏰ Next weekly post scheduled for: {next_sunday}")
-        time.sleep(wait_seconds)
-        
-        # Post weekly update
-        try:
-            post_content = generate_weekly_post()
-            # In a real implementation, you'd send this to your channel
-            # bot.send_message(CHANNEL_ID, post_content, parse_mode='Markdown')
-            print("✅ Weekly top fans post would be published here")
-            
-            # Reset tracking for new week
-            reset_tracking()
-            
-        except Exception as e:
-            print(f"Error in weekly post: {e}")
-
-# Start the weekly scheduler in a separate thread
-weekly_thread = threading.Thread(target=schedule_weekly_post, daemon=True)
-weekly_thread.start()
 
 # ===============================
 # RENDER FONT FIX
