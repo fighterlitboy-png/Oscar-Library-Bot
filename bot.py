@@ -6,6 +6,8 @@ import threading
 import time
 import requests
 import sys
+from datetime import datetime, timedelta
+import asyncio
 
 # ===============================
 # BOT TOKEN & URL (Environment Variables)
@@ -28,10 +30,11 @@ def is_owner(user_id):
 # Default Top Fans post template
 TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 
-ဒီအပတ်အတွင်း ကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ!
+ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို
+အပြင်းအထန် အားပေးမှုအများဆုံး
+Member များကိုရွေးချယ်လိုက်ပါပြီ...!
 
 🎖️ **Official Top 20 Community Stars** 🎖️
-ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများ!
 
 🥇 GOLD Tier (Top 1-5)
 1. @user1 👑 Channel King
@@ -68,13 +71,101 @@ TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 ✅ စကားဝိုင်းမှာ ပါဝင်ပါ...
 ✅ ချန်နယ်ကို အားပေးပါ...
 
-သင့်ရဲ့ တစ်ခုတည်းသော React ကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
+သင့်ရဲ့တစ်ခုတည်းသော Reactကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
 
-🌟 **ကျေးဇူးအထူးတင်ပါတယ်...!**
-ဒီချန်နယ်ကို အသက်သွင်းပေးတဲ့ Member တိုင်းကို အထူးကျေးဇူးတင်ပါတယ်။ သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ!
+🌟 **ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများဖြစ်ကြပါစေ...!**
+သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ!
 
 📅 **နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ**
-ဘယ်သူတွေ Top 20 ထဲဝင်မလဲ စောင့်ကြည့်လိုက်ကြရအောင်! 🎊"""
+ဘယ်သူတွေ Top 20 ထဲဝင်မလဲ စောင့်ကြည့်လိုက်ကြရအောင်...! 🎊"""
+
+# ===============================
+# AUTO REMOVE SYSTEM - SUNDAY 5:59PM
+# ===============================
+async def get_final_top_20():
+    """Sunday 5:59PM မှာ နောက်ဆုံးစစ်ဆေးပြီး Top 20 ထုတ်ပေးမယ်"""
+    try:
+        print("🕔 Sunday 5:59PM - Finalizing Top 20 List...")
+        
+        # 1. မူရင်း Top users ရယူ (score အမြင့်ဆုံးအစဉ်လိုက်)
+        user_scores = {}
+        all_user_ids = set(list(user_message_count.keys()) + list(user_reaction_count.keys()))
+        
+        for user_id in all_user_ids:
+            message_score = user_message_count.get(user_id, 0)
+            reaction_score = user_reaction_count.get(user_id, 0)
+            user_scores[user_id] = message_score + reaction_score
+        
+        # Score အမြင့်ဆုံးအစဉ်လိုက် sort
+        raw_top_users = sorted(user_scores.items(), key=lambda x: x[1], reverse=True)
+        
+        # 2. Sunday 5:59PM မှာ channel members နဲ့တိုက်စစ်
+        current_members = await get_channel_members()  # လက်ရှိ member list
+        
+        # 3. လက်ရှိရှိသူတွေပဲ filter လုပ်ပြီး Top 20 ထုတ်
+        final_top_20 = []
+        for user_id, score in raw_top_users:
+            if user_id in current_members:  # လက်ရှိရှိမှသာ ထည့်မယ်
+                final_top_20.append((user_id, score))
+                if len(final_top_20) >= 20:  # 20 ယောက်ပြည့်ရင် stop
+                    break
+        
+        print(f"✅ Final Top 20: {len(final_top_20)} users")
+        return final_top_20[:20]  # Top 20 ပဲပြန်ပေးမယ်
+        
+    except Exception as e:
+        print(f"❌ Error in get_final_top_20: {e}")
+        return []
+
+async def get_channel_members():
+    """Channel ထဲက လက်ရှိ member list ရယူ"""
+    # ဒီ function ကို သင့် channel နဲ့သင့်တော်အောင် ပြင်ရန်
+    try:
+        # ဥပမာ: သင့် channel member IDs ရယူနည်း
+        members = []  # member user IDs list
+        return members
+    except Exception as e:
+        print(f"❌ Error getting channel members: {e}")
+        return []
+
+# Tracking data (မူရင်း code ကနေ)
+user_message_count = {}
+user_reaction_count = {}
+tracking_start_time = datetime.now()
+
+# ===============================
+# SCHEDULER - SUNDAY 5:59PM AUTO REMOVE
+# ===============================
+async def schedule_weekly_post():
+    """Sunday 5:59PM မှာ auto remove + 6:00PM မှာ post"""
+    while True:
+        now = datetime.now()
+        
+        # Sunday 5:59PM မှာ final list ထုတ်
+        next_sunday = now.replace(hour=17, minute=59, second=0, microsecond=0)
+        days_until_sunday = (6 - now.weekday()) % 7
+        next_sunday += timedelta(days=days_until_sunday)
+        
+        # Sunday 5:59PM မှာ final check စောင့်
+        wait_seconds = (next_sunday - now).total_seconds()
+        if wait_seconds > 0:
+            print(f"⏰ Waiting until Sunday 5:59PM: {next_sunday}")
+            await asyncio.sleep(wait_seconds)
+        
+        # Final Top 20 ထုတ် (Auto Remove ပါဝင်)
+        final_top_20 = await get_final_top_20()
+        
+        # 6:00PM မှာ post (1 minute wait)
+        await asyncio.sleep(60)
+        
+        # Post ပို့
+        try:
+            # သင့် channel ကို post ပို့
+            # await bot.send_message(CHANNEL_ID, post_content, parse_mode='Markdown')
+            print("✅ Weekly Top Fans post published!")
+            
+        except Exception as e:
+            print(f"❌ Error posting: {e}")
 
 # ===============================
 # EDIT TOP FANS POST COMMAND (Owner Only)
@@ -117,10 +208,7 @@ def process_new_post(message):
 @bot.message_handler(commands=['showtop'])
 def show_top_post(message):
     """Show the current top fans post"""
-    try:
-        bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='Markdown')
-    except Exception as e:
-        bot.send_message(message.chat.id, f"❌ Error: {e}")
+    bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='Markdown')
 
 # ===============================
 # RENDER FONT FIX
@@ -453,6 +541,8 @@ def author_redirect(call):
 # FLASK SERVER
 # ===============================
 app = Flask(__name__)
+bot.remove_webhook()
+bot.set_webhook(url=WEBHOOK_URL)
 
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def webhook():
@@ -467,8 +557,20 @@ def index():
     return "Bot is running…", 200
 
 # ===============================
+# INITIALIZE AUTO REMOVE SYSTEM
+# ===============================
+def initialize_auto_remove():
+    """Auto Remove System ကို start လုပ်မယ်"""
+    def run_scheduler():
+        asyncio.run(schedule_weekly_post())
+    
+    threading.Thread(target=run_scheduler, daemon=True).start()
+    print("✅ Auto Remove System Started - Sunday 5:59PM")
+
+# ===============================
 # RUN
 # ===============================
 if __name__ == "__main__":
+    initialize_auto_remove()
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
