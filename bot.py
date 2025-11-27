@@ -6,9 +6,6 @@ import threading
 import time
 import requests
 import sys
-from datetime import datetime, timedelta
-from collections import defaultdict
-import json
 
 # ===============================
 # BOT TOKEN & URL (Environment Variables)
@@ -308,7 +305,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
 **📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
 
-စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
+စာရေးဆရာအ�ိုက်ရှာဖတ်ချင်ရင် 
 **✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
 
 💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
