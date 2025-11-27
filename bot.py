@@ -16,8 +16,12 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFm
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
 
-# HTML parse mode ကိုပြောင်းသုံးမယ်
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
+
+# ===============================
+# CHANNEL CONFIGURATION
+# ===============================
+YOUR_CHANNEL_ID = "@bookbykosoemoe"  # သင့် channel username ထည့်ပါ
 
 # ===============================
 # BIRTHDAY WISH BOT CONFIGURATION
@@ -25,6 +29,13 @@ bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 BIRTHDAY_CHANNEL_ID = "1002150199369"
 BIRTHDAY_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 WELCOME_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
+
+# ===============================
+# TOP FANS TRACKING SYSTEM
+# ===============================
+user_message_count = {}
+user_reaction_count = {}
+tracking_start_time = datetime.now()
 
 class BirthdayWishBot:
     def __init__(self):
@@ -47,13 +58,12 @@ class BirthdayWishBot:
 <b>Happy Birthday ❤️ ကမ္ဘာ❣️
 ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂</b>
 
-{current_date} မွေးနေ့ရှင်လေးများ 
-နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
+<b>{current_date} မွေးနေ့ရှင်လေးများ 
+နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...💙</b>
 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအင်ဆန္ဒများလည်းပြည့်ဝပါစေ...🥰
 
-ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
-အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ...💞
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ...💞
 
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
@@ -77,7 +87,6 @@ class BirthdayWishBot:
         try:
             message = self.create_birthday_message()
             
-            # ပုံနဲ့တကွ မက်ဆေ့ပို့ခြင်း
             await bot.send_photo(
                 chat_id=self.channel_id,
                 photo=self.photo_url,
@@ -94,14 +103,10 @@ class BirthdayWishBot:
         while True:
             now = datetime.now()
             
-            # နံနက် ၈ နာရီစစ်ဆေးခြင်း
             if now.hour == 8 and now.minute == 0:
                 await self.send_birthday_wish()
-                
-                # ၂၄ နာရီစောင့်ခြင်း
                 await asyncio.sleep(3600)
             else:
-                # ၁ မိနစ်တစ်ကြိမ်စစ်ဆေးခြင်း
                 await asyncio.sleep(60)
 
 # ===============================
@@ -133,7 +138,6 @@ def show_birthday_post(message):
         current_date = birthday_bot.get_current_date()
         preview_text = birthday_bot.create_birthday_message()
         
-        # ပုံနဲ့တကွ ပြသရန်
         bot.send_photo(
             message.chat.id,
             photo=BIRTHDAY_PHOTO_URL,
@@ -141,61 +145,136 @@ def show_birthday_post(message):
         )
         
     except Exception as e:
-        # ပုံမရရင် text ပဲပို့
         bot.send_message(message.chat.id, preview_text)
         print(f"❌ ပုံမတင်နိုင်: {e}")
 
 # ===============================
-# TOP FANS POST TEMPLATE (HTML Format)
+# TOP FANS TRACKING FUNCTIONS
 # ===============================
-TOP_FANS_POST = """<b>🏆 အပတ်စဉ် Top Fans များ 🏆</b>
+def track_user_activity(message):
+    """User activity ကိုခြေရာခံမယ်"""
+    try:
+        user_id = message.from_user.id
+        user_message_count[user_id] = user_message_count.get(user_id, 0) + 1
+        print(f"📝 User {user_id} message count: {user_message_count[user_id]}")
+        
+    except Exception as e:
+        print(f"❌ Error tracking user activity: {e}")
 
-ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ...!
+def get_top_fans_list():
+    """Top 20 fans list ထုတ်မယ်"""
+    try:
+        user_scores = {}
+        
+        for user_id in set(list(user_message_count.keys()) + list(user_reaction_count.keys())):
+            message_score = user_message_count.get(user_id, 0)
+            reaction_score = user_reaction_count.get(user_id, 0)
+            user_scores[user_id] = message_score + (reaction_score * 2)
+        
+        all_top_users = sorted(user_scores.items(), key=lambda x: x[1], reverse=True)
+        final_top_20 = all_top_users[:20]
+        
+        return final_top_20
+        
+    except Exception as e:
+        print(f"❌ Error getting top fans: {e}")
+        return []
 
-<b>🎖️ Official Top 20 Community Stars 🎖️</b>
+def create_top_fans_post():
+    """Top Fans post ဖန်တီးမယ်"""
+    try:
+        top_users = get_top_fans_list()
+        
+        if not top_users:
+            return "<b>🏆 အပတ်စဉ် Top Fans များ 🏆</b>\n\nဒီအပတ်အတွင်း မှတ်တမ်းရှိသူမရှိသေးပါ..."
+        
+        post = "<b>🏆 အပတ်စဉ် Top Fans များ 🏆</b>\n\n"
+        post += "ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ...!\n\n"
+        post += "<b>🎖️ Official Top 20 Community Stars 🎖️</b>\n\n"
+        
+        # Gold Tier (Top 1-5)
+        post += "<b>🥇 GOLD Tier (Top 1-5)</b>\n"
+        for i, (user_id, score) in enumerate(top_users[:5], 1):
+            post += f"{i}. User_{user_id} ⭐ Score: {score}\n"
+        
+        # Silver Tier (Top 6-15)
+        post += "\n<b>🥈 SILVER Tier (Top 6-15)</b>\n"
+        for i, (user_id, score) in enumerate(top_users[5:15], 6):
+            post += f"{i}. User_{user_id} ✨ Score: {score}\n"
+        
+        # Bronze Tier (Top 16-20)
+        post += "\n<b>🥉 BRONZE Tier (Top 16-20)</b>\n"
+        for i, (user_id, score) in enumerate(top_users[15:20], 16):
+            post += f"{i}. User_{user_id} 🌟 Score: {score}\n"
+        
+        post += "\n<b>💫 နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...</b>\n\n"
+        post += "ဒီအပတ် ပါဝင်သူတစ်ယောက်စီတိုင်းကို အထူးကျေးဇူးတင်ရှိပါတယ်!\n"
+        post += "နောက်အပတ်မှာတော့ သင့်နာမည် ဒီစာရင်းမှာပါအောင်...🥰\n\n"
+        
+        post += "✅ React လေးတွေ ပိုပေးပါ...\n"
+        post += "✅ စကားဝိုင်းမှာ ပါဝင်ပါ...\n"
+        post += "✅ ချန်နယ်ကို အားပေးပါ...\n\n"
+        
+        post += "သင့်ရဲ့တစ်ခုတည်းသော Reactကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝\n\n"
+        
+        post += "<b>🌟 ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများကျေးဇူးကမ္ဘာပါ...🤞</b>\n"
+        post += "သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ...✨\n\n"
+        
+        post += "<b>📅 နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ</b>\n"
+        post += "ဘယ်သူတွေ Top 20 ထဲဝင်မလဲ စောင့်ကြည့်လိုက်ကြရအောင်...! 🎊"
+        
+        return post
+        
+    except Exception as e:
+        print(f"❌ Error creating top fans post: {e}")
+        return "<b>❌ Top Fans list ထုတ်ရာတွင် အမှားတစ်ခုဖြစ်နေသည်</b>"
 
-<b>🥇 GOLD Tier (Top 1-5)</b>
-1. @user1 👑 Channel King
-2. @user2 ⭐ Super Star  
-3. @user3 🔥 Fire Reactor
-4. @user4 💬 Chat Champion
-5. @user5 🎯 Most Active
-
-<b>🥈 SILVER Tier (Top 6-15)</b> 
-6. @user6 ✨ Rising Star
-7. @user7 💫 Active Member
-8. @user8 🌟 Community Hero
-9. @user9 🚀 Engagement Star
-10. @user10 💝 Supporter
-11. @user11 👍 Top Fan
-12. @user12 🔥 React Master
-13. @user13 💬 Conversation Starter
-14. @user14 ⭐ Future Star
-15. @user15 🌈 Community Builder
-
-<b>🥉 BRONZE Tier (Top 16-20)</b>
-16. @user16 🎉 Celebration Star
-17. @user17 💎 Diamond Member
-18. @user18 🌟 Shining Star
-19. @user19 🚀 Rocket Booster
-20. @user20 💖 Heart Giver
-
-<b>💫 နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...</b>
-
-ဒီအပတ် ပါဝင်သူတစ်ယောက်စီတိုင်းကို အထူးကျေးဇူးတင်ရှိပါတယ်!  
-နောက်အပတ်မှာတော့ သင့်နာမည် ဒီစာရင်းမှာပါအောင်...🥰
-
-✅ React လေးတွေ ပိုပေးပါ...
-✅ စကားဝိုင်းမှာ ပါဝင်ပါ...
-✅ ချန်နယ်ကို အားပေးပါ...
-
-သင့်ရဲ့တစ်ခုတည်းသော Reactကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
-
-<b>🌟 ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများကျေးဇူးကမ္ဘာပါ...🤞</b>
-သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ...✨</b>
-
-📅 နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ
-ဘယ်သူတွေ Top 20 ထဲဝင်မလဲ စောင့်ကြည့်လိုက်ကြရအောင်...! 🎊"""
+# ===============================
+# TOP FANS AUTO POST SYSTEM
+# ===============================
+async def schedule_weekly_top_fans():
+    """တနင်္ဂနွေ ည ၅:၅၉ မှာ Final Top 20 ထုတ်ပြီး ၆:၀၀ မှာ Post တင်မယ်"""
+    while True:
+        now = datetime.now()
+        
+        # တနင်္ဂနွေ ည ၅:၅၉ စစ်ဆေးခြင်း
+        next_sunday = now.replace(hour=17, minute=59, second=0, microsecond=0)
+        days_until_sunday = (6 - now.weekday()) % 7
+        next_sunday += timedelta(days=days_until_sunday)
+        
+        wait_seconds = (next_sunday - now).total_seconds()
+        if wait_seconds > 0:
+            print(f"⏰ Waiting until Sunday 5:59PM: {next_sunday}")
+            await asyncio.sleep(wait_seconds)
+        
+        try:
+            print("🕔 Sunday 5:59PM - Finalizing Top 20 List...")
+            
+            final_top_20 = get_top_fans_list()
+            print(f"✅ Final Top 20: {len(final_top_20)} users")
+            
+            await asyncio.sleep(60)
+            
+            top_fans_post = create_top_fans_post()
+            
+            # ✅ CHANNEL ကို POST တင်မယ်
+            await bot.send_message(
+                chat_id=YOUR_CHANNEL_ID, 
+                text=top_fans_post, 
+                parse_mode='HTML'
+            )
+            
+            print(f"✅ Weekly Top Fans post published to channel: {YOUR_CHANNEL_ID}")
+            
+            user_message_count.clear()
+            user_reaction_count.clear()
+            tracking_start_time = datetime.now()
+            print("🔄 User tracking data reset for new week")
+            
+        except Exception as e:
+            print(f"❌ Error in weekly top fans: {e}")
+        
+        await asyncio.sleep(604800)
 
 # ===============================
 # SHOW TOP FANS POST COMMAND
@@ -203,19 +282,78 @@ TOP_FANS_POST = """<b>🏆 အပတ်စဉ် Top Fans များ 🏆</b>
 @bot.message_handler(commands=['showtopfan'])
 def show_top_post(message):
     """Show the current top fans post"""
-    bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='HTML')
+    try:
+        top_fans_post = create_top_fans_post()
+        bot.send_message(message.chat.id, top_fans_post, parse_mode='HTML')
+        print(f"✅ /showtopfan command processed for user: {message.from_user.id}")
+    except Exception as e:
+        print(f"❌ Error in /showtopfan: {e}")
+        bot.send_message(message.chat.id, "❌ Top Fans post ပြရာတွင် အမှားတစ်ခုဖြစ်နေသည်။")
+
+@bot.message_handler(commands=['mystats'])
+def show_my_stats(message):
+    """User ရဲ့ stats ကိုပြမယ်"""
+    try:
+        user_id = message.from_user.id
+        message_count = user_message_count.get(user_id, 0)
+        reaction_count = user_reaction_count.get(user_id, 0)
+        total_score = message_count + (reaction_count * 2)
+        
+        stats_text = f"""<b>📊 သင့်ရဲ့ Stats</b>
+
+💬 Messages: {message_count}
+❤️ Reactions: {reaction_count} 
+⭐ Total Score: {total_score}
+
+<b>နောက်တစ်ပါတ်အတွက် Top 20 ဝင်ရန်:</b>
+✅ မက်ဆေ့များများပို့ပါ
+✅ React များများပေးပါ
+✅ Active ဖြစ်အောင်နေပါ
+
+<b>တနင်္ဂနွေ ည ၆ နာရီတွင် Top Fans list အသစ်ထွက်မည်!</b>"""
+        
+        bot.send_message(message.chat.id, stats_text, parse_mode='HTML')
+        
+    except Exception as e:
+        print(f"❌ Error in /mystats: {e}")
 
 # ===============================
-# RENDER FONT FIX
+# MESSAGE TRACKING HANDLER
+# ===============================
+@bot.message_handler(func=lambda m: True)
+def track_all_messages(message):
+    """အရာအားလုံးကိုခြေရာခံမယ်"""
+    try:
+        if message.text and message.text.startswith('/'):
+            return
+        track_user_activity(message)
+    except Exception as e:
+        print(f"❌ Error tracking message: {e}")
+
+# ===============================
+# INITIALIZE TOP FANS SYSTEM
+# ===============================
+async def start_top_fans_bot():
+    """Top Fans bot ကို start လုပ်မယ်"""
+    print("🤖 Top Fans Tracking System စတင်ပါပြီ...")
+    print("⏰ တနင်္ဂနွေ ည ၅:၅၉ မှာ Final List ထုတ်ပြီး ၆:၀၀ မှာ Post တင်မည်")
+    await schedule_weekly_top_fans()
+
+def initialize_top_fans_bot():
+    """Top Fans bot ကို background တွင် start လုပ်မယ်"""
+    def run_top_fans_bot():
+        asyncio.run(start_top_fans_bot())
+    top_fans_thread = threading.Thread(target=run_top_fans_bot, daemon=True)
+    top_fans_thread.start()
+
+# ===============================
+# RENDER FONT FIX & KEEP ALIVE
 # ===============================
 try:
     sys.stdout.reconfigure(encoding='utf-8')
 except:
     pass
 
-# ===============================
-# KEEP ALIVE
-# ===============================
 def keep_alive():
     while True:
         try:
@@ -242,7 +380,6 @@ def welcome_new_member(message):
 ✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ 
 🗃️ ရွေးဖတ်ဖို့ Button ကိုနှိပ်ပါ ✨"""
         
-        # Button ထည့်ရန်
         welcome_kb = types.InlineKeyboardMarkup()
         welcome_kb.row(
             types.InlineKeyboardButton(
@@ -252,7 +389,6 @@ def welcome_new_member(message):
         )
         
         try:
-            # URL နဲ့ပို့မယ်
             bot.send_photo(
                 message.chat.id, 
                 photo=WELCOME_PHOTO_URL, 
@@ -269,7 +405,7 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED FOR FORWARDED MESSAGES
+# 2️⃣ LINK BLOCKER (GROUP ONLY)
 # ======================================================
 
 def is_link(text):
@@ -348,27 +484,19 @@ def is_admin(chat_id, user_id):
 def handle_group_messages(message):
     """Handle all group messages including forwarded ones"""
     
-    # Skip if it's a command or new chat members
     if message.text and message.text.startswith('/'):
         return
     if message.new_chat_members:
         return
 
-    # 🔥 FULL LINK CHECK (NORMAL + FORWARD + CAPTION + ENTITIES)
     if has_link_api(message):
-        # If there's also only a mention entity (no url/text_link and no raw link),
-        # has_link_api would have returned False earlier, so this block won't run.
         if not is_admin(message.chat.id, message.from_user.id):
             try:
-                # Delete the message with link
                 bot.delete_message(message.chat.id, message.message_id)
-                
-                # Send warning message with mention
                 user_first_name = message.from_user.first_name
                 user_id = message.from_user.id
                 warning_msg = f'⚠️ <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...'
                 bot.send_message(message.chat.id, warning_msg, parse_mode='HTML')
-                
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
@@ -420,23 +548,19 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 def handle_private_messages(message):
     """Handle private messages including forwarded links"""
     
-    # Skip if it's a command (already handled by start handler)
     if message.text and message.text.startswith('/'):
         return
     
     user_first_name = message.from_user.first_name
     user_id = message.from_user.id
     
-    # Check for forwarded messages containing links
     if message.forward_from_chat or message.forward_from:
-        # For forwarded messages with text
         if message.text and is_link(message.text):
             bot.send_message(
                 message.chat.id, 
                 f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...',
                 parse_mode='HTML'
             )
-        # For forwarded media messages with captions containing links
         elif message.caption and is_link(message.caption):
             bot.send_message(
                 message.chat.id, 
@@ -444,13 +568,11 @@ def handle_private_messages(message):
                 parse_mode='HTML'
             )
         else:
-            # Regular forwarded message without links
             bot.send_message(
                 message.chat.id, 
                 f'📩 <a href="tg://user?id={user_id}">{user_first_name}</a> ရဲ့ Forwarded message received!\n\nNote: I can process links from forwarded messages in private chats.',
                 parse_mode='HTML'
             )
-    # Regular text messages (not commands)
     elif message.text and not message.text.startswith('/'):
         if is_link(message.text):
             bot.send_message(
@@ -466,7 +588,7 @@ def handle_private_messages(message):
             )
 
 # ===============================
-# CATEGORY REDIRECT
+# CATEGORY & AUTHOR HANDLERS
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "category")
 def category_redirect(call):
@@ -476,9 +598,6 @@ def category_redirect(call):
         parse_mode='HTML'
     )
 
-# ===============================
-# AUTHORS MENU
-# ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
     text = "<b>✍️ စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ</b>\n\n<b>🌼 Oscar's Library 🌼</b>"
@@ -496,9 +615,6 @@ def author_menu(call):
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode='HTML')
 
-# ===============================
-# AUTHOR LINKS
-# ===============================
 AUTHOR_LINKS = {
     "က": "https://t.me/oscarhelpservices/5",
     "ခ": "https://t.me/oscarhelpservices/7",
@@ -530,9 +646,6 @@ AUTHOR_LINKS = {
     "Eng": "https://t.me/sharebykosoemoe/920"
 }
 
-# ===============================
-# AUTHOR REDIRECT
-# ===============================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
 def author_redirect(call):
     key = call.data.replace("author_", "")
@@ -568,8 +681,8 @@ def index():
 # RUN
 # ===============================
 if __name__ == "__main__":
-    # Initialize birthday bot only
     initialize_birthday_bot()
+    initialize_top_fans_bot()
     
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
