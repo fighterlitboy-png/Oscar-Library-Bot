@@ -16,13 +16,15 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFm
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
 
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
+# HTML parse mode ကိုပြောင်းသုံးမယ်
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
 # ===============================
 # BIRTHDAY WISH BOT CONFIGURATION
 # ===============================
 BIRTHDAY_CHANNEL_ID = "1002150199369"
 BIRTHDAY_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
+WELCOME_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
 
 class BirthdayWishBot:
     def __init__(self):
@@ -40,19 +42,18 @@ class BirthdayWishBot:
         """မွေးနေ့ဆုတောင်းစာဖန်တီး"""
         current_date = self.get_current_date()
         
-        message = f"""Birthday Wishes 💌 
+        message = f"""<b>Birthday Wishes 💌🎈</b>
 
-Happy Birthday ❤️ ကမ္ဘာ❣️
+<b>Happy Birthday ❤️ ကမ္ဘာ❣️
+ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂</b>
 
-ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
-
-{current_date} မွေးနေ့လေးမှစ 
+{current_date} မွေးနေ့ရှင်လေးများ 
 နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအင်ဆန္ဒများလည်းပြည့်ဝပါစေ...🥰
 
 ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
-အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ...💞
 
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
@@ -65,7 +66,7 @@ Happy Birthday ❤️ ကမ္ဘာ❣️
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 
-🌼 Oscar's Library 🌼
+<b>🌼 Oscar's Library 🌼</b>
  
 #adminteam"""
         
@@ -145,22 +146,22 @@ def show_birthday_post(message):
         print(f"❌ ပုံမတင်နိုင်: {e}")
 
 # ===============================
-# TOP FANS POST TEMPLATE
+# TOP FANS POST TEMPLATE (HTML Format)
 # ===============================
-TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
+TOP_FANS_POST = """<b>🏆 အပတ်စဉ် Top Fans များ 🏆</b>
 
 ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ...!
 
-🎖️ **Official Top 20 Community Stars** 🎖️
+<b>🎖️ Official Top 20 Community Stars 🎖️</b>
 
-🥇 GOLD Tier (Top 1-5)
+<b>🥇 GOLD Tier (Top 1-5)</b>
 1. @user1 👑 Channel King
 2. @user2 ⭐ Super Star  
 3. @user3 🔥 Fire Reactor
 4. @user4 💬 Chat Champion
 5. @user5 🎯 Most Active
 
-🥈 SILVER Tier (Top 6-15) 
+<b>🥈 SILVER Tier (Top 6-15)</b> 
 6. @user6 ✨ Rising Star
 7. @user7 💫 Active Member
 8. @user8 🌟 Community Hero
@@ -172,14 +173,14 @@ TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 14. @user14 ⭐ Future Star
 15. @user15 🌈 Community Builder
 
-🥉 BRONZE Tier (Top 16-20)
+<b>🥉 BRONZE Tier (Top 16-20)</b>
 16. @user16 🎉 Celebration Star
 17. @user17 💎 Diamond Member
 18. @user18 🌟 Shining Star
 19. @user19 🚀 Rocket Booster
 20. @user20 💖 Heart Giver
 
-💫 **နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...**
+<b>💫 နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...</b>
 
 ဒီအပတ် ပါဝင်သူတစ်ယောက်စီတိုင်းကို အထူးကျေးဇူးတင်ရှိပါတယ်!  
 နောက်အပတ်မှာတော့ သင့်နာမည် ဒီစာရင်းမှာပါအောင်...🥰
@@ -190,10 +191,10 @@ TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 
 သင့်ရဲ့တစ်ခုတည်းသော Reactကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
 
-🌟 **ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများကျေးဇူးကမ္ဘာပါ...🤞**
-သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ!
+<b>🌟 ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများကျေးဇူးကမ္ဘာပါ...🤞</b>
+သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ...✨</b>
 
-📅 **နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ**
+📅 နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ
 ဘယ်သူတွေ Top 20 ထဲဝင်မလဲ စောင့်ကြည့်လိုက်ကြရအောင်...! 🎊"""
 
 # ===============================
@@ -202,7 +203,7 @@ TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 @bot.message_handler(commands=['showtopfan'])
 def show_top_post(message):
     """Show the current top fans post"""
-    bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='Markdown')
+    bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='HTML')
 
 # ===============================
 # RENDER FONT FIX
@@ -228,17 +229,15 @@ threading.Thread(target=keep_alive, daemon=True).start()
 # ======================================================
 # 1️⃣ GROUP WELCOME SYSTEM
 # ======================================================
-WELCOME_IMAGE = "https://github.com/fighterlitboy-png/Oscar-Library-Bot/blob/main/welcome_photo.jpg"
-
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
     for user in message.new_chat_members:
-        caption = f"""နွေးထွေးစွာကြိုဆိုပါတယ်...🧸
+        caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
 {user.first_name} ...🥰
 
-📚 Oscar's Library မှ
+<b>📚 Oscar's Library မှ
 မင်းရဲ့စာဖတ်ခြင်းအတွက် 
-အမြဲအသင့်ရှိပါတယ်...🤓
+အမြဲအသင့်ရှိပါတယ်...🤓</b>
 
 ✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ 
 🗃️ ရွေးဖတ်ဖို့ Button ကိုနှိပ်ပါ ✨"""
@@ -253,19 +252,20 @@ def welcome_new_member(message):
         )
         
         try:
-            with open(WELCOME_IMAGE, "rb") as img:
-                bot.send_photo(
-                    message.chat.id, 
-                    img, 
-                    caption=caption,
-                    reply_markup=welcome_kb
-                )
+            # URL နဲ့ပို့မယ်
+            bot.send_photo(
+                message.chat.id, 
+                photo=WELCOME_PHOTO_URL, 
+                caption=caption,
+                reply_markup=welcome_kb
+            )
         except Exception as e:
             print(f"Welcome image error: {e}")
             bot.send_message(
                 message.chat.id,
                 caption,
-                reply_markup=welcome_kb
+                reply_markup=welcome_kb,
+                parse_mode='HTML'
             )
 
 # ======================================================
@@ -366,8 +366,8 @@ def handle_group_messages(message):
                 # Send warning message with mention
                 user_first_name = message.from_user.first_name
                 user_id = message.from_user.id
-                warning_msg = f"⚠️ [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
-                bot.send_message(message.chat.id, warning_msg)
+                warning_msg = f'⚠️ <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...'
+                bot.send_message(message.chat.id, warning_msg, parse_mode='HTML')
                 
             except Exception as e:
                 print(f"Link blocker error: {e}")
@@ -378,27 +378,27 @@ def handle_group_messages(message):
 @bot.message_handler(commands=['start'])
 def start_message(message):
     first = message.from_user.first_name or "Friend"
-    text = f"""သာယာသောနေ့လေးဖြစ်ပါစေ...🌸 **
-    {first}** ...🥰
+    text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸
+    {first} ...🥰</b>
     
-🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
+<b>🌼 Oscar's Library 🌼 မှ ကြိုဆိုပါတယ်</b>
 
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
 
-**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
-📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ**
+<b>စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
+📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
 
 Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
-**📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
+<b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
 စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
-**✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
+<b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
 
-💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
+<b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
 
-⚠️ အဆင်မပြေတာရှိရင် ⚠️ **
-❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်ပါ။"""
+<b>⚠️ အဆင်မပြေတာရှိရင် ⚠️
+❓အထွေထွေမေးမြန်းရန်</b> ကိုနှိပ်ပါ။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
@@ -411,7 +411,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
-    bot.send_message(message.chat.id, text, reply_markup=kb)
+    bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode='HTML')
 
 # ======================================================
 # 3️⃣ PRIVATE CHAT MESSAGE HANDLER - FIXED
@@ -433,31 +433,36 @@ def handle_private_messages(message):
         if message.text and is_link(message.text):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
+                f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...',
+                parse_mode='HTML'
             )
         # For forwarded media messages with captions containing links
         elif message.caption and is_link(message.caption):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
+                f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...',
+                parse_mode='HTML'
             )
         else:
             # Regular forwarded message without links
             bot.send_message(
                 message.chat.id, 
-                f"📩 [{user_first_name}](tg://user?id={user_id}) ရဲ့ Forwarded message received!\n\nNote: I can process links from forwarded messages in private chats."
+                f'📩 <a href="tg://user?id={user_id}">{user_first_name}</a> ရဲ့ Forwarded message received!\n\nNote: I can process links from forwarded messages in private chats.',
+                parse_mode='HTML'
             )
     # Regular text messages (not commands)
     elif message.text and not message.text.startswith('/'):
         if is_link(message.text):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
+                f'🔗 <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်...',
+                parse_mode='HTML'
             )
         else:
             bot.send_message(
                 message.chat.id, 
-                f"🤖 [{user_first_name}](tg://user?id={user_id}) ရဲ့ Message:\n{message.text}"
+                f'🤖 <a href="tg://user?id={user_id}">{user_first_name}</a> ရဲ့ Message:\n{message.text}',
+                parse_mode='HTML'
             )
 
 # ===============================
@@ -467,7 +472,8 @@ def handle_private_messages(message):
 def category_redirect(call):
     bot.send_message(
         call.message.chat.id,
-        "📚 **ကဏ္ဍအလိုက် စာအုပ်များ**\nhttps://t.me/oscarhelpservices/4\n\n🌼 Oscar's Library 🌼"
+        "<b>📚 ကဏ္ဍအလိုက် စာအုပ်များ</b>\nhttps://t.me/oscarhelpservices/4\n\n<b>🌼 Oscar's Library 🌼</b>",
+        parse_mode='HTML'
     )
 
 # ===============================
@@ -475,7 +481,7 @@ def category_redirect(call):
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
-    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
+    text = "<b>✍️ စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ</b>\n\n<b>🌼 Oscar's Library 🌼</b>"
     rows = [
         ["က","ခ","ဂ","င"],
         ["စ","ဆ","ဇ","ည"],
@@ -488,7 +494,7 @@ def author_menu(call):
     kb = types.InlineKeyboardMarkup()
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb)
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode='HTML')
 
 # ===============================
 # AUTHOR LINKS
@@ -535,7 +541,8 @@ def author_redirect(call):
         bot.answer_callback_query(call.id)
         bot.send_message(
             call.message.chat.id,
-            f"➡️ **{key} ဖြင့်စသောစာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
+            f'<b>➡️ {key} ဖြင့်စသောစာရေးဆရာများ</b>\n{url}\n\n<b>🌼 Oscar\'s Library 🌼</b>',
+            parse_mode='HTML'
         )
 
 # ===============================
