@@ -17,9 +17,13 @@ PING_URL = "https://oscar-library-bot.onrender.com"
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
 # ===============================
-# CHANNEL & IMAGE CONFIG
+# CHANNEL CONFIGURATION
 # ===============================
-YOUR_CHANNEL_ID = "@bookbykosoemoe"
+YOUR_CHANNEL_ID = "@bookbykosoemoe"  # သင့် channel username
+
+# ===============================
+# BIRTHDAY CONFIGURATION
+# ===============================
 BIRTHDAY_CHANNEL_ID = "1002150199369"
 BIRTHDAY_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 WELCOME_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
@@ -50,20 +54,44 @@ threading.Thread(target=keep_alive, daemon=True).start()
 # ===============================
 def get_current_date_str():
     now = datetime.now()
-    return f"{now.strftime('%B')}, {now.day}"
+    month = now.strftime("%B")
+    day = now.day
+    return f"{month}, {day}"
 
 def create_birthday_message_text():
     current_date = get_current_date_str()
-    return f"<b>Birthday Wishes 💌🎈</b>\n\n<b>Happy Birthday ❤️</b>\n<b>{current_date} မွေးနေ့ရှင်များ💙</b>"
+    message = f"""<b>Birthday Wishes 💌🎈</b>
+
+<b>Happy Birthday ❤️ ကမ္ဘာ❣️
+ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂</b>
+
+<b>{current_date} မွေးနေ့ရှင်လေးများ 
+နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...💙</b>
+
+ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအင်ဆန္ဒများလည်းပြည့်ဝပါစေ...🥰
+
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ...💞
+
+ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရောနေ့ရက်တွေကို ထာဝရ ပိုင်ဆိုင်နိုင်ပါစေ 
+လို့ ဆုတောင်းပေးပါတယ် 🎂
+
+😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
+
+<b>🌼 Oscar's Library 🌼</b>
+
+#adminteam"""
+    return message
 
 def birthday_worker():
     while True:
         now = datetime.now()
         if now.hour == 8 and now.minute == 0:
             try:
-                bot.send_photo(BIRTHDAY_CHANNEL_ID, BIRTHDAY_PHOTO_URL, caption=create_birthday_message_text(), parse_mode='HTML')
+                caption = create_birthday_message_text()
+                bot.send_photo(chat_id=BIRTHDAY_CHANNEL_ID, photo=BIRTHDAY_PHOTO_URL, caption=caption)
+                print(f"✅ Birthday sent - {datetime.now()}")
             except Exception as e:
-                print(f"Birthday send error: {e}")
+                print(f"❌ Birthday error - {e}")
             time.sleep(61)
         else:
             time.sleep(20)
@@ -71,48 +99,63 @@ def birthday_worker():
 threading.Thread(target=birthday_worker, daemon=True).start()
 
 # ===============================
-# TOP FANS LOGIC
+# TOP FANS SYSTEM
 # ===============================
 def track_user_activity(message):
     try:
         user_id = message.from_user.id
         user_message_count[user_id] = user_message_count.get(user_id, 0) + 1
         username = getattr(message.from_user, "username", None)
-        user_names[user_id] = f"@{username}" if username else message.from_user.first_name
-    except:
-        pass
+        first_name = message.from_user.first_name or "User"
+        user_names[user_id] = f"@{username}" if username else first_name
+    except Exception as e:
+        print(f"❌ Tracking error: {e}")
 
 def get_top_fans_list():
     try:
-        # Auto remove users who left channel
-        for user_id in list(user_message_count.keys()):
-            try:
-                status = bot.get_chat_member(YOUR_CHANNEL_ID, user_id).status
-                if status in ["left", "kicked"]:
-                    user_message_count.pop(user_id, None)
-                    user_reaction_count.pop(user_id, None)
-                    user_names.pop(user_id, None)
-            except:
-                pass
         user_scores = {}
         for user_id in set(list(user_message_count.keys()) + list(user_reaction_count.keys())):
             message_score = user_message_count.get(user_id, 0)
             reaction_score = user_reaction_count.get(user_id, 0)
             user_scores[user_id] = message_score + (reaction_score * 2)
-        top_20 = sorted(user_scores.items(), key=lambda x: x[1], reverse=True)[:20]
-        return top_20
-    except:
+        all_top_users = sorted(user_scores.items(), key=lambda x: x[1], reverse=True)
+        final_top_20 = all_top_users[:20]
+        return final_top_20
+    except Exception as e:
+        print(f"❌ Error getting top fans: {e}")
         return []
 
 def create_top_fans_post():
-    top_users = get_top_fans_list()
-    if not top_users:
-        return "<b>🏆 Top Fans မရှိသေးပါ</b>"
-    post = "<b>🏆 အပတ်စဉ် Top Fans 🏆</b>\n\n"
-    for i, (user_id, score) in enumerate(top_users, 1):
-        username = user_names.get(user_id, f"User_{user_id}")
-        post += f"{i}. <b>{username}</b> - <i>Score:</i> {score}\n"
-    return post
+    try:
+        top_users = get_top_fans_list()
+        if not top_users:
+            return "<b>🏆 အပတ်စဉ် Top Fans များ 🏆</b>\n\nဒီအပတ်အတွင်း မှတ်တမ်းရှိသူမရှိသေးပါ..."
+        post = "<b>🏆 အပတ်စဉ် Top Fans 🏆</b>\n\n"
+        post += "ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ...!\n\n"
+        gold_titles = ["👑 Channel King", "⭐ Super Star", "🔥 Fire Reactor", "💬 Chat Champion", "🎯 Most Active"]
+        post += "<b>🥇 GOLD Tier (Top 1-5)</b>\n"
+        for i, (user_id, score) in enumerate(top_users[:5], 1):
+            username = user_names.get(user_id, f"User_{user_id}")
+            title = gold_titles[i-1] if i-1 < len(gold_titles) else "⭐ Top Fan"
+            post += f"{i}. {username} {title} - Score: {score}\n"
+        post += "\n<b>🥈 SILVER Tier (Top 6-15)</b>\n"
+        silver_titles = ["✨ Rising Star", "💫 Active Member", "🌟 Community Hero", "🚀 Engagement Star", "💝 Supporter", 
+                        "👍 Top Fan", "🔥 React Master", "💬 Conversation Starter", "⭐ Future Star", "🌈 Community Builder"]
+        for i, (user_id, score) in enumerate(top_users[5:15], 6):
+            username = user_names.get(user_id, f"User_{user_id}")
+            title = silver_titles[i-6] if i-6 < len(silver_titles) else "🌟 Star"
+            post += f"{i}. {username} {title} - Score: {score}\n"
+        post += "\n<b>🥉 BRONZE Tier (Top 16-20)</b>\n"
+        bronze_titles = ["🎉 Celebration Star", "💎 Diamond Member", "🌟 Shining Star", "🚀 Rocket Booster", "💖 Heart Giver"]
+        for i, (user_id, score) in enumerate(top_users[15:20], 16):
+            username = user_names.get(user_id, f"User_{user_id}")
+            title = bronze_titles[i-16] if i-16 < len(bronze_titles) else "🌟 Member"
+            post += f"{i}. {username} {title} - Score: {score}\n"
+        post += "\n💫 နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...\nဒီအပတ် ပါဝင်သူတစ်ယောက်စီကို အထူးကျေးဇူးတင်ရှိပါတယ်!"
+        return post
+    except Exception as e:
+        print(f"❌ Error creating top fans post: {e}")
+        return "<b>❌ Top Fans list error</b>"
 
 def top_fans_worker():
     while True:
@@ -122,18 +165,36 @@ def top_fans_worker():
         if next_sunday_1759 <= now:
             next_sunday_1759 += timedelta(days=7)
         wait_seconds = (next_sunday_1759 - now).total_seconds()
-        time.sleep(max(wait_seconds, 0))
+        if wait_seconds > 0:
+            time.sleep(wait_seconds)
         try:
-            time.sleep(60)  # wait until 18:00
-            bot.send_message(YOUR_CHANNEL_ID, create_top_fans_post(), parse_mode='HTML')
+            time.sleep(61)
+            top_fans_post = create_top_fans_post()
+            bot.send_message(chat_id=YOUR_CHANNEL_ID, text=top_fans_post)
             user_message_count.clear()
             user_reaction_count.clear()
             user_names.clear()
+            global tracking_start_time
+            tracking_start_time = datetime.now()
         except Exception as e:
-            print(f"TopFans weekly error: {e}")
+            print(f"❌ Weekly top fans error: {e}")
         time.sleep(5)
 
 threading.Thread(target=top_fans_worker, daemon=True).start()
+
+# ===============================
+# WELCOME SYSTEM
+# ===============================
+@bot.message_handler(content_types=['new_chat_members'])
+def welcome_new_member(message):
+    for user in message.new_chat_members:
+        caption = f"နွေးထွေးစွာကြိုဆိုပါတယ်...🧸 {user.first_name} ...🥰"
+        kb = types.InlineKeyboardMarkup()
+        kb.row(types.InlineKeyboardButton("စာပေချစ်သူများအတြက္", url="https://t.me/oscar_libray_bot"))
+        try:
+            bot.send_photo(message.chat.id, photo=WELCOME_PHOTO_URL, caption=caption, reply_markup=kb)
+        except Exception:
+            bot.send_message(message.chat.id, caption, reply_markup=kb)
 
 # ===============================
 # LINK BLOCKER
@@ -148,67 +209,88 @@ def has_link_api(message):
         return True
     if getattr(message, "caption", None) and is_link(message.caption):
         return True
-    try:
-        for e in getattr(message, "entities", []):
-            if getattr(e, "type", "") in ["url", "text_link"]:
-                return True
-        for e in getattr(message, "caption_entities", []):
-            if getattr(e, "type", "") in ["url", "text_link"]:
-                return True
-    except:
-        pass
     return False
 
 def is_admin(chat_id, user_id):
     try:
         admins = bot.get_chat_administrators(chat_id)
-        return user_id in [a.user.id for a in admins]
+        return user_id in [admin.user.id for admin in admins]
     except:
         return False
 
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio', 'voice'])
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document'])
 def handle_group_messages(message):
     if has_link_api(message) and not is_admin(message.chat.id, message.from_user.id):
         try:
             bot.delete_message(message.chat.id, message.message_id)
+            user_first_name = message.from_user.first_name
             user_id = message.from_user.id
-            first_name = message.from_user.first_name
-            bot.send_message(message.chat.id, f'⚠️ <a href="tg://user?id={user_id}">{first_name}</a> 💢 Link မရနိုင်ပါ 🙅🏻', parse_mode='HTML')
-        except:
-            pass
-    else:
-        track_user_activity(message)
-
-# ===============================
-# WELCOME SYSTEM
-# ===============================
-@bot.message_handler(content_types=['new_chat_members'])
-def welcome_new_member(message):
-    for user in message.new_chat_members:
-        caption = f"<b>နွေးထွေးစွာကြိုဆိုပါတယ်🧸</b>\n<b>{user.first_name}</b>\n📚 Oscar's Library မှ အမြဲအသင့်ရှိပါတယ်!"
-        kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton("စာပေချစ်သူများအတွက်", url="https://t.me/oscar_libray_bot"))
-        try:
-            bot.send_photo(message.chat.id, WELCOME_PHOTO_URL, caption=caption, reply_markup=kb, parse_mode='HTML')
-        except:
-            bot.send_message(message.chat.id, caption, reply_markup=kb, parse_mode='HTML')
+            warning_msg = f'⚠️ <a href="tg://user?id={user_id}">{user_first_name}</a> 💢 Link🔗 ပိတ်ထားပါတယ် 🙅🏻'
+            bot.send_message(message.chat.id, warning_msg, parse_mode='HTML')
+        except Exception as e:
+            print(f"Link blocker error: {e}")
 
 # ===============================
 # /START COMMAND
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    first = message.from_user.first_name
-    text = f"<b>သာယာသောနေ့လေးဖြစ်ပါစေ 🌸</b>\n<b>{first}</b>, Oscar's Library မှ ကြိုဆိုပါတယ်!"
+    first = message.from_user.first_name or "Friend"
+    text = f"သာယာသောနေ့လေးဖြစ်ပါစေ...🌸 {first} ...🥰"
     kb = types.InlineKeyboardMarkup()
     kb.row(types.InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="category"),
            types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu"))
-    bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode='HTML')
+    bot.send_message(message.chat.id, text, reply_markup=kb)
 
 # ===============================
-# CATEGORY & AUTHOR MENU
+# CATEGORY & AUTHOR CALLBACKS
 # ===============================
-AUTHOR_LINKS = {"က": "https://t.me/oscarhelpservices/5", "Eng": "https://t.me/sharebykosoemoe/920"}  # simplified
+@bot.callback_query_handler(func=lambda c: c.data == "category")
+def category_redirect(call):
+    bot.send_message(call.message.chat.id, "📚 ကဏ္ဍအလိုက် စာအုပ်များ\nhttps://t.me/oscarhelpservices/4")
+
+@bot.callback_query_handler(func=lambda c: c.data == "author_menu")
+def author_menu(call):
+    text = "✍️ စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ"
+    rows = [["က","ခ","ဂ","င"], ["စ","ဆ","ဇ","ည"], ["ဋ္ဌ","တ","ထ","ဒ"], ["ဓ","န","ပ","ဖ"], ["ဗ","ဘ","မ","ယ"], ["ရ","လ","ဝ","သ"], ["ဟ","အ","ဥ","Eng"]]
+    kb = types.InlineKeyboardMarkup()
+    for r in rows:
+        kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
+    try:
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb)
+    except Exception:
+        bot.send_message(call.message.chat.id, text, reply_markup=kb)
+
+AUTHOR_LINKS = {
+    "က": "https://t.me/oscarhelpservices/5",
+    "ခ": "https://t.me/oscarhelpservices/7",
+    "ဂ": "https://t.me/oscarhelpservices/12",
+    "င": "https://t.me/oscarhelpservices/14",
+    "စ": "https://t.me/oscarhelpservices/16",
+    "ဆ": "https://t.me/oscarhelpservices/18",
+    "ဇ": "https://t.me/oscarhelpservices/20",
+    "ည": "https://t.me/oscarhelpservices/23",
+    "ဋ္ဌ": "https://t.me/oscarhelpservices/25",
+    "တ": "https://t.me/oscarhelpservices/27",
+    "ထ": "https://t.me/oscarhelpservices/33",
+    "ဒ": "https://t.me/oscarhelpservices/35",
+    "ဓ": "https://t.me/oscarhelpservices/37",
+    "န": "https://t.me/oscarhelpservices/39",
+    "ပ": "https://t.me/oscarhelpservices/41",
+    "ဖ": "https://t.me/oscarhelpservices/43",
+    "ဗ": "https://t.me/oscarhelpservices/45",
+    "ဘ": "https://t.me/oscarhelpservices/47",
+    "မ": "https://t.me/oscarhelpservices/58",
+    "ယ": "https://t.me/oscarhelpservices/59",
+    "ရ": "https://t.me/oscarhelpservices/61",
+    "လ": "https://t.me/oscarhelpservices/63",
+    "ဝ": "https://t.me/oscarhelpservices/65",
+    "သ": "https://t.me/oscarhelpservices/67",
+    "ဟ": "https://t.me/oscarhelpservices/69",
+    "အ": "https://t.me/oscarhelpservices/30",
+    "ဥ": "https://t.me/oscarhelpservices/10",
+    "Eng": "https://t.me/sharebykosoemoe/920"
+}
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
 def author_redirect(call):
@@ -216,38 +298,10 @@ def author_redirect(call):
     url = AUTHOR_LINKS.get(key)
     if url:
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, f"➡️ <b>{key}</b> စာရေးဆရာများ\n{url}", parse_mode='HTML')
+        bot.send_message(call.message.chat.id, f"➡️ {key} ဖြင့်စသောစာရေးဆရာများ\n{url}")
 
 # ===============================
-# SHOW COMMANDS
-# ===============================
-@bot.message_handler(commands=['showbirthday'])
-def show_birthday_post(message):
-    bot.send_photo(message.chat.id, BIRTHDAY_PHOTO_URL, caption=create_birthday_message_text(), parse_mode='HTML')
-
-@bot.message_handler(commands=['showtopfan'])
-def show_top_post(message):
-    bot.send_message(message.chat.id, create_top_fans_post(), parse_mode='HTML')
-
-@bot.message_handler(commands=['mystats'])
-def show_my_stats(message):
-    user_id = message.from_user.id
-    message_count = user_message_count.get(user_id, 0)
-    reaction_count = user_reaction_count.get(user_id, 0)
-    total_score = message_count + (reaction_count * 2)
-    bot.send_message(message.chat.id, f"<b>📊 သင့် Stats</b>\n💬 Messages: {message_count}\n❤️ Reactions: {reaction_count}\n⭐ Total Score: {total_score}", parse_mode='HTML')
-
-# ===============================
-# TRACK ALL MESSAGES
-# ===============================
-@bot.message_handler(func=lambda m: True)
-def track_all_messages(message):
-    if message.text and message.text.startswith('/'):
-        return
-    track_user_activity(message)
-
-# ===============================
-# FLASK WEBHOOK
+# RUN FLASK WEBHOOK
 # ===============================
 app = Flask(__name__)
 bot.remove_webhook()
@@ -255,8 +309,10 @@ bot.set_webhook(url=WEBHOOK_URL)
 
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def webhook():
-    update = telebot.types.Update.de_json(request.get_json(force=True))
-    bot.process_new_updates([update])
+    json_data = request.get_json(force=True)
+    if json_data:
+        update = telebot.types.Update.de_json(json_data)
+        bot.process_new_updates([update])
     return "OK", 200
 
 @app.route("/", methods=['GET'])
