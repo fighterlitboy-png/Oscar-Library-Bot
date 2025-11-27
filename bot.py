@@ -19,6 +19,110 @@ PING_URL = "https://oscar-library-bot.onrender.com"
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 
 # ===============================
+# BIRTHDAY WISH BOT CONFIGURATION
+# ===============================
+BIRTHDAY_CHANNEL_ID = "1002150199369"  # Your birthday channel ID
+BIRTHDAY_PHOTO_URL = "https://raw.githubusercontent.com/yourusername/yourrepo/main/Happy_Birthday_Photo.jpg"
+
+class BirthdayWishBot:
+    def __init__(self):
+        self.channel_id = BIRTHDAY_CHANNEL_ID
+        self.photo_url = BIRTHDAY_PHOTO_URL
+    
+    def get_current_date(self):
+        """လက်ရှိလနဲ့ရက်ကိုရယူ"""
+        now = datetime.now()
+        month = now.strftime("%B")
+        day = now.day
+        return f"{month}, {day}"
+    
+    def create_birthday_message(self):
+        """မွေးနေ့ဆုတောင်းစာဖန်တီး"""
+        current_date = self.get_current_date()
+        
+        message = f"""Birthday Wishes 💌 
+
+Happy Birthday ❤️ ကမ္ဘာ❣️
+
+ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
+
+{current_date} မွေးနေ့လေးမှစ 
+နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
+
+ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအင်ဆန္ဒများလည်းပြည့်ဝပါစေ...🥰
+
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
+အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+
+အနာဂတ်မှာ 🤍
+နားလည်မှု များစွာနဲ့ 🍒
+အရင်ကထက်ပိုပိုပြီး  💕
+ဆထက်တပိုး ပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
+
+ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော
+နေ့ရက်တွေကို ထာဝရ ပိုင်ဆိုင်နိုင်ပါစေ 
+လို့ ဆုတောင်းပေးပါတယ် 🎂
+
+😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
+
+🌼 Oscar's Library 🌼
+ 
+ #adminteam """
+        
+        return message
+    
+    async def send_birthday_wish(self):
+        """မွေးနေ့ဆုတောင်းစာပို့ရန်"""
+        try:
+            message = self.create_birthday_message()
+            
+            # ပုံနဲ့တကွ မက်ဆေ့ပို့ခြင်း
+            await bot.send_photo(
+                chat_id=self.channel_id,
+                photo=self.photo_url,
+                caption=message
+            )
+            
+            print(f"✅ မွေးနေ့ဆုတောင်းစာပို့ပြီး - {datetime.now()}")
+            
+        except Exception as e:
+            print(f"❌ မွေးနေ့ဆုတောင်းစာပို့ရာတွင်အမှား - {e}")
+    
+    async def schedule_daily_message(self):
+        """နေ့စဉ်ပို့ရန် စီစဉ်ခြင်း"""
+        while True:
+            now = datetime.now()
+            
+            # နံနက် ၈ နာရီစစ်ဆေးခြင်း
+            if now.hour == 8 and now.minute == 0:
+                await self.send_birthday_wish()
+                
+                # ၂၄ နာရီစောင့်ခြင်း
+                await asyncio.sleep(3600)
+            else:
+                # ၁ မိနစ်တစ်ကြိမ်စစ်ဆေးခြင်း
+                await asyncio.sleep(60)
+
+# ===============================
+# BIRTHDAY BOT INITIALIZATION
+# ===============================
+birthday_bot = BirthdayWishBot()
+
+async def start_birthday_bot():
+    """Birthday bot ကို start လုပ်မယ်"""
+    print("🤖 Birthday Wish Bot စတင်ပါပြီ...")
+    print("⏰ နေ့စဉ် နံနက် ၈ နာရီတွင် ပို့ပေးသွားမည်")
+    await birthday_bot.schedule_daily_message()
+
+def initialize_birthday_bot():
+    """Birthday bot ကို background တွင် start လုပ်မယ်"""
+    def run_birthday_bot():
+        asyncio.run(start_birthday_bot())
+    
+    birthday_thread = threading.Thread(target=run_birthday_bot, daemon=True)
+    birthday_thread.start()
+
+# ===============================
 # TOP FANS POST EDITING SYSTEM (Owner Only)
 # ===============================
 OWNER_ID = 6272937931  # Your Telegram User ID
@@ -30,9 +134,7 @@ def is_owner(user_id):
 # Default Top Fans post template
 TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 
-ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို
-အပြင်းအထန် အားပေးမှုအများဆုံး
-Member များကိုရွေးချယ်လိုက်ပါပြီ...!
+ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ...!
 
 🎖️ **Official Top 20 Community Stars** 🎖️
 
@@ -73,7 +175,7 @@ Member များကိုရွေးချယ်လိုက်ပါပြ�
 
 သင့်ရဲ့တစ်ခုတည်းသော Reactကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
 
-🌟 **ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများဖြစ်ကြပါစေ...!**
+🌟 **ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများကျေးဇူးကမ္ဘာပါ...🤞**
 သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ!
 
 📅 **နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ**
@@ -170,7 +272,7 @@ async def schedule_weekly_post():
 # ===============================
 # EDIT TOP FANS POST COMMAND (Owner Only)
 # ===============================
-@bot.message_handler(commands=['edittop'])
+@bot.message_handler(commands=['edittopfan'])
 def edit_top_post(message):
     """Edit the top fans post - Owner only"""
     if not is_owner(message.from_user.id):
@@ -180,7 +282,7 @@ def edit_top_post(message):
     bot.send_message(
         message.chat.id,
         "📝 **Top Fans Post ပြင်ဆင်ရန်**\n\n"
-        "လက်ရှိ post ကို ကြည့်ရှုရန်: /showtop\n\n"
+        "လက်ရှိ post ကို ကြည့်ရှုရန်: /showtopfan\n\n"
         "အသစ်ပြင်ဆင်ရန် စာပိုဒ်အသစ်ကို ရိုက်ပေးပါ...",
         parse_mode='Markdown'
     )
@@ -196,7 +298,7 @@ def process_new_post(message):
         bot.send_message(
             message.chat.id,
             "✅ Top Fans Post ကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ!\n\n"
-            "ကြည့်ရှုရန်: /showtop",
+            "ကြည့်ရှုရန်: /showtopfan",
             parse_mode='Markdown'
         )
     except Exception as e:
@@ -571,6 +673,9 @@ def initialize_auto_remove():
 # RUN
 # ===============================
 if __name__ == "__main__":
+    # Initialize both systems
     initialize_auto_remove()
+    initialize_birthday_bot()
+    
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
