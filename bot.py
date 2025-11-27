@@ -16,16 +16,31 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFm
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
 
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 
 # ===============================
 # BIRTHDAY WISH BOT CONFIGURATION
 # ===============================
 BIRTHDAY_CHANNEL_ID = "1002150199369"
-BIRTHDAY_PHOTO_URL = "https://raw.githubusercontent.com/yourusername/yourrepo/main/Happy_Birthday_Photo.jpg"
+BIRTHDAY_PHOTO_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 
-# Editable Birthday Post Template
-BIRTHDAY_POST_TEMPLATE = """Birthday Wishes 💌 
+class BirthdayWishBot:
+    def __init__(self):
+        self.channel_id = BIRTHDAY_CHANNEL_ID
+        self.photo_url = BIRTHDAY_PHOTO_URL
+    
+    def get_current_date(self):
+        """လက်ရှိလနဲ့ရက်ကိုရယူ"""
+        now = datetime.now()
+        month = now.strftime("%B")
+        day = now.day
+        return f"{month}, {day}"
+    
+    def create_birthday_message(self):
+        """မွေးနေ့ဆုတောင်းစာဖန်တီး"""
+        current_date = self.get_current_date()
+        
+        message = f"""Birthday Wishes 💌 
 
 Happy Birthday ❤️ ကမ္ဘာ❣️
 
@@ -53,29 +68,15 @@ Happy Birthday ❤️ ကမ္ဘာ❣️
 🌼 Oscar's Library 🌼
  
 #adminteam"""
-
-class BirthdayWishBot:
-    def __init__(self):
-        self.channel_id = BIRTHDAY_CHANNEL_ID
-        self.photo_url = BIRTHDAY_PHOTO_URL
-    
-    def get_current_date(self):
-        """လက်ရှိလနဲ့ရက်ကိုရယူ"""
-        now = datetime.now()
-        month = now.strftime("%B")
-        day = now.day
-        return f"{month}, {day}"
-    
-    def create_birthday_message(self):
-        """မွေးနေ့ဆုတောင်းစာဖန်တီး"""
-        current_date = self.get_current_date()
-        return BIRTHDAY_POST_TEMPLATE.format(current_date=current_date)
+        
+        return message
     
     async def send_birthday_wish(self):
         """မွေးနေ့ဆုတောင်းစာပို့ရန်"""
         try:
             message = self.create_birthday_message()
             
+            # ပုံနဲ့တကွ မက်ဆေ့ပို့ခြင်း
             await bot.send_photo(
                 chat_id=self.channel_id,
                 photo=self.photo_url,
@@ -92,10 +93,14 @@ class BirthdayWishBot:
         while True:
             now = datetime.now()
             
+            # နံနက် ၈ နာရီစစ်ဆေးခြင်း
             if now.hour == 8 and now.minute == 0:
                 await self.send_birthday_wish()
+                
+                # ၂၄ နာရီစောင့်ခြင်း
                 await asyncio.sleep(3600)
             else:
+                # ၁ မိနစ်တစ်ကြိမ်စစ်ဆေးခြင်း
                 await asyncio.sleep(60)
 
 # ===============================
@@ -114,97 +119,48 @@ def initialize_birthday_bot():
     def run_birthday_bot():
         asyncio.run(start_birthday_bot())
     
-    threading.Thread(target=run_birthday_bot, daemon=True).start()
+    birthday_thread = threading.Thread(target=run_birthday_bot, daemon=True)
+    birthday_thread.start()
 
 # ===============================
-# OWNER SYSTEM
+# BIRTHDAY PREVIEW COMMAND
 # ===============================
-OWNER_ID = 6272937931
-
-def is_owner(user_id):
-    """Check if user is the owner"""
-    return user_id == OWNER_ID
-
-# ===============================
-# BIRTHDAY POST EDITING SYSTEM (Owner Only)
-# ===============================
-@bot.message_handler(commands=['editbirthday'])
-def edit_birthday_post(message):
-    """Edit the birthday post - Owner only"""
-    if not is_owner(message.from_user.id):
-        bot.send_message(message.chat.id, "❌ ဒီ command ကို သုံးခွင့်မရှိပါ။ Owner သာသုံးနိုင်သည်။")
-        return
-    
-    help_text = """
-🎂 <b>မွေးနေ့ဆုတောင်းစာ ပြင်ဆင်ရန်</b>
-
-<b>Formatting များ အသုံးပြုနည်း:</b>
-• <b>Bold</b> - &lt;b&gt;text&lt;/b&gt;
-• <i>Italic</i> - &lt;i&gt;text&lt;/i&gt;
-• <u>Underline</u> - &lt;u&gt;text&lt;/u&gt;
-• <code>Monospace</code> - &lt;code&gt;text&lt;/code&gt;
-• <pre>Preformatted</pre> - &lt;pre&gt;text&lt;/pre&gt;
-• <a href="https://example.com">Link</a> - &lt;a href="url"&gt;text&lt;/a&gt;
-
-<b>မှတ်ချက်:</b> {current_date} ဆိုတဲ့နေရာမှာ လက်ရှိလနဲ့ရက်ကိုအလိုအလျောက်ထည့်ပေးသွားမှာဖြစ်ပါတယ်။
-
-လက်ရှိစာကို ကြည့်ရှုရန်: /showbirthday
-ပြင်ဆင်ရန် စာပိုဒ်အသစ်ကို ရိုက်ပေးပါ...
-"""
-    
-    bot.send_message(message.chat.id, help_text, parse_mode='HTML')
-    bot.register_next_step_handler(message, process_birthday_post)
-
-def process_birthday_post(message):
-    """Process the new birthday post from owner"""
-    global BIRTHDAY_POST_TEMPLATE
+@bot.message_handler(commands=['showbirthday'])
+def show_birthday_post(message):
+    """Show the current birthday post with image preview"""
     try:
-        BIRTHDAY_POST_TEMPLATE = message.text
-        
-        # Preview the new post
         current_date = birthday_bot.get_current_date()
-        preview_text = BIRTHDAY_POST_TEMPLATE.format(current_date=current_date)
+        preview_text = birthday_bot.create_birthday_message()
         
-        bot.send_message(
+        # ပုံနဲ့တကွ ပြသရန်
+        bot.send_photo(
             message.chat.id,
-            "✅ <b>မွေးနေ့ဆုတောင်းစာ အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ!</b>\n\n"
-            "Preview ကြည့်ရှုရန်: /showbirthday\n\n"
-            f"<b>Preview:</b>\n{preview_text}",
-            parse_mode='HTML'
+            photo=BIRTHDAY_PHOTO_URL,
+            caption=preview_text
         )
         
     except Exception as e:
-        bot.send_message(message.chat.id, f"❌ ပြင်ဆင်ရာတွင် အမှားတစ်ခုဖြစ်နေသည်: {e}")
-
-@bot.message_handler(commands=['showbirthday'])
-def show_birthday_post(message):
-    """Show the current birthday post"""
-    current_date = birthday_bot.get_current_date()
-    preview_text = BIRTHDAY_POST_TEMPLATE.format(current_date=current_date)
-    
-    bot.send_message(
-        message.chat.id, 
-        f"<b>လက်ရှိမွေးနေ့ဆုတောင်းစာ:</b>\n\n{preview_text}", 
-        parse_mode='HTML'
-    )
+        # ပုံမရရင် text ပဲပို့
+        bot.send_message(message.chat.id, preview_text)
+        print(f"❌ ပုံမတင်နိုင်: {e}")
 
 # ===============================
-# TOP FANS POST EDITING SYSTEM (Owner Only)
+# TOP FANS POST TEMPLATE
 # ===============================
-TOP_FANS_POST = """🏆 <b>အပတ်စဉ် Top Fans များ</b> 🏆
+TOP_FANS_POST = """🏆 **အပတ်စဉ် Top Fans များ** 🏆
 
 ဒီအပတ်အတွင်းကျွန်တော်တို့ချန်နယ်ကို အပြင်းအထန် အားပေးမှုအများဆုံး Member များကိုရွေးချယ်လိုက်ပါပြီ...!
 
-🎖️ <b>Official Top 20 Community Stars</b> 🎖️
+🎖️ **Official Top 20 Community Stars** 🎖️
 
-<b>🥇 GOLD Tier (Top 1-5)</b>
+🥇 GOLD Tier (Top 1-5)
 1. @user1 👑 Channel King
 2. @user2 ⭐ Super Star  
 3. @user3 🔥 Fire Reactor
 4. @user4 💬 Chat Champion
 5. @user5 🎯 Most Active
 
-<b>🥈 SILVER Tier (Top 6-15)</b> 
+🥈 SILVER Tier (Top 6-15) 
 6. @user6 ✨ Rising Star
 7. @user7 💫 Active Member
 8. @user8 🌟 Community Hero
@@ -216,14 +172,14 @@ TOP_FANS_POST = """🏆 <b>အပတ်စဉ် Top Fans များ</b> 🏆
 14. @user14 ⭐ Future Star
 15. @user15 🌈 Community Builder
 
-<b>🥉 BRONZE Tier (Top 16-20)</b>
+🥉 BRONZE Tier (Top 16-20)
 16. @user16 🎉 Celebration Star
 17. @user17 💎 Diamond Member
 18. @user18 🌟 Shining Star
 19. @user19 🚀 Rocket Booster
 20. @user20 💖 Heart Giver
 
-💫 <b>နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...</b>
+💫 **နောက်အပတ်မှာ Top Fan ဘယ်သူတွေဖြစ်မလဲ...**
 
 ဒီအပတ် ပါဝင်သူတစ်ယောက်စီတိုင်းကို အထူးကျေးဇူးတင်ရှိပါတယ်!  
 နောက်အပတ်မှာတော့ သင့်နာမည် ဒီစာရင်းမှာပါအောင်...🥰
@@ -234,121 +190,19 @@ TOP_FANS_POST = """🏆 <b>အပတ်စဉ် Top Fans များ</b> 🏆
 
 သင့်ရဲ့တစ်ခုတည်းသော Reactကလေးက ကျွန်တော်တို့အတွက် များစွာအဓိပ္ပာယ်ရှိပါတယ်! 💝
 
-🌟 <b>ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများကျေးဇူးကမ္ဘာပါ...🤞</b>
+🌟 **ကျွန်တော်တို့ရဲ့ချန်နယ်ကို အသက်သွင်းပေးထားတဲ့ အချစ်တော်လေးများကျေးဇူးကမ္ဘာပါ...🤞**
 သင့်ရဲ့ ပါဝင်မှုတိုင်းက ကျွန်တော်တို့အတွက် ဆက်လက်လုပ်ဆောင်နိုင်တဲ့ စွမ်းအားပါ!
 
-📅 <b>နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ</b>
+📅 **နောက်တစ်ကြိမ် - တနင်္ဂနွေ ည ၆ နာရီ**
 ဘယ်သူတွေ Top 20 ထဲဝင်မလဲ စောင့်ကြည့်လိုက်ကြရအောင်...! 🎊"""
 
-@bot.message_handler(commands=['edittopfan'])
-def edit_top_post(message):
-    """Edit the top fans post - Owner only"""
-    if not is_owner(message.from_user.id):
-        bot.send_message(message.chat.id, "❌ ဒီ command ကို သုံးခွင့်မရှိပါ။ Owner သာသုံးနိုင်သည်။")
-        return
-    
-    help_text = """
-📝 <b>Top Fans Post ပြင်ဆင်ရန်</b>
-
-<b>Formatting များ အသုံးပြုနည်း:</b>
-• <b>Bold</b> - &lt;b&gt;text&lt;/b&gt;
-• <i>Italic</i> - &lt;i&gt;text&lt;/i&gt;
-• <u>Underline</u> - &lt;u&gt;text&lt;/u&gt;
-• <code>Monospace</code> - &lt;code&gt;text&lt;/code&gt;
-• <pre>Preformatted</pre> - &lt;pre&gt;text&lt;/pre&gt;
-• <a href="https://example.com">Link</a> - &lt;a href="url"&gt;text&lt;/a&gt;
-
-လက်ရှိစာကို ကြည့်ရှုရန်: /showtopfan
-ပြင်ဆင်ရန် စာပိုဒ်အသစ်ကို ရိုက်ပေးပါ...
-"""
-    
-    bot.send_message(message.chat.id, help_text, parse_mode='HTML')
-    bot.register_next_step_handler(message, process_new_post)
-
-def process_new_post(message):
-    """Process the new post from owner"""
-    global TOP_FANS_POST
-    try:
-        TOP_FANS_POST = message.text
-        bot.send_message(
-            message.chat.id,
-            "✅ <b>Top Fans Post ကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ!</b>\n\n"
-            "ကြည့်ရှုရန်: /showtopfan",
-            parse_mode='HTML'
-        )
-    except Exception as e:
-        bot.send_message(message.chat.id, f"❌ ပြင်ဆင်ရာတွင် အမှားတစ်ခုဖြစ်နေသည်: {e}")
-
+# ===============================
+# SHOW TOP FANS POST COMMAND
+# ===============================
 @bot.message_handler(commands=['showtopfan'])
 def show_top_post(message):
     """Show the current top fans post"""
-    bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='HTML')
-
-# ===============================
-# AUTO REMOVE SYSTEM - SUNDAY 5:59PM
-# ===============================
-user_message_count = {}
-user_reaction_count = {}
-tracking_start_time = datetime.now()
-
-async def get_final_top_20():
-    """Sunday 5:59PM မှာ နောက်ဆုံးစစ်ဆေးပြီး Top 20 ထုတ်ပေးမယ်"""
-    try:
-        print("🕔 Sunday 5:59PM - Finalizing Top 20 List...")
-        user_scores = {}
-        all_user_ids = set(list(user_message_count.keys()) + list(user_reaction_count.keys()))
-        
-        for user_id in all_user_ids:
-            message_score = user_message_count.get(user_id, 0)
-            reaction_score = user_reaction_count.get(user_id, 0)
-            user_scores[user_id] = message_score + reaction_score
-        
-        raw_top_users = sorted(user_scores.items(), key=lambda x: x[1], reverse=True)
-        current_members = await get_channel_members()
-        
-        final_top_20 = []
-        for user_id, score in raw_top_users:
-            if user_id in current_members:
-                final_top_20.append((user_id, score))
-                if len(final_top_20) >= 20:
-                    break
-        
-        print(f"✅ Final Top 20: {len(final_top_20)} users")
-        return final_top_20[:20]
-        
-    except Exception as e:
-        print(f"❌ Error in get_final_top_20: {e}")
-        return []
-
-async def get_channel_members():
-    """Channel ထဲက လက်ရှိ member list ရယူ"""
-    try:
-        members = []
-        return members
-    except Exception as e:
-        print(f"❌ Error getting channel members: {e}")
-        return []
-
-async def schedule_weekly_post():
-    """Sunday 5:59PM မှာ auto remove + 6:00PM မှာ post"""
-    while True:
-        now = datetime.now()
-        next_sunday = now.replace(hour=17, minute=59, second=0, microsecond=0)
-        days_until_sunday = (6 - now.weekday()) % 7
-        next_sunday += timedelta(days=days_until_sunday)
-        
-        wait_seconds = (next_sunday - now).total_seconds()
-        if wait_seconds > 0:
-            print(f"⏰ Waiting until Sunday 5:59PM: {next_sunday}")
-            await asyncio.sleep(wait_seconds)
-        
-        final_top_20 = await get_final_top_20()
-        await asyncio.sleep(60)
-        
-        try:
-            print("✅ Weekly Top Fans post published!")
-        except Exception as e:
-            print(f"❌ Error posting: {e}")
+    bot.send_message(message.chat.id, TOP_FANS_POST, parse_mode='Markdown')
 
 # ===============================
 # RENDER FONT FIX
@@ -389,6 +243,7 @@ def welcome_new_member(message):
 ✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ 
 🗃️ ရွေးဖတ်ဖို့ Button ကိုနှိပ်ပါ ✨"""
         
+        # Button ထည့်ရန်
         welcome_kb = types.InlineKeyboardMarkup()
         welcome_kb.row(
             types.InlineKeyboardButton(
@@ -414,8 +269,9 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY)
+# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED FOR FORWARDED MESSAGES
 # ======================================================
+
 def is_link(text):
     """Basic raw-text link patterns"""
     if not text:
@@ -424,18 +280,22 @@ def is_link(text):
 
 def has_link_api(message):
     """Detect links in all message locations including forwarded text/captions"""
+
+    # 1) Normal text
     try:
         if message.text and is_link(message.text):
             return True
     except:
         pass
 
+    # 2) Caption
     try:
         if message.caption and is_link(message.caption):
             return True
     except:
         pass
 
+    # 3) Entities (normal message)
     try:
         ents = getattr(message, "entities", None)
         if ents:
@@ -445,6 +305,7 @@ def has_link_api(message):
     except:
         pass
 
+    # 4) Caption entities
     try:
         cent = getattr(message, "caption_entities", None)
         if cent:
@@ -454,13 +315,17 @@ def has_link_api(message):
     except:
         pass
 
+    # 5) Forwarded message (Telegram does NOT send entities in forward text)
+    #    So we must check raw text/caption again manually
     if message.forward_from or message.forward_from_chat:
+        # Forwarded text
         try:
             if message.text and is_link(message.text):
                 return True
         except:
             pass
 
+        # Forwarded caption
         try:
             if message.caption and is_link(message.caption):
                 return True
@@ -483,22 +348,32 @@ def is_admin(chat_id, user_id):
 def handle_group_messages(message):
     """Handle all group messages including forwarded ones"""
     
+    # Skip if it's a command or new chat members
     if message.text and message.text.startswith('/'):
         return
     if message.new_chat_members:
         return
 
+    # 🔥 FULL LINK CHECK (NORMAL + FORWARD + CAPTION + ENTITIES)
     if has_link_api(message):
+        # If there's also only a mention entity (no url/text_link and no raw link),
+        # has_link_api would have returned False earlier, so this block won't run.
         if not is_admin(message.chat.id, message.from_user.id):
             try:
+                # Delete the message with link
                 bot.delete_message(message.chat.id, message.message_id)
-                warning_msg = f"⚠️ {message.from_user.first_name} 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
+                
+                # Send warning message with mention
+                user_first_name = message.from_user.first_name
+                user_id = message.from_user.id
+                warning_msg = f"⚠️ [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
                 bot.send_message(message.chat.id, warning_msg)
+                
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
 # ===============================
-# /START MESSAGE
+# /START MESSAGE - FIXED
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -506,24 +381,24 @@ def start_message(message):
     text = f"""သာယာသောနေ့လေးဖြစ်ပါစေ...🌸 **
     {first}** ...🥰
     
-🌼 <b>Oscar's Library</b> 🌼 မှ ကြိုဆိုပါတယ်
+🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
 
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
 
-<b>စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
-📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
+**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
+📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ**
 
 Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
-<b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
+**📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
 
 စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
-<b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
+**✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
 
-💢 <b>📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်</b> 💢
+💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
 
-⚠️ အဆင်မပြေတာရှိရင် ⚠️ 
-<b>❓အထွေထွေမေးမြန်းရန်</b> ကိုနှိပ်ပါ။"""
+⚠️ အဆင်မပြေတာရှိရင် ⚠️ **
+❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်ပါ။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
@@ -536,42 +411,54 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
-    bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=kb)
+    bot.send_message(message.chat.id, text, reply_markup=kb)
 
 # ======================================================
-# 3️⃣ PRIVATE CHAT MESSAGE HANDLER
+# 3️⃣ PRIVATE CHAT MESSAGE HANDLER - FIXED
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
     """Handle private messages including forwarded links"""
     
+    # Skip if it's a command (already handled by start handler)
     if message.text and message.text.startswith('/'):
         return
     
+    user_first_name = message.from_user.first_name
+    user_id = message.from_user.id
+    
+    # Check for forwarded messages containing links
     if message.forward_from_chat or message.forward_from:
+        # For forwarded messages with text
         if message.text and is_link(message.text):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 Forwarded link detected:\n{message.text}\n\nI can see the forwarded link! ✅"
+                f"🔗 [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
             )
+        # For forwarded media messages with captions containing links
         elif message.caption and is_link(message.caption):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 Forwarded media with link:\n{message.caption}\n\nI can see the forwarded link! ✅"
+                f"🔗 [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
             )
         else:
+            # Regular forwarded message without links
             bot.send_message(
                 message.chat.id, 
-                "📩 Forwarded message received!\n\nNote: I can process links from forwarded messages in private chats."
+                f"📩 [{user_first_name}](tg://user?id={user_id}) ရဲ့ Forwarded message received!\n\nNote: I can process links from forwarded messages in private chats."
             )
+    # Regular text messages (not commands)
     elif message.text and not message.text.startswith('/'):
         if is_link(message.text):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 Link detected:\n{message.text}\n\nThis is a direct link message! ✅"
+                f"🔗 [{user_first_name}](tg://user?id={user_id}) 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
             )
         else:
-            bot.send_message(message.chat.id, f"🤖 Auto Reply:\n{message.text}")
+            bot.send_message(
+                message.chat.id, 
+                f"🤖 [{user_first_name}](tg://user?id={user_id}) ရဲ့ Message:\n{message.text}"
+            )
 
 # ===============================
 # CATEGORY REDIRECT
@@ -580,8 +467,7 @@ def handle_private_messages(message):
 def category_redirect(call):
     bot.send_message(
         call.message.chat.id,
-        "📚 <b>ကဏ္ဍအလိုက် စာအုပ်များ</b>\nhttps://t.me/oscarhelpservices/4\n\n🌼 Oscar's Library 🌼",
-        parse_mode='HTML'
+        "📚 **ကဏ္ဍအလိုက် စာအုပ်များ**\nhttps://t.me/oscarhelpservices/4\n\n🌼 Oscar's Library 🌼"
     )
 
 # ===============================
@@ -589,7 +475,7 @@ def category_redirect(call):
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
-    text = "✍️ <b>စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ</b>\n\n🌼 Oscar's Library 🌼"
+    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
     rows = [
         ["က","ခ","ဂ","င"],
         ["စ","ဆ","ဇ","ည"],
@@ -602,7 +488,7 @@ def author_menu(call):
     kb = types.InlineKeyboardMarkup()
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, parse_mode='HTML', reply_markup=kb)
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb)
 
 # ===============================
 # AUTHOR LINKS
@@ -638,6 +524,9 @@ AUTHOR_LINKS = {
     "Eng": "https://t.me/sharebykosoemoe/920"
 }
 
+# ===============================
+# AUTHOR REDIRECT
+# ===============================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
 def author_redirect(call):
     key = call.data.replace("author_", "")
@@ -646,8 +535,7 @@ def author_redirect(call):
         bot.answer_callback_query(call.id)
         bot.send_message(
             call.message.chat.id,
-            f"➡️ <b>{key} ဖြင့်စသောစာရေးဆရာများ</b>\n{url}\n\n🌼 Oscar's Library 🌼",
-            parse_mode='HTML'
+            f"➡️ **{key} ဖြင့်စသောစာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
         )
 
 # ===============================
@@ -670,21 +558,10 @@ def index():
     return "Bot is running…", 200
 
 # ===============================
-# INITIALIZE AUTO REMOVE SYSTEM
-# ===============================
-def initialize_auto_remove():
-    """Auto Remove System ကို start လုပ်မယ်"""
-    def run_scheduler():
-        asyncio.run(schedule_weekly_post())
-    
-    threading.Thread(target=run_scheduler, daemon=True).start()
-    print("✅ Auto Remove System Started - Sunday 5:59PM")
-
-# ===============================
 # RUN
 # ===============================
 if __name__ == "__main__":
-    initialize_auto_remove()
+    # Initialize birthday bot only
     initialize_birthday_bot()
     
     port = int(os.environ.get("PORT", 10000))
