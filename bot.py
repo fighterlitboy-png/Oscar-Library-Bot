@@ -6,7 +6,7 @@ import threading
 import time
 import requests
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 
 # ===============================
@@ -38,12 +38,13 @@ def get_myanmar_time():
 BIRTHDAY_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
-<b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
-<b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
+Happy Birthday ❤️ ကမ္ဘာ❣️
+
+ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
 
 <b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
 
-ကိုယ်၏ ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
+ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများလည်းပြည့်ဝပါစေ...
 
 ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
 အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
@@ -69,14 +70,15 @@ def keep_alive():
     while True:
         try:
             requests.get(PING_URL, timeout=10)
-        except:
-            pass
+            print("🌐 Keep-alive ping sent")
+        except Exception as e:
+            print(f"🌐 Keep-alive error: {e}")
         time.sleep(300)  # 5 minutes
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
 # ===============================
-# BIRTHDAY AUTO POST SYSTEM (NO SCHEDULE MODULE)
+# BIRTHDAY AUTO POST SYSTEM
 # ===============================
 active_groups = set()
 last_birthday_post = None
@@ -93,19 +95,22 @@ def should_send_birthday_post():
     try:
         myanmar_time = get_myanmar_time()
         current_time = myanmar_time.strftime("%H:%M")
+        current_date = myanmar_time.strftime("%Y-%m-%d")
+        
+        print(f"⏰ Time check: {current_time} (Myanmar Time)")
         
         # မနက် ၈ နာရီ (08:00) စစ်ဆေးခြင်း
         if current_time == "08:00":
             # တစ်ရက်ကို ၁ ခါပဲ post တင်ရန်
             global last_birthday_post
-            today = myanmar_time.strftime("%Y-%m-%d")
             
-            if last_birthday_post != today:
-                last_birthday_post = today
+            if last_birthday_post != current_date:
+                last_birthday_post = current_date
+                print("✅ Birthday post triggered!")
                 return True
         return False
     except Exception as e:
-        print(f"Time check error: {e}")
+        print(f"⏰ Time check error: {e}")
         return False
 
 def send_birthday_to_all_admin_groups():
@@ -116,6 +121,7 @@ def send_birthday_to_all_admin_groups():
         caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
         
         print(f"🎂 Starting birthday posts for {current_date}...")
+        print(f"👥 Active groups: {len(active_groups)}")
         
         success_count = 0
         for group_id in list(active_groups):
@@ -127,11 +133,12 @@ def send_birthday_to_all_admin_groups():
                     parse_mode="HTML"
                 )
                 success_count += 1
+                print(f"✅ Sent to group: {group_id}")
                 time.sleep(2)  # Avoid rate limiting
             except Exception as e:
                 print(f"❌ Failed to send to group {group_id}: {e}")
         
-        print(f"✅ Birthday posts completed: {success_count} groups")
+        print(f"✅ Birthday posts completed: {success_count}/{len(active_groups)} groups")
         
     except Exception as e:
         print(f"🎂 Birthday system error: {e}")
@@ -144,7 +151,7 @@ def birthday_scheduler():
             if should_send_birthday_post():
                 send_birthday_to_all_admin_groups()
         except Exception as e:
-            print(f"Scheduler error: {e}")
+            print(f"🎂 Scheduler error: {e}")
         time.sleep(60)  # 1 minute check
 
 # Start birthday scheduler
@@ -167,7 +174,7 @@ def welcome_new_member(message):
 အမြဲအသင့်ရှိပါတယ်...🤓
 
 ✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ 
-🗃️ ရွေးဖတ်ဖို့ Button ကိုနှိပ်ပါ ✨"""
+🗃️ ရွေးဖတ်ဖို့ <b>Button</b> ကိုနှိပ်ပါ ✨"""
         
         welcome_kb = types.InlineKeyboardMarkup()
         welcome_kb.row(
@@ -272,7 +279,7 @@ def handle_group_messages(message):
         if not is_admin(message.chat.id, message.from_user.id):
             try:
                 bot.delete_message(message.chat.id, message.message_id)
-                warning_msg = f"⚠️ {message.from_user.first_name} 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
+                warning_msg = f"⚠️ {message.from_user.first_name} 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်..."
                 bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
             except Exception as e:
                 print(f"Link blocker error: {e}")
@@ -433,37 +440,9 @@ def author_redirect(call):
         )
 
 # ===============================
-# BIRTHDAY TEST COMMAND
-# ===============================
-@bot.message_handler(commands=['testbirthday'])
-def test_birthday_command(message):
-    try:
-        if not is_admin(message.chat.id, message.from_user.id):
-            bot.reply_to(message, "❌ Admin only command")
-            return
-        
-        myanmar_time = get_myanmar_time()
-        current_date = myanmar_time.strftime("%B %d")
-        test_caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
-        test_caption = "<b>🧪 TEST BIRTHDAY POST</b>\n\n" + test_caption
-        
-        bot.send_photo(
-            message.chat.id,
-            BIRTHDAY_IMAGE_URL,
-            caption=test_caption,
-            parse_mode="HTML"
-        )
-        bot.reply_to(message, "✅ Test birthday post sent successfully!")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error: {e}")
-
-# ===============================
 # FLASK SERVER
 # ===============================
 app = Flask(__name__)
-bot.remove_webhook()
-bot.set_webhook(url=WEBHOOK_URL)
 
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def webhook():
@@ -476,6 +455,20 @@ def webhook():
 @app.route("/", methods=['GET'])
 def index():
     return "Bot is running…", 200
+
+# ===============================
+# INITIALIZE WEBHOOK
+# ===============================
+print("🤖 Initializing bot...")
+try:
+    bot.remove_webhook()
+    time.sleep(1)
+    bot.set_webhook(url=WEBHOOK_URL)
+    print(f"✅ Webhook set: {WEBHOOK_URL}")
+    print("🎂 Auto Birthday System: ACTIVE")
+    print("⏰ Will post daily at 8:00 AM Myanmar Time")
+except Exception as e:
+    print(f"❌ Webhook error: {e}")
 
 # ===============================
 # RUN
