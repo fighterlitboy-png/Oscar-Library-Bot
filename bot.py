@@ -368,5 +368,128 @@ def index():
 # RUN
 # ===============================
 if __name__ == "__main__":
+# ===============================
+# Myanmar Local Time (Asia/Yangon)
+# Birthday Auto Post + /showbirthday
+# ===============================
+
+import io
+import time
+import threading
+from datetime import datetime
+import pytz
+import requests
+
+# Channel ID
+BIRTHDAY_CHANNEL = -1002150199369
+
+# Photo raw link
+BIRTHDAY_PHOTO_RAW = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
+
+# ======== TIMEZONE SETUP ========
+yangon_tz = pytz.timezone("Asia/Yangon")
+
+def get_today_date():
+    """Return MonthName DayNumber → November 28"""
+    now = datetime.now(yangon_tz)
+    return now.strftime("%B %d").replace(" 0", " ")
+
+def generate_birthday_text():
+    today = get_today_date()
+    return f"""* Birthday Wishes 💌  
+
+Happy Birthday ❤️ ကမ္ဘာ❣️
+
+ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
+
+({today}) မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင် 
+
+ကိုယ်၏ ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ
+
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
+အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+
+အနာဂတ်မှာ 🤍
+နားလည်မှု များစွာနဲ့ 🍒
+အရင်ကထက်ပိုပိုပြီး  💕
+ဆထက်တပိုး ပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
+
+ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော
+နေ့ရက်တွေကို ထာဝရ ပိုင်ဆိုင်နိုင်ပါစေ 
+လို့ ဆုတောင်းပေးပါတယ် 🎂
+
+😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
+ 
+🌼 Oscar's Library 🌼 *"""
+
+def fetch_image_bytes(url):
+    try:
+        r = requests.get(url, timeout=20)
+        r.raise_for_status()
+        return io.BytesIO(r.content)
+    except Exception as e:
+        print(f"Image download error: {e}")
+        return None
+
+def post_birthday_to_channel():
+    try:
+        img = fetch_image_bytes(BIRTHDAY_PHOTO_RAW)
+        if img:
+            img.name = "birthday.jpg"
+            bot.send_photo(
+                BIRTHDAY_CHANNEL,
+                img,
+                caption=generate_birthday_text(),
+                parse_mode="Markdown"
+            )
+        else:
+            bot.send_message(
+                BIRTHDAY_CHANNEL,
+                generate_birthday_text(),
+                parse_mode="Markdown"
+            )
+        print("Birthday posted.")
+    except Exception as e:
+        print("Birthday post error:", e)
+
+def schedule_daily_birthday(hour=8, minute=0):
+    """Daily post at Myanmar time"""
+    last_post_date = None
+    while True:
+        now = datetime.now(yangon_tz)
+        today = now.date()
+        if now.hour == hour and now.minute == minute:
+            if last_post_date != today:
+                post_birthday_to_channel()
+                last_post_date = today
+                time.sleep(61)
+        time.sleep(5)
+
+# Background scheduler (8:00 AM Myanmar time)
+threading.Thread(target=schedule_daily_birthday, daemon=True).start()
+
+# Manual command
+@bot.message_handler(commands=['showbirthday'])
+def cmd_showbirthday(message):
+    try:
+        img = fetch_image_bytes(BIRTHDAY_PHOTO_RAW)
+        if img:
+            img.name = "birthday.jpg"
+            bot.send_photo(
+                message.chat.id,
+                img,
+                caption=generate_birthday_text(),
+                parse_mode="Markdown"
+            )
+        else:
+            bot.send_message(message.chat.id, generate_birthday_text(), parse_mode="Markdown")
+
+        try:
+            bot.reply_to(message, "🎉 Birthday post sent!")
+        except:
+            pass
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Error: {e}")
+
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
