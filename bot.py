@@ -6,8 +6,7 @@ import threading
 import time
 import requests
 import sys
-import schedule
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 # ===============================
@@ -17,7 +16,7 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFm
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
 
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")  # ✅ Markdown ကနေ HTML ကိုပြောင်း
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
 # ===============================
 # RENDER FONT FIX
@@ -39,13 +38,12 @@ def get_myanmar_time():
 BIRTHDAY_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
-Happy Birthday ❤️ ကမ္ဘာ❣️
+<b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
+<b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
 
-ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
+<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
 
-<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင် 
-
-ကိုယ်၏ ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ
+ကိုယ်၏ ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
 ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
 အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
@@ -59,10 +57,9 @@ Happy Birthday ❤️ ကမ္ဘာ❣️
 နေ့ရက်တွေကို ထာဝရ ပိုင်ဆိုင်နိုင်ပါစေ 
 လို့ ဆုတောင်းပေးပါတယ် 🎂
 
-<b>😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊</b> 
+😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 
 <b>🌼 Oscar's Library 🌼</b> 
-
 #adminteam"""
 
 # ===============================
@@ -74,21 +71,42 @@ def keep_alive():
             requests.get(PING_URL, timeout=10)
         except:
             pass
-        time.sleep(60)
+        time.sleep(300)  # 5 minutes
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
 # ===============================
-# BIRTHDAY AUTO POST SYSTEM
+# BIRTHDAY AUTO POST SYSTEM (NO SCHEDULE MODULE)
 # ===============================
 active_groups = set()
+last_birthday_post = None
 
 def track_active_group(chat_id):
     """Active group တွေကို track လုပ်ခြင်း"""
-    if chat_id < 0:  # Negative IDs are groups/channels
+    if chat_id < 0:
         active_groups.add(chat_id)
-        if len(active_groups) > 100:
+        if len(active_groups) > 50:
             active_groups.pop()
+
+def should_send_birthday_post():
+    """မနက် ၈ နာရီကျရင် True return ပြန်ခြင်း"""
+    try:
+        myanmar_time = get_myanmar_time()
+        current_time = myanmar_time.strftime("%H:%M")
+        
+        # မနက် ၈ နာရီ (08:00) စစ်ဆေးခြင်း
+        if current_time == "08:00":
+            # တစ်ရက်ကို ၁ ခါပဲ post တင်ရန်
+            global last_birthday_post
+            today = myanmar_time.strftime("%Y-%m-%d")
+            
+            if last_birthday_post != today:
+                last_birthday_post = today
+                return True
+        return False
+    except Exception as e:
+        print(f"Time check error: {e}")
+        return False
 
 def send_birthday_to_all_admin_groups():
     """Admin ဖြစ်နေတဲ့ group အားလုံးကို auto post တင်ခြင်း"""
@@ -106,10 +124,10 @@ def send_birthday_to_all_admin_groups():
                     group_id,
                     BIRTHDAY_IMAGE_URL,
                     caption=caption,
-                    parse_mode="HTML"  # ✅ HTML format ကိုသုံး
+                    parse_mode="HTML"
                 )
                 success_count += 1
-                time.sleep(1)
+                time.sleep(2)  # Avoid rate limiting
             except Exception as e:
                 print(f"❌ Failed to send to group {group_id}: {e}")
         
@@ -118,18 +136,19 @@ def send_birthday_to_all_admin_groups():
     except Exception as e:
         print(f"🎂 Birthday system error: {e}")
 
-def schedule_birthday_posts():
-    """မနက် ၈ နာရီတိုင်း auto post (Myanmar Time)"""
-    schedule.every().day.at("01:30").do(send_birthday_to_all_admin_groups)
-    
-    print("🎂 Auto Birthday System Started!")
-    print("⏰ Will post daily at 8:00 AM Myanmar Time")
-    
+def birthday_scheduler():
+    """မနက် ၈ နာရီစစ်ဆေးခြင်း"""
+    print("🎂 Birthday scheduler started - Checking every minute...")
     while True:
-        schedule.run_pending()
-        time.sleep(60)
+        try:
+            if should_send_birthday_post():
+                send_birthday_to_all_admin_groups()
+        except Exception as e:
+            print(f"Scheduler error: {e}")
+        time.sleep(60)  # 1 minute check
 
-birthday_thread = threading.Thread(target=schedule_birthday_posts, daemon=True)
+# Start birthday scheduler
+birthday_thread = threading.Thread(target=birthday_scheduler, daemon=True)
 birthday_thread.start()
 
 # ======================================================
@@ -141,14 +160,14 @@ WELCOME_IMAGE = "welcome_photo.jpg"
 def welcome_new_member(message):
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
-<b>{user.first_name} ...🥰</b>
+<b> {user.first_name} ...🥰</b>
 
 <b>📚 Oscar's Library မှ</b>
 မင်းရဲ့စာဖတ်ခြင်းအတွက် 
 အမြဲအသင့်ရှိပါတယ်...🤓
 
 ✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ 
-🗃️ ရွေးဖတ်ဖို့ <b>Button</b> ကိုနှိပ်ပါ ✨"""
+🗃️ ရွေးဖတ်ဖို့ Button ကိုနှိပ်ပါ ✨"""
         
         welcome_kb = types.InlineKeyboardMarkup()
         welcome_kb.row(
@@ -165,7 +184,7 @@ def welcome_new_member(message):
                     img, 
                     caption=caption,
                     reply_markup=welcome_kb,
-                    parse_mode="HTML"  # ✅ HTML format ကိုသုံး
+                    parse_mode="HTML"
                 )
         except Exception as e:
             print(f"Welcome image error: {e}")
@@ -173,7 +192,7 @@ def welcome_new_member(message):
                 message.chat.id,
                 caption,
                 reply_markup=welcome_kb,
-                parse_mode="HTML"  # ✅ HTML format ကိုသုံး
+                parse_mode="HTML"
             )
 
 # ======================================================
@@ -247,14 +266,14 @@ def handle_group_messages(message):
     if message.new_chat_members:
         return
 
-    track_active_group(message.chat.id)  # ✅ Group tracking ထည့်
+    track_active_group(message.chat.id)
 
     if has_link_api(message):
         if not is_admin(message.chat.id, message.from_user.id):
             try:
                 bot.delete_message(message.chat.id, message.message_id)
                 warning_msg = f"⚠️ {message.from_user.first_name} 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
-                bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")  # ✅ HTML format
+                bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
@@ -267,7 +286,7 @@ def start_message(message):
     text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
 <b>{first}</b> ...🥰
     
-<b>🌼 Oscar's Library 🌼</b> မှကြိုဆိုပါတယ်...
+<b>🌼 Oscar's Library 🌼</b> မှ ကြိုဆိုပါတယ်
 
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
 
@@ -297,7 +316,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
-    bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")  # ✅ HTML format
+    bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ======================================================
 # 3️⃣ PRIVATE CHAT MESSAGE HANDLER
@@ -312,29 +331,29 @@ def handle_private_messages(message):
             bot.send_message(
                 message.chat.id, 
                 f"<b>🔗 Forwarded link detected:</b>\n{message.text}\n\n<b>I can see the forwarded link! ✅</b>",
-                parse_mode="HTML"  # ✅ HTML format
+                parse_mode="HTML"
             )
         elif message.caption and is_link(message.caption):
             bot.send_message(
                 message.chat.id, 
                 f"<b>🔗 Forwarded media with link:</b>\n{message.caption}\n\n<b>I can see the forwarded link! ✅</b>",
-                parse_mode="HTML"  # ✅ HTML format
+                parse_mode="HTML"
             )
         else:
             bot.send_message(
                 message.chat.id, 
                 "<b>📩 Forwarded message received!</b>\n\nNote: I can process links from forwarded messages in private chats.",
-                parse_mode="HTML"  # ✅ HTML format
+                parse_mode="HTML"
             )
     elif message.text and not message.text.startswith('/'):
         if is_link(message.text):
             bot.send_message(
                 message.chat.id, 
                 f"<b>🔗 Link detected:</b>\n{message.text}\n\n<b>This is a direct link message! ✅</b>",
-                parse_mode="HTML"  # ✅ HTML format
+                parse_mode="HTML"
             )
         else:
-            bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")  # ✅ HTML format
+            bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
 
 # ===============================
 # CATEGORY REDIRECT
@@ -344,7 +363,7 @@ def category_redirect(call):
     bot.send_message(
         call.message.chat.id,
         "<b>📚 ကဏ္ဍအလိုက် စာအုပ်များ</b>\nhttps://t.me/oscarhelpservices/4\n\n<b>🌼 Oscar's Library 🌼</b>",
-        parse_mode="HTML"  # ✅ HTML format
+        parse_mode="HTML"
     )
 
 # ===============================
@@ -365,7 +384,7 @@ def author_menu(call):
     kb = types.InlineKeyboardMarkup()
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")  # ✅ HTML format
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
 
 # ===============================
 # AUTHOR LINKS
@@ -401,9 +420,6 @@ AUTHOR_LINKS = {
     "Eng": "https://t.me/sharebykosoemoe/920"
 }
 
-# ===============================
-# AUTHOR REDIRECT
-# ===============================
 @bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
 def author_redirect(call):
     key = call.data.replace("author_", "")
@@ -413,7 +429,7 @@ def author_redirect(call):
         bot.send_message(
             call.message.chat.id,
             f"<b>➡️ {key} ဖြင့်စသောစာရေးဆရာများ</b>\n{url}\n\n<b>🌼 Oscar's Library 🌼</b>",
-            parse_mode="HTML"  # ✅ HTML format
+            parse_mode="HTML"
         )
 
 # ===============================
@@ -435,7 +451,7 @@ def test_birthday_command(message):
             message.chat.id,
             BIRTHDAY_IMAGE_URL,
             caption=test_caption,
-            parse_mode="HTML"  # ✅ HTML format
+            parse_mode="HTML"
         )
         bot.reply_to(message, "✅ Test birthday post sent successfully!")
         
