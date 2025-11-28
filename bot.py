@@ -38,13 +38,12 @@ def get_myanmar_time():
 BIRTHDAY_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
-Happy Birthday ❤️ ကမ္ဘာ❣️
+<b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
+<b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
 
-ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
+<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
 
-<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
-
-ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများလည်းပြည့်ဝပါစေ...
+ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
 ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
 အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
@@ -52,15 +51,16 @@ Happy Birthday ❤️ ကမ္ဘာ❣️
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
-ဆထက်တပိုး ပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
+ဆထက်တပိုးပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
 
 ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော
-နေ့ရက်တွေကို ထာဝရ ပိုင်ဆိုင်နိုင်ပါစေ 
-လို့ ဆုတောင်းပေးပါတယ် 🎂
+နေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ 
+အမြဲဆုတောင်းပေးပါတယ် 🎂
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 
 <b>🌼 Oscar's Library 🌼</b> 
+
 #adminteam"""
 
 # ===============================
@@ -167,7 +167,7 @@ WELCOME_IMAGE = "welcome_photo.jpg"
 def welcome_new_member(message):
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
-<b> {user.first_name} ...🥰</b>
+<b>{user.first_name} ...🥰</b>
 
 <b>📚 Oscar's Library မှ</b>
 မင်းရဲ့စာဖတ်ခြင်းအတွက် 
@@ -293,7 +293,7 @@ def start_message(message):
     text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
 <b>{first}</b> ...🥰
     
-<b>🌼 Oscar's Library 🌼</b> မှ ကြိုဆိုပါတယ်
+<b>🌼 Oscar's Library 🌼</b> မှကြိုဆိုပါတယ်။
 
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
 
@@ -317,11 +317,15 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
         types.InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="category"),
         types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu")
     )
-    kb.row(types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17"))
-    kb.row(types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"))
-    kb.row(types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498"))
-    kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
-    kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
+    kb.row(
+        types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17")
+        types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single")
+    )
+    kb.row(
+        types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9")
+        types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498")
+    )
+        kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
@@ -374,7 +378,7 @@ def category_redirect(call):
     )
 
 # ===============================
-# AUTHORS MENU
+# AUTHORS MENU (WITH BACK BUTTON)
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
@@ -391,6 +395,56 @@ def author_menu(call):
     kb = types.InlineKeyboardMarkup()
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
+    
+    # ✅ Back button ထည့်ရန်
+    kb.row(types.InlineKeyboardButton("⬅ Back", callback_data="back_to_main"))
+    
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
+
+# ===============================
+# BACK TO MAIN MENU HANDLER
+# ===============================
+@bot.callback_query_handler(func=lambda c: c.data == "back_to_main")
+def back_to_main(call):
+    """မူလ menu ကိုပြန်သွားခြင်း"""
+    first = call.from_user.first_name or "Friend"
+    text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
+<b>{first}</b> ...🥰
+    
+<b>🌼 Oscar's Library 🌼</b> မှကြိုဆိုပါတယ်။
+
+စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
+
+<b>စာအုပ်ရှာဖို့ နှစ်ပေါင်းခွဲထားတယ်</b>
+<b>📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
+
+Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
+စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
+<b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
+
+စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
+<b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
+
+<b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
+
+⚠️ အဆင်မပြေတာရှိရင် ⚠️
+<b>❓အထွေထွေမေးမြန်းရန်</b> ကိုနှိပ်ပါ။"""
+
+    kb = types.InlineKeyboardMarkup()
+    kb.row(
+        types.InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="category"),
+        types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu")
+    )
+    kb.row(
+        types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17")
+        types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single")
+    )
+    kb.row(
+        types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9")
+        types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498")
+    )
+        kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
+
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
 
 # ===============================
