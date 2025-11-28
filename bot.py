@@ -325,7 +325,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
         types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"),
         types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498")
     )
-        kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
+    kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
