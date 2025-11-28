@@ -368,35 +368,40 @@ def index():
 # RUN
 # ===============================
 if __name__ == "__main__":
-# ===============================
-# Myanmar Local Time (Asia/Yangon)
-# Birthday Auto Post + /showbirthday
-# ===============================
+    bot.remove_webhook()
+    bot.set_webhook(url=WEBHOOK_URL)
 
-import io
-import time
-import threading
-from datetime import datetime
-import pytz
-import requests
+    # ===============================
+    # Myanmar Local Time (Asia/Yangon)
+    # Birthday Auto Post + /showbirthday
+    # ===============================
 
-# Channel ID
-BIRTHDAY_CHANNEL = -1002150199369
+    import io
+    import time
+    import threading
+    from datetime import datetime
+    import pytz
+    import requests
 
-# Photo raw link
-BIRTHDAY_PHOTO_RAW = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
+    # Channel ID
+    BIRTHDAY_CHANNEL = -1002150199369
 
-# ======== TIMEZONE SETUP ========
-yangon_tz = pytz.timezone("Asia/Yangon")
+    # Photo raw link
+    BIRTHDAY_PHOTO_RAW = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 
-def get_today_date():
-    """Return MonthName DayNumber → November 28"""
-    now = datetime.now(yangon_tz)
-    return now.strftime("%B %d").replace(" 0", " ")
+    # ======== TIMEZONE SETUP ========
+    yangon_tz = pytz.timezone("Asia/Yangon")
 
-def generate_birthday_text():
-    today = get_today_date()
-    return f"""* Birthday Wishes 💌  
+
+    def get_today_date():
+        """Return MonthName DayNumber → November 28"""
+        now = datetime.now(yangon_tz)
+        return now.strftime("%B %d").replace(" 0", " ")
+
+
+    def generate_birthday_text():
+        today = get_today_date()
+        return f"""* Birthday Wishes 💌  
 
 Happy Birthday ❤️ ကမ္ဘာ❣️
 
@@ -422,74 +427,79 @@ Happy Birthday ❤️ ကမ္ဘာ❣️
  
 🌼 Oscar's Library 🌼 *"""
 
-def fetch_image_bytes(url):
-    try:
-        r = requests.get(url, timeout=20)
-        r.raise_for_status()
-        return io.BytesIO(r.content)
-    except Exception as e:
-        print(f"Image download error: {e}")
-        return None
 
-def post_birthday_to_channel():
-    try:
-        img = fetch_image_bytes(BIRTHDAY_PHOTO_RAW)
-        if img:
-            img.name = "birthday.jpg"
-            bot.send_photo(
-                BIRTHDAY_CHANNEL,
-                img,
-                caption=generate_birthday_text(),
-                parse_mode="Markdown"
-            )
-        else:
-            bot.send_message(
-                BIRTHDAY_CHANNEL,
-                generate_birthday_text(),
-                parse_mode="Markdown"
-            )
-        print("Birthday posted.")
-    except Exception as e:
-        print("Birthday post error:", e)
-
-def schedule_daily_birthday(hour=8, minute=0):
-    """Daily post at Myanmar time"""
-    last_post_date = None
-    while True:
-        now = datetime.now(yangon_tz)
-        today = now.date()
-        if now.hour == hour and now.minute == minute:
-            if last_post_date != today:
-                post_birthday_to_channel()
-                last_post_date = today
-                time.sleep(61)
-        time.sleep(5)
-
-# Background scheduler (8:00 AM Myanmar time)
-threading.Thread(target=schedule_daily_birthday, daemon=True).start()
-
-# Manual command
-@bot.message_handler(commands=['showbirthday'])
-def cmd_showbirthday(message):
-    try:
-        img = fetch_image_bytes(BIRTHDAY_PHOTO_RAW)
-        if img:
-            img.name = "birthday.jpg"
-            bot.send_photo(
-                message.chat.id,
-                img,
-                caption=generate_birthday_text(),
-                parse_mode="Markdown"
-            )
-        else:
-            bot.send_message(message.chat.id, generate_birthday_text(), parse_mode="Markdown")
-
+    def fetch_image_bytes(url):
         try:
-            bot.reply_to(message, "🎉 Birthday post sent!")
-        except:
-            pass
-    except Exception as e:
-        bot.send_message(message.chat.id, f"Error: {e}")
+            r = requests.get(url, timeout=20)
+            r.raise_for_status()
+            return io.BytesIO(r.content)
+        except Exception as e:
+            print(f"Image download error: {e}")
+            return None
+
+
+    def post_birthday_to_channel():
+        try:
+            img = fetch_image_bytes(BIRTHDAY_PHOTO_RAW)
+            if img:
+                img.name = "birthday.jpg"
+                bot.send_photo(
+                    BIRTHDAY_CHANNEL,
+                    img,
+                    caption=generate_birthday_text(),
+                    parse_mode="Markdown"
+                )
+            else:
+                bot.send_message(
+                    BIRTHDAY_CHANNEL,
+                    generate_birthday_text(),
+                    parse_mode="Markdown"
+                )
+            print("Birthday posted.")
+        except Exception as e:
+            print("Birthday post error:", e)
+
+
+    def schedule_daily_birthday(hour=8, minute=0):
+        """Daily post at Myanmar time"""
+        last_post_date = None
+        while True:
+            now = datetime.now(yangon_tz)
+            today = now.date()
+            if now.hour == hour and now.minute == minute:
+                if last_post_date != today:
+                    post_birthday_to_channel()
+                    last_post_date = today
+                    time.sleep(61)
+            time.sleep(5)
+
+
+    # Background scheduler (8:00 AM Myanmar time)
+    threading.Thread(target=schedule_daily_birthday, daemon=True).start()
+
+
+    # Manual command
+    @bot.message_handler(commands=['showbirthday'])
+    def cmd_showbirthday(message):
+        try:
+            img = fetch_image_bytes(BIRTHDAY_PHOTO_RAW)
+            if img:
+                img.name = "birthday.jpg"
+                bot.send_photo(
+                    message.chat.id,
+                    img,
+                    caption=generate_birthday_text(),
+                    parse_mode="Markdown"
+                )
+            else:
+                bot.send_message(message.chat.id, generate_birthday_text(), parse_mode="Markdown")
+
+            try:
+                bot.reply_to(message, "🎉 Birthday post sent!")
+            except:
+                pass
+        except Exception as e:
+            bot.send_message(message.chat.id, f"Error: {e}")
 
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
