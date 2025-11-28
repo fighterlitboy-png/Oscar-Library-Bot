@@ -9,60 +9,66 @@ from datetime import datetime
 import pytz
 
 # ===============================
-# BOT TOKEN & URL (Environment Variables)
+# BOT TOKEN & URL
 # ===============================
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4')
-WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
+WEBHOOK_URL = f"https://oscar-library-bot.onrender.com/{BOT_TOKEN}"
 
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="MarkdownV2")
+
+# ===============================
+# Flask app
+# ===============================
 app = Flask(__name__)
 
-# ===============================
-# Channel & Image Setup
-# ===============================
-BIRTHDAY_CHANNEL = -1002150199369
-BIRTHDAY_PHOTO_RAW = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
+@app.route(f"/{BOT_TOKEN}", methods=['POST'])
+def webhook():
+    json_data = request.get_json(force=True)
+    if json_data:
+        update = telebot.types.Update.de_json(json_data)
+        bot.process_new_updates([update])
+    return "OK", 200
+
+@app.route("/", methods=['GET'])
+def index():
+    return "Bot is running…", 200
 
 # ===============================
-# Timezone setup
+# Myanmar timezone
 # ===============================
 yangon_tz = pytz.timezone("Asia/Yangon")
 
 # ===============================
-# Helper Functions
+# Birthday config
 # ===============================
+BIRTHDAY_CHANNEL = -1002150199369
+BIRTHDAY_PHOTO_RAW = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
+
 def get_today_date():
     now = datetime.now(yangon_tz)
     return now.strftime("%B %d").replace(" 0", " ")
 
 def generate_birthday_text():
     today = get_today_date()
-    return f"""<b>🎉 Birthday Wishes 💌</b>
-
-<b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
-
-<i>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</i>
-
-(<u>{today}</u>) မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်  
-
-ကိုယ်၏ကျန်းမာခြင်း၊ စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်၊လိုအင်ဆန္ဒများလည်း ပြည့်ဝပါစေ...💖
-
-ဘ၀ခရီးကို မပူမပင် မကြောင့်ကြစေရပဲ  
-အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
-
-အနာဂတ်မှာ 🤍  
-နားလည်မှုများစွာနဲ့ 🍒  
-အရင်ကထက်ပိုပိုပြီး 💕  
-ဆထက်တပိုးပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
-
-ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော  
-နေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ  
-ဆုတောင်းပေးပါတယ် 🎂
-
-😊 <i>ရွှင်လန်းချမ်းမြေ့ပါစေ</i> 😊
-
-🌼 <b>Oscar's Library</b> 🌼
-#adminteam """
+    # MarkdownV2 escape certain chars
+    return (
+        "* Birthday Wishes 💌  \n\n"
+        "Happy Birthday ❤️ ကမ္ဘာ❣️  \n\n"
+        "ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗  \n\n"
+        f"({today}) မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်  \n\n"
+        "ကိုယ်၏ ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ  \n\n"
+        "ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ  \n"
+        "အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞  \n\n"
+        "အနာဂတ်မှာ 🤍  \n"
+        "နားလည်မှု များစွာနဲ့ 🍒  \n"
+        "အရင်ကထက်ပိုပိုပြီး  💕  \n"
+        "ဆထက်တပိုး ပိုပြီး ချစ်နိုင်ပါစေ 🤍💞  \n\n"
+        "ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော  \n"
+        "နေ့ရက်တွေကို ထာဝရ ပိုင်ဆိုင်နိုင်ပါစေ  \n"
+        "လို့ ဆုတောင်းပေးပါတယ် 🎂  \n\n"
+        "😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊  \n\n"
+        "🌼 Oscar's Library 🌼 *"
+    )
 
 def fetch_image_bytes(url):
     try:
@@ -81,17 +87,20 @@ def post_birthday_to_channel():
             bot.send_photo(
                 BIRTHDAY_CHANNEL,
                 img,
-                caption=generate_birthday_text()
+                caption=generate_birthday_text(),
+                parse_mode="MarkdownV2"
             )
         else:
             bot.send_message(
                 BIRTHDAY_CHANNEL,
-                generate_birthday_text()
+                generate_birthday_text(),
+                parse_mode="MarkdownV2"
             )
         print("Birthday posted.")
     except Exception as e:
         print("Birthday post error:", e)
 
+# Daily scheduler 8:00 AM Myanmar time
 def schedule_daily_birthday(hour=8, minute=0):
     last_post_date = None
     while True:
@@ -104,13 +113,10 @@ def schedule_daily_birthday(hour=8, minute=0):
                 time.sleep(61)
         time.sleep(5)
 
-# ===============================
-# Background Scheduler
-# ===============================
 threading.Thread(target=schedule_daily_birthday, daemon=True).start()
 
 # ===============================
-# /showbirthday Command
+# /showbirthday command
 # ===============================
 @bot.message_handler(commands=['showbirthday'])
 def cmd_showbirthday(message):
@@ -121,41 +127,34 @@ def cmd_showbirthday(message):
             bot.send_photo(
                 message.chat.id,
                 img,
-                caption=generate_birthday_text()
+                caption=generate_birthday_text(),
+                parse_mode="MarkdownV2"
             )
         else:
             bot.send_message(
                 message.chat.id,
-                generate_birthday_text()
+                generate_birthday_text(),
+                parse_mode="MarkdownV2"
             )
-        try:
-            bot.reply_to(message, "🎉 Birthday post sent!")
-        except:
-            pass
     except Exception as e:
         bot.send_message(message.chat.id, f"Error: {e}")
 
 # ===============================
-# Flask Webhook
-# ===============================
-bot.remove_webhook()
-bot.set_webhook(url=WEBHOOK_URL)
-
-@app.route(f"/{BOT_TOKEN}", methods=['POST'])
-def webhook():
-    json_data = request.get_json(force=True)
-    if json_data:
-        update = telebot.types.Update.de_json(json_data)
-        bot.process_new_updates([update])
-    return "OK", 200
-
-@app.route("/", methods=['GET'])
-def index():
-    return "Bot is running…", 200
-
-# ===============================
-# Run Flask App
+# Run webhook
 # ===============================
 if __name__ == "__main__":
+    while True:
+        try:
+            bot.remove_webhook()
+            bot.set_webhook(url=WEBHOOK_URL)
+            print("Webhook set successfully!")
+            break
+        except telebot.apihelper.ApiTelegramException as e:
+            if "429" in str(e):
+                print("Too many requests, retrying in 2 seconds...")
+                time.sleep(2)
+            else:
+                raise e
+
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
