@@ -6,6 +6,9 @@ import threading
 import time
 import requests
 import sys
+import schedule
+from datetime import datetime
+import pytz
 
 # ===============================
 # BOT TOKEN & URL (Environment Variables)
@@ -14,7 +17,7 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFm
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
 
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")  # ✅ Markdown ကနေ HTML ကိုပြောင်း
 
 # ===============================
 # RENDER FONT FIX
@@ -23,6 +26,44 @@ try:
     sys.stdout.reconfigure(encoding='utf-8')
 except:
     pass
+
+# ===============================
+# BIRTHDAY SYSTEM CONFIGURATION
+# ===============================
+MYANMAR_TZ = pytz.timezone('Asia/Yangon')
+
+def get_myanmar_time():
+    """မြန်မာစံတော်ချိန်ရယူခြင်း"""
+    return datetime.now(MYANMAR_TZ)
+
+BIRTHDAY_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
+BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
+
+Happy Birthday ❤️ ကမ္ဘာ❣️
+
+ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
+
+<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင် 
+
+ကိုယ်၏ ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ
+
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
+အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+
+အနာဂတ်မှာ 🤍
+နားလည်မှု များစွာနဲ့ 🍒
+အရင်ကထက်ပိုပိုပြီး 💕
+ဆထက်တပိုး ပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
+
+ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော
+နေ့ရက်တွေကို ထာဝရ ပိုင်ဆိုင်နိုင်ပါစေ 
+လို့ ဆုတောင်းပေးပါတယ် 🎂
+
+<b>😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊</b> 
+
+<b>🌼 Oscar's Library 🌼</b> 
+
+#adminteam"""
 
 # ===============================
 # KEEP ALIVE
@@ -37,6 +78,60 @@ def keep_alive():
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
+# ===============================
+# BIRTHDAY AUTO POST SYSTEM
+# ===============================
+active_groups = set()
+
+def track_active_group(chat_id):
+    """Active group တွေကို track လုပ်ခြင်း"""
+    if chat_id < 0:  # Negative IDs are groups/channels
+        active_groups.add(chat_id)
+        if len(active_groups) > 100:
+            active_groups.pop()
+
+def send_birthday_to_all_admin_groups():
+    """Admin ဖြစ်နေတဲ့ group အားလုံးကို auto post တင်ခြင်း"""
+    try:
+        myanmar_time = get_myanmar_time()
+        current_date = myanmar_time.strftime("%B %d")
+        caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
+        
+        print(f"🎂 Starting birthday posts for {current_date}...")
+        
+        success_count = 0
+        for group_id in list(active_groups):
+            try:
+                bot.send_photo(
+                    group_id,
+                    BIRTHDAY_IMAGE_URL,
+                    caption=caption,
+                    parse_mode="HTML"  # ✅ HTML format ကိုသုံး
+                )
+                success_count += 1
+                time.sleep(1)
+            except Exception as e:
+                print(f"❌ Failed to send to group {group_id}: {e}")
+        
+        print(f"✅ Birthday posts completed: {success_count} groups")
+        
+    except Exception as e:
+        print(f"🎂 Birthday system error: {e}")
+
+def schedule_birthday_posts():
+    """မနက် ၈ နာရီတိုင်း auto post (Myanmar Time)"""
+    schedule.every().day.at("01:30").do(send_birthday_to_all_admin_groups)
+    
+    print("🎂 Auto Birthday System Started!")
+    print("⏰ Will post daily at 8:00 AM Myanmar Time")
+    
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
+birthday_thread = threading.Thread(target=schedule_birthday_posts, daemon=True)
+birthday_thread.start()
+
 # ======================================================
 # 1️⃣ GROUP WELCOME SYSTEM
 # ======================================================
@@ -45,17 +140,16 @@ WELCOME_IMAGE = "welcome_photo.jpg"
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
     for user in message.new_chat_members:
-        caption = f"""နွေးထွေးစွာကြိုဆိုပါတယ်...🧸
-{user.first_name} ...🥰
+        caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
+<b>{user.first_name} ...🥰</b>
 
-📚 Oscar's Library မှ
+<b>📚 Oscar's Library မှ</b>
 မင်းရဲ့စာဖတ်ခြင်းအတွက် 
 အမြဲအသင့်ရှိပါတယ်...🤓
 
 ✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ 
-🗃️ ရွေးဖတ်ဖို့ Button ကိုနှိပ်ပါ ✨"""
+🗃️ ရွေးဖတ်ဖို့ <b>Button</b> ကိုနှိပ်ပါ ✨"""
         
-        # Button ထည့်ရန်
         welcome_kb = types.InlineKeyboardMarkup()
         welcome_kb.row(
             types.InlineKeyboardButton(
@@ -70,46 +164,40 @@ def welcome_new_member(message):
                     message.chat.id, 
                     img, 
                     caption=caption,
-                    reply_markup=welcome_kb
+                    reply_markup=welcome_kb,
+                    parse_mode="HTML"  # ✅ HTML format ကိုသုံး
                 )
         except Exception as e:
             print(f"Welcome image error: {e}")
             bot.send_message(
                 message.chat.id,
                 caption,
-                reply_markup=welcome_kb
+                reply_markup=welcome_kb,
+                parse_mode="HTML"  # ✅ HTML format ကိုသုံး
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY) - FIXED ADMIN CHECK + BOT API ENTITIES
-#    - Allows plain @mentions (entities type "mention")
-#    - Blocks raw links and entities type "url" or "text_link"
+# 2️⃣ LINK BLOCKER (GROUP ONLY)
 # ======================================================
 
 def is_link(text):
-    """Basic raw-text link patterns"""
     if not text:
         return False
     return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com"])
 
 def has_link_api(message):
-    """Detect links in all message locations including forwarded text/captions"""
-
-    # 1) Normal text
     try:
         if message.text and is_link(message.text):
             return True
     except:
         pass
 
-    # 2) Caption
     try:
         if message.caption and is_link(message.caption):
             return True
     except:
         pass
 
-    # 3) Entities (normal message)
     try:
         ents = getattr(message, "entities", None)
         if ents:
@@ -119,7 +207,6 @@ def has_link_api(message):
     except:
         pass
 
-    # 4) Caption entities
     try:
         cent = getattr(message, "caption_entities", None)
         if cent:
@@ -129,17 +216,13 @@ def has_link_api(message):
     except:
         pass
 
-    # 5) Forwarded message (Telegram does NOT send entities in forward text)
-    #    So we must check raw text/caption again manually
     if message.forward_from or message.forward_from_chat:
-        # Forwarded text
         try:
             if message.text and is_link(message.text):
                 return True
         except:
             pass
 
-        # Forwarded caption
         try:
             if message.caption and is_link(message.caption):
                 return True
@@ -149,7 +232,6 @@ def has_link_api(message):
     return False
 
 def is_admin(chat_id, user_id):
-    """Check if user is admin in the group"""
     try:
         admins = bot.get_chat_administrators(chat_id)
         admin_ids = [admin.user.id for admin in admins]
@@ -160,57 +242,49 @@ def is_admin(chat_id, user_id):
 
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
 def handle_group_messages(message):
-    """Handle all group messages including forwarded ones"""
-    
-    # Skip if it's a command or new chat members
     if message.text and message.text.startswith('/'):
         return
     if message.new_chat_members:
         return
 
-    # 🔥 FULL LINK CHECK (NORMAL + FORWARD + CAPTION + ENTITIES)
+    track_active_group(message.chat.id)  # ✅ Group tracking ထည့်
+
     if has_link_api(message):
-        # If there's also only a mention entity (no url/text_link and no raw link),
-        # has_link_api would have returned False earlier, so this block won't run.
         if not is_admin(message.chat.id, message.from_user.id):
             try:
-                # Delete the message with link
                 bot.delete_message(message.chat.id, message.message_id)
-                
-                # Send warning message
-                warning_msg = f"⚠️ {message.from_user.first_name} 💢 Link🔗 များကို ပိတ်ထားပါတယ် 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
-                bot.send_message(message.chat.id, warning_msg)
-                
+                warning_msg = f"⚠️ {message.from_user.first_name} 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် Owner ကို ဆက်သွယ်ပါနော်..."
+                bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")  # ✅ HTML format
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
 # ===============================
-# /START MESSAGE - FIXED
+# /START MESSAGE - HTML FORMAT
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
     first = message.from_user.first_name or "Friend"
-    text = f"""သာယာသောနေ့လေးဖြစ်ပါစေ...🌸 **
-    {first}** ...🥰
+    text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
+<b>{first}</b> ...🥰
     
-🌼 **Oscar's Library** 🌼 မှ ကြိုဆိုပါတယ်
+<b>🌼 Oscar's Library 🌼</b> မှကြိုဆိုပါတယ်...
 
 စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
 
-**စာအုပ်ရှာဖို့ နှစ်ပိုင်းခွဲထားတယ် 
-📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ**
+<b>စာအုပ်ရှာဖို့ နှစ်ပေါင်းခွဲထားတယ်</b>
+<b>📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
 
 Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
-**📚ကဏ္ဍအလိုက်** ကိုနှိပ်ပါ။
+<b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
 စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
-**✍️စာရေးဆရာ** ကိုနှိပ်ပါ။
+<b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
 
-💢 **📖စာအုပ်ဖတ်နည်းကြည့်ပါရန်** 💢
+<b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
 
-⚠️ အဆင်မပြေတာရှိရင် ⚠️ **
-❓အထွေထွေမေးမြန်းရန်** ကိုနှိပ်ပါ။"""
+⚠️ အဆင်မပြေတာရှိရင် ⚠️
+<b>❓အထွေထွေမေးမြန်းရန်</b> ကိုနှိပ်ပါ။"""
 
     kb = types.InlineKeyboardMarkup()
     kb.row(
@@ -223,49 +297,44 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single"))
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
 
-    bot.send_message(message.chat.id, text, reply_markup=kb)
+    bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")  # ✅ HTML format
 
 # ======================================================
-# 3️⃣ PRIVATE CHAT MESSAGE HANDLER - FIXED
+# 3️⃣ PRIVATE CHAT MESSAGE HANDLER
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
-    """Handle private messages including forwarded links"""
-    
-    # Skip if it's a command (already handled by start handler)
     if message.text and message.text.startswith('/'):
         return
     
-    # Check for forwarded messages containing links
     if message.forward_from_chat or message.forward_from:
-        # For forwarded messages with text
         if message.text and is_link(message.text):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 Forwarded link detected:\n{message.text}\n\nI can see the forwarded link! ✅"
+                f"<b>🔗 Forwarded link detected:</b>\n{message.text}\n\n<b>I can see the forwarded link! ✅</b>",
+                parse_mode="HTML"  # ✅ HTML format
             )
-        # For forwarded media messages with captions containing links
         elif message.caption and is_link(message.caption):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 Forwarded media with link:\n{message.caption}\n\nI can see the forwarded link! ✅"
+                f"<b>🔗 Forwarded media with link:</b>\n{message.caption}\n\n<b>I can see the forwarded link! ✅</b>",
+                parse_mode="HTML"  # ✅ HTML format
             )
         else:
-            # Regular forwarded message without links
             bot.send_message(
                 message.chat.id, 
-                "📩 Forwarded message received!\n\n" +
-                "Note: I can process links from forwarded messages in private chats."
+                "<b>📩 Forwarded message received!</b>\n\nNote: I can process links from forwarded messages in private chats.",
+                parse_mode="HTML"  # ✅ HTML format
             )
-    # Regular text messages (not commands)
     elif message.text and not message.text.startswith('/'):
         if is_link(message.text):
             bot.send_message(
                 message.chat.id, 
-                f"🔗 Link detected:\n{message.text}\n\nThis is a direct link message! ✅"
+                f"<b>🔗 Link detected:</b>\n{message.text}\n\n<b>This is a direct link message! ✅</b>",
+                parse_mode="HTML"  # ✅ HTML format
             )
         else:
-            bot.send_message(message.chat.id, f"🤖 Auto Reply:\n{message.text}")
+            bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")  # ✅ HTML format
 
 # ===============================
 # CATEGORY REDIRECT
@@ -274,7 +343,8 @@ def handle_private_messages(message):
 def category_redirect(call):
     bot.send_message(
         call.message.chat.id,
-        "📚 **ကဏ္ဍအလိုက် စာအုပ်များ**\nhttps://t.me/oscarhelpservices/4\n\n🌼 Oscar's Library 🌼"
+        "<b>📚 ကဏ္ဍအလိုက် စာအုပ်များ</b>\nhttps://t.me/oscarhelpservices/4\n\n<b>🌼 Oscar's Library 🌼</b>",
+        parse_mode="HTML"  # ✅ HTML format
     )
 
 # ===============================
@@ -282,7 +352,7 @@ def category_redirect(call):
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
-    text = "✍️ **စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ**\n\n🌼 Oscar's Library 🌼"
+    text = "<b>✍️ စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ</b>\n\n<b>🌼 Oscar's Library 🌼</b>"
     rows = [
         ["က","ခ","ဂ","င"],
         ["စ","ဆ","ဇ","ည"],
@@ -295,7 +365,7 @@ def author_menu(call):
     kb = types.InlineKeyboardMarkup()
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb)
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")  # ✅ HTML format
 
 # ===============================
 # AUTHOR LINKS
@@ -342,8 +412,35 @@ def author_redirect(call):
         bot.answer_callback_query(call.id)
         bot.send_message(
             call.message.chat.id,
-            f"➡️ **{key} ဖြင့်စသောစာရေးဆရာများ**\n{url}\n\n🌼 Oscar's Library 🌼"
+            f"<b>➡️ {key} ဖြင့်စသောစာရေးဆရာများ</b>\n{url}\n\n<b>🌼 Oscar's Library 🌼</b>",
+            parse_mode="HTML"  # ✅ HTML format
         )
+
+# ===============================
+# BIRTHDAY TEST COMMAND
+# ===============================
+@bot.message_handler(commands=['testbirthday'])
+def test_birthday_command(message):
+    try:
+        if not is_admin(message.chat.id, message.from_user.id):
+            bot.reply_to(message, "❌ Admin only command")
+            return
+        
+        myanmar_time = get_myanmar_time()
+        current_date = myanmar_time.strftime("%B %d")
+        test_caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
+        test_caption = "<b>🧪 TEST BIRTHDAY POST</b>\n\n" + test_caption
+        
+        bot.send_photo(
+            message.chat.id,
+            BIRTHDAY_IMAGE_URL,
+            caption=test_caption,
+            parse_mode="HTML"  # ✅ HTML format
+        )
+        bot.reply_to(message, "✅ Test birthday post sent successfully!")
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error: {e}")
 
 # ===============================
 # FLASK SERVER
