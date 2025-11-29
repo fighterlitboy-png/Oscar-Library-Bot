@@ -45,14 +45,17 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
-ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
+အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
 
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
-ချစ်ခင်နိုင်ပါစေ 💞
+ဆထက်တပိုးပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
 
-<b>ချစ်ရတဲ့မိသားစုနဲ့ အတူပျော်ရွှင်ရသောနေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ အမြဲဆုတောင်းပေးပါတယ် 🎂</b>
+ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော
+နေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ 
+အမြဲဆုတောင်းပေးပါတယ် 🎂
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 
@@ -86,6 +89,80 @@ def track_active_group(chat_id):
         active_groups.add(chat_id)
         if len(active_groups) > 100:
             active_groups.pop()
+
+# ===============================
+# ENHANCED LINK DETECTION SYSTEM
+# ===============================
+
+def is_link(text):
+    """Comprehensive link detection with more patterns"""
+    if not text:
+        return False
+    
+    text_lower = text.lower()
+    
+    # Comprehensive link patterns
+    link_patterns = [
+        "http://", "https://", "www.", ".com", ".org", ".net", 
+        ".io", ".me", ".tk", ".ml", ".ga", ".cf", 
+        "t.me/", "telegram.me/", "telegram.dog/",
+        "youtube.com/", "youtu.be/", "facebook.com/", "fb.me/",
+        "twitter.com/", "x.com/", "instagram.com/", "whatsapp.com/",
+        "discord.gg/", "discord.com/", "messenger.com/",
+        "bit.ly/", "tinyurl.com/", "shorturl.at/",
+        "drive.google.com/", "docs.google.com/", "dropbox.com/",
+        "pastebin.com/", "github.com/", "git.io/",
+        "//", "://", ".co/", ".tk/", ".ml/", ".ga/", ".cf/"
+    ]
+    
+    return any(pattern in text_lower for pattern in link_patterns)
+
+def has_link_api(message):
+    """Comprehensive link detection in all message parts"""
+    
+    # 1) Check message text
+    if message.text and is_link(message.text):
+        print(f"🔗 Link found in text: {message.text[:50]}...")
+        return True
+    
+    # 2) Check caption
+    if message.caption and is_link(message.caption):
+        print(f"🔗 Link found in caption: {message.caption[:50]}...")
+        return True
+    
+    # 3) Check entities (URLs, text links)
+    try:
+        if message.entities:
+            for entity in message.entities:
+                if entity.type in ["url", "text_link"]:
+                    print(f"🔗 Link found in entity: {entity.type}")
+                    return True
+    except:
+        pass
+    
+    # 4) Check caption entities
+    try:
+        if message.caption_entities:
+            for entity in message.caption_entities:
+                if entity.type in ["url", "text_link"]:
+                    print(f"🔗 Link found in caption entity: {entity.type}")
+                    return True
+    except:
+        pass
+    
+    # 5) Check forwarded messages
+    if message.forward_from_chat or message.forward_from:
+        # Check forwarded text
+        if message.text and is_link(message.text):
+            print(f"🔗 Link found in forwarded text")
+            return True
+        
+        # Check forwarded caption  
+        if message.caption and is_link(message.caption):
+            print(f"🔗 Link found in forwarded caption")
+            return True
+    
+    return False
 
 # ===============================
 # ADMIN CHATS AUTO-DISCOVERY SYSTEM
@@ -247,59 +324,8 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY)
+# 2️⃣ LINK BLOCKER (GROUP ONLY) - WITH USER MENTION
 # ======================================================
-
-def is_link(text):
-    if not text:
-        return False
-    return any(x in text.lower() for x in ["http://", "https://", "www.", "t.me/", "telegram.me/", ".com"])
-
-def has_link_api(message):
-    try:
-        if message.text and is_link(message.text):
-            return True
-    except:
-        pass
-
-    try:
-        if message.caption and is_link(message.caption):
-            return True
-    except:
-        pass
-
-    try:
-        ents = getattr(message, "entities", None)
-        if ents:
-            for e in ents:
-                if e.type in ["url", "text_link"]:
-                    return True
-    except:
-        pass
-
-    try:
-        cent = getattr(message, "caption_entities", None)
-        if cent:
-            for e in cent:
-                if e.type in ["url", "text_link"]:
-                    return True
-    except:
-        pass
-
-    if message.forward_from or message.forward_from_chat:
-        try:
-            if message.text and is_link(message.text):
-                return True
-        except:
-            pass
-
-        try:
-            if message.caption and is_link(message.caption):
-                return True
-        except:
-            pass
-
-    return False
 
 def is_admin(chat_id, user_id):
     try:
@@ -323,8 +349,12 @@ def handle_group_messages(message):
         if not is_admin(message.chat.id, message.from_user.id):
             try:
                 bot.delete_message(message.chat.id, message.message_id)
-                warning_msg = f"⚠️ <a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a> 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်..."
+                
+                # ✅ User mention with notification
+                warning_msg = f'⚠️ <a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a> 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်...'
+                
                 bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
+                
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
@@ -466,7 +496,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
 <b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
-စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
+စာရေးဆရာအ�ိုက်ရှာဖတ်ချင်ရင် 
 <b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
 
 <b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
@@ -577,6 +607,17 @@ def force_birthday_post(message):
     except Exception as e:
         bot.reply_to(message, f"❌ Force post error: {e}")
 
+@bot.message_handler(commands=['testlink'])
+def test_link_detection(message):
+    """Link detection test command"""
+    test_text = "Test links: https://example.com www.google.com t.me/hello"
+    
+    bot.reply_to(message, f"🔍 Testing link detection...\n\nText: {test_text}\n\nDetection: {is_link(test_text)}")
+    
+    # Test current message
+    has_link = has_link_api(message)
+    bot.reply_to(message, f"📨 Current message link detection: {has_link}")
+
 # ===============================
 # FLASK SERVER
 # ===============================
@@ -606,6 +647,7 @@ try:
     print("🎂 Admin Auto-Discovery System: ACTIVE")
     print("⏰ Will scan and post to ALL admin groups/channels daily at 8:00 AM")
     print("🔍 No manual IDs needed - Auto discovery enabled")
+    print("🔗 Enhanced link detection: ACTIVE")
 except Exception as e:
     print(f"❌ Webhook error: {e}")
 
