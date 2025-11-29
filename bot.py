@@ -45,17 +45,14 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
-ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
-အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
 
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
-ဆထက်တပိုးပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
+ချစ်ခင်နိုင်ပါစေ 💞
 
-ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော
-နေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ 
-အမြဲဆုတောင်းပေးပါတယ် 🎂
+<b>ချစ်ရတဲ့မိသားစုနဲ့ အတူပျော်ရွှင်ရသောနေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ အမြဲဆုတောင်းပေးပါတယ် 🎂</b>
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 
@@ -78,17 +75,53 @@ def keep_alive():
 threading.Thread(target=keep_alive, daemon=True).start()
 
 # ===============================
-# BIRTHDAY AUTO POST SYSTEM
+# ACTIVE GROUPS TRACKING
 # ===============================
 active_groups = set()
 last_birthday_post = None
 
 def track_active_group(chat_id):
     """Active group တွေကို track လုပ်ခြင်း"""
-    if chat_id < 0:
+    if chat_id < 0:  # Groups and channels only
         active_groups.add(chat_id)
-        if len(active_groups) > 50:
+        if len(active_groups) > 100:
             active_groups.pop()
+
+# ===============================
+# ADMIN CHATS AUTO-DISCOVERY SYSTEM
+# ===============================
+
+def discover_all_admin_chats():
+    """Admin ဖြစ်တဲ့ group/channel အားလုံးကို auto discover လုပ်ခြင်း"""
+    admin_chats = set()
+    
+    try:
+        print("🕵️ Auto-discovering admin chats...")
+        
+        # Method 1: Use tracked active groups
+        print(f"🔍 Checking {len(active_groups)} tracked chats...")
+        for chat_id in list(active_groups):
+            try:
+                chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
+                if chat_member.status in ['administrator', 'creator']:
+                    # Check if bot can send messages
+                    try:
+                        bot.send_chat_action(chat_id, 'typing')
+                        admin_chats.add(chat_id)
+                        print(f"✅ Admin chat found: {chat_id}")
+                    except:
+                        print(f"❌ No send permission: {chat_id}")
+                        active_groups.discard(chat_id)
+            except Exception as e:
+                print(f"❌ Cannot access chat {chat_id}: {e}")
+                active_groups.discard(chat_id)
+        
+        print(f"🎯 Total admin chats discovered: {len(admin_chats)}")
+        return list(admin_chats)
+        
+    except Exception as e:
+        print(f"❌ Admin discovery error: {e}")
+        return list(active_groups)  # Fallback
 
 def should_send_birthday_post():
     """မနက် ၈ နာရီကျရင် True return ပြန်ခြင်း"""
@@ -113,43 +146,53 @@ def should_send_birthday_post():
         print(f"⏰ Time check error: {e}")
         return False
 
-def send_birthday_to_all_admin_groups():
-    """Admin ဖြစ်နေတဲ့ group အားလုံးကို auto post တင်ခြင်း"""
+def send_birthday_to_all_admin_chats():
+    """Auto-discovered admin chats အားလုံးကို post တင်ခြင်း"""
     try:
         myanmar_time = get_myanmar_time()
         current_date = myanmar_time.strftime("%B %d")
         caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
         
+        # Auto-discover admin chats
+        admin_chats = discover_all_admin_chats()
+        
         print(f"🎂 Starting birthday posts for {current_date}...")
-        print(f"👥 Active groups: {len(active_groups)}")
+        print(f"👑 Admin chats discovered: {len(admin_chats)}")
         
         success_count = 0
-        for group_id in list(active_groups):
+        for chat_id in admin_chats:
             try:
                 bot.send_photo(
-                    group_id,
+                    chat_id,
                     BIRTHDAY_IMAGE_URL,
                     caption=caption,
                     parse_mode="HTML"
                 )
                 success_count += 1
-                print(f"✅ Sent to group: {group_id}")
-                time.sleep(2)  # Avoid rate limiting
+                print(f"✅ Sent to: {chat_id}")
+                time.sleep(1)  # Avoid rate limiting
             except Exception as e:
-                print(f"❌ Failed to send to group {group_id}: {e}")
+                error_msg = str(e)
+                print(f"❌ Failed for {chat_id}: {error_msg}")
+                
+                # Remove if no permission
+                if any(x in error_msg for x in ["Forbidden", "blocked", "no rights"]):
+                    active_groups.discard(chat_id)
         
-        print(f"✅ Birthday posts completed: {success_count}/{len(active_groups)} groups")
+        print(f"✅ Birthday posts completed: {success_count}/{len(admin_chats)} admin chats")
         
     except Exception as e:
         print(f"🎂 Birthday system error: {e}")
 
 def birthday_scheduler():
-    """မနက် ၈ နာရီစစ်ဆေးခြင်း"""
-    print("🎂 Birthday scheduler started - Checking every minute...")
+    """မနက် ၈ နာရီတိုင်း admin chats အားလုံးကို post တင်ခြင်း"""
+    print("🎂 Admin Auto-Discovery Birthday Scheduler Started!")
+    print("⏰ Will scan and post to ALL admin groups/channels daily at 8:00 AM")
+    
     while True:
         try:
             if should_send_birthday_post():
-                send_birthday_to_all_admin_groups()
+                send_birthday_to_all_admin_chats()
         except Exception as e:
             print(f"🎂 Scheduler error: {e}")
         time.sleep(60)  # 1 minute check
@@ -165,6 +208,7 @@ WELCOME_IMAGE = "welcome_photo.jpg"
 
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
+    track_active_group(message.chat.id)  # ✅ Track group
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
 <b>{user.first_name} ...🥰</b>
@@ -273,7 +317,7 @@ def handle_group_messages(message):
     if message.new_chat_members:
         return
 
-    track_active_group(message.chat.id)
+    track_active_group(message.chat.id)  # ✅ Track group
 
     if has_link_api(message):
         if not is_admin(message.chat.id, message.from_user.id):
@@ -494,6 +538,46 @@ def author_redirect(call):
         )
 
 # ===============================
+# ADMIN MANAGEMENT COMMANDS
+# ===============================
+
+@bot.message_handler(commands=['discover'])
+def discover_admin_chats(message):
+    """လက်ရှိ admin chats အားလုံးကို discover လုပ်ခြင်း"""
+    try:
+        if not is_admin(message.chat.id, message.from_user.id):
+            return
+            
+        bot.reply_to(message, "🕵️ Discovering all admin chats...")
+        admin_chats = discover_all_admin_chats()
+        
+        response = f"""👑 **Admin Chats Discovery**
+
+✅ **Total Admin Chats Found**: {len(admin_chats)}
+📊 **Tracked Active Groups**: {len(active_groups)}
+
+မနက် ၈ နာရီတိုင်း ဒီ chat {len(admin_chats)} ခုဆီ ပို့ပေးပါလိမ့်မယ်!"""
+
+        bot.reply_to(message, response, parse_mode="Markdown")
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Discovery error: {e}")
+
+@bot.message_handler(commands=['forcepost'])
+def force_birthday_post(message):
+    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း"""
+    try:
+        if not is_admin(message.chat.id, message.from_user.id):
+            return
+            
+        bot.reply_to(message, "🚀 Force sending birthday posts to all admin chats...")
+        send_birthday_to_all_admin_chats()
+        bot.reply_to(message, "✅ Force post completed!")
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Force post error: {e}")
+
+# ===============================
 # FLASK SERVER
 # ===============================
 app = Flask(__name__)
@@ -519,8 +603,9 @@ try:
     time.sleep(1)
     bot.set_webhook(url=WEBHOOK_URL)
     print(f"✅ Webhook set: {WEBHOOK_URL}")
-    print("🎂 Auto Birthday System: ACTIVE")
-    print("⏰ Will post daily at 8:00 AM Myanmar Time")
+    print("🎂 Admin Auto-Discovery System: ACTIVE")
+    print("⏰ Will scan and post to ALL admin groups/channels daily at 8:00 AM")
+    print("🔍 No manual IDs needed - Auto discovery enabled")
 except Exception as e:
     print(f"❌ Webhook error: {e}")
 
