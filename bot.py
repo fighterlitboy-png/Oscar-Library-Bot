@@ -323,7 +323,7 @@ def handle_group_messages(message):
         if not is_admin(message.chat.id, message.from_user.id):
             try:
                 bot.delete_message(message.chat.id, message.message_id)
-                warning_msg = f"⚠️ {message.from_user.first_name} 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်..."
+                warning_msg = f"⚠️ <a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a> 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်..."
                 bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
             except Exception as e:
                 print(f"Link blocker error: {e}")
