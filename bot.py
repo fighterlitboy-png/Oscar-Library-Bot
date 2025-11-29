@@ -45,23 +45,20 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
-ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ        
-အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲအေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
 
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
-ဆထက်တပိုးပိုပြီး ချစ်နိုင်ပါစေ 🤍💞
+ချစ်နိုင်ကြပါစေ 💞
 
-ချစ်ရတဲ့ မိသားစုနဲ့အတူပျော်ရွှင်ရသော
-နေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ 
-အမြဲဆုတောင်းပေးပါတယ် 🎂
+ချစ်ရတဲ့မိသားစုနဲ့အတူ ပျော်ရွှင်ရသောနေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ အမြဲဆုတောင်းပေးပါတယ် 🎂
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 
 <b>🌼 Oscar's Library 🌼</b> 
 
-#adminteam"""
+#oscaradminteam"""
 
 # ===============================
 # KEEP ALIVE
@@ -118,19 +115,19 @@ def is_link(text):
     return any(pattern in text_lower for pattern in link_patterns)
 
 def has_link_api(message):
-    """Comprehensive link detection in all message parts"""
+    """Comprehensive link detection in all message parts including forwarded"""
     
-    # 1) Check message text
+    # 1) Check normal message text
     if message.text and is_link(message.text):
         print(f"🔗 Link found in text: {message.text[:50]}...")
         return True
     
-    # 2) Check caption
+    # 2) Check normal caption
     if message.caption and is_link(message.caption):
         print(f"🔗 Link found in caption: {message.caption[:50]}...")
         return True
     
-    # 3) Check entities (URLs, text links)
+    # 3) Check entities (URLs, text links) in normal message
     try:
         if message.entities:
             for entity in message.entities:
@@ -150,16 +147,26 @@ def has_link_api(message):
     except:
         pass
     
-    # 5) Check forwarded messages
+    # 5) Check forwarded messages - IMPROVED
     if message.forward_from_chat or message.forward_from:
-        # Check forwarded text
-        if message.text and is_link(message.text):
-            print(f"🔗 Link found in forwarded text")
-            return True
+        print(f"🔍 Checking forwarded message from: {message.forward_from_chat or message.forward_from}")
         
-        # Check forwarded caption  
-        if message.caption and is_link(message.caption):
-            print(f"🔗 Link found in forwarded caption")
+        # Get the actual text content from forwarded message
+        forwarded_text = ""
+        
+        # Method 1: Direct text from forward
+        if message.text:
+            forwarded_text = message.text
+            print(f"📨 Forwarded text: {forwarded_text[:100]}...")
+        
+        # Method 2: Caption from forwarded media
+        elif message.caption:
+            forwarded_text = message.caption
+            print(f"📷 Forwarded caption: {forwarded_text[:100]}...")
+        
+        # Check if forwarded content has links
+        if forwarded_text and is_link(forwarded_text):
+            print(f"🚨 LINK DETECTED in forwarded content!")
             return True
     
     return False
@@ -496,7 +503,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
 <b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
-စာရေးဆရာအ�ိုက်ရှာဖတ်ချင်ရင် 
+စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
 <b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
 
 <b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
@@ -618,6 +625,34 @@ def test_link_detection(message):
     has_link = has_link_api(message)
     bot.reply_to(message, f"📨 Current message link detection: {has_link}")
 
+@bot.message_handler(commands=['debugforward'])
+def debug_forward(message):
+    """Debug forwarded messages"""
+    debug_info = f"""<b>🔍 Forward Debug Info</b>
+
+📨 Message Type: {message.content_type}
+🆔 Chat ID: {message.chat.id}
+👤 From User: {message.from_user.id if message.from_user else 'None'}
+
+<b>Forward Info:</b>
+• Forwarded: {bool(message.forward_from or message.forward_from_chat)}
+• Forward From User: {message.forward_from.id if message.forward_from else 'None'}
+• Forward From Chat: {message.forward_from_chat.id if message.forward_from_chat else 'None'}
+• Forward Date: {message.forward_date}
+
+<b>Content:</b>
+• Text: {message.text[:200] if message.text else 'None'}
+• Caption: {message.caption[:200] if message.caption else 'None'}
+• Entities: {len(message.entities) if message.entities else 0}
+• Caption Entities: {len(message.caption_entities) if message.caption_entities else 0}
+
+<b>Link Detection:</b>
+• Text Link: {is_link(message.text) if message.text else False}
+• Caption Link: {is_link(message.caption) if message.caption else False}
+• API Detection: {has_link_api(message)}"""
+
+    bot.reply_to(message, debug_info, parse_mode="HTML")
+
 # ===============================
 # FLASK SERVER
 # ===============================
@@ -648,6 +683,7 @@ try:
     print("⏰ Will scan and post to ALL admin groups/channels daily at 8:00 AM")
     print("🔍 No manual IDs needed - Auto discovery enabled")
     print("🔗 Enhanced link detection: ACTIVE")
+    print("🔄 Improved forward message link detection: ACTIVE")
 except Exception as e:
     print(f"❌ Webhook error: {e}")
 
