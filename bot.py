@@ -634,6 +634,18 @@ def discover_admin_chats(message):
         bot.reply_to(message, f"❌ Discovery error: {e}")
 
 # ===============================
+# TEST COMMAND FOR DEBUGGING
+# ===============================
+@bot.message_handler(commands=['test'])
+def test_command(message):
+    """Test command for debugging - ALL USERS"""
+    try:
+        print(f"🧪 TEST COMMAND from: {message.from_user.id}")
+        bot.reply_to(message, "🤖 TEST COMMAND WORKING! Bot is alive!")
+    except Exception as e:
+        print(f"❌ TEST COMMAND ERROR: {e}")
+
+# ===============================
 # CALLBACK HANDLERS
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "category")
@@ -748,25 +760,27 @@ def author_redirect(call):
         )
 
 # ===============================
-# WEBHOOK HANDLERS
+# WEBHOOK HANDLERS WITH DEBUG
 # ===============================
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def webhook():
-    """Webhook handler with FORCE PRINTING"""
-    print(f"📨 WEBHOOK RECEIVED - {datetime.now()}")
+    """Webhook handler with detailed debugging"""
+    print(f"📨📨📨 WEBHOOK RECEIVED - {datetime.now()}")
+    print(f"📊 Method: {request.method}")
     
     try:
         if request.method == 'POST':
             json_data = request.get_json(force=True)
             if json_data:
-                print(f"📊 Processing update")
+                print(f"📦 JSON received, processing update...")
                 update = telebot.types.Update.de_json(json_data)
                 bot.process_new_updates([update])
+                print("✅ Update processed successfully")
             else:
                 print("❌ No JSON data received")
         return "OK", 200
     except Exception as e:
-        print(f"❌ WEBHOOK ERROR: {e}")
+        print(f"💥💥💥 WEBHOOK ERROR: {e}")
         return "OK", 200
 
 @app.route("/", methods=['GET', 'POST'])  
@@ -774,31 +788,59 @@ def index():
     print("🌐 Health check received")
     return "Bot is running with DEBUG MODE...", 200
 
+@app.route("/test", methods=['GET'])
+def test_route():
+    print("🧪 TEST ROUTE CALLED")
+    return "Test route working! Bot is alive!", 200
+
 # ===============================
-# INITIALIZE WEBHOOK
+# MANUAL WEBHOOK SETUP
 # ===============================
-print("🔄 INITIALIZING WEBHOOK...")
+print("🔄 MANUAL WEBHOOK SETUP...")
 try:
+    # Remove existing webhook
     print("🗑️ Removing existing webhook...")
     bot.remove_webhook()
-    time.sleep(3)
+    time.sleep(5)
     
+    # Get current webhook info
+    try:
+        webhook_info = bot.get_webhook_info()
+        print(f"📊 Current webhook: {webhook_info.url}")
+    except Exception as e:
+        print(f"📊 Cannot get webhook info: {e}")
+    
+    # Set new webhook
     print("🔧 Setting up new webhook...")
-    bot.set_webhook(
+    success = bot.set_webhook(
         url=WEBHOOK_URL,
+        certificate=None,
         max_connections=100,
+        allowed_updates=None,
         timeout=60
     )
     
-    print(f"✅ WEBHOOK SET SUCCESSFULLY: {WEBHOOK_URL}")
-    print("🎂 Birthday Scheduler: ACTIVE")
-    print("⏰ Will post daily at 8:00 AM Myanmar Time")
-    print("🔧 All systems ready!")
-    print("🚀 Bot is now LIVE!")
-    print("💡 Available Commands: /start, /forcepost, /testchannel, /poststatus, /discover")
-    
+    if success:
+        print(f"✅ WEBHOOK SET SUCCESSFULLY: {WEBHOOK_URL}")
+    else:
+        print("❌ WEBHOOK SET FAILED")
+        
+    # Verify webhook
+    try:
+        webhook_info = bot.get_webhook_info()
+        print(f"📊 Verified webhook: {webhook_info.url}")
+        print(f"📊 Pending updates: {webhook_info.pending_update_count}")
+    except Exception as e:
+        print(f"📊 Cannot verify webhook: {e}")
+        
 except Exception as e:
-    print(f"❌❌❌ CRITICAL ERROR IN INITIALIZATION: {e}")
+    print(f"💥 WEBHOOK SETUP ERROR: {e}")
+
+print("🎂 Birthday Scheduler: ACTIVE")
+print("⏰ Will post daily at 8:00 AM Myanmar Time")
+print("🔧 All systems ready!")
+print("🚀 Bot is now LIVE!")
+print("💡 Available Commands: /start, /test, /forcepost, /testchannel, /poststatus, /discover")
 
 # ===============================
 # RUN WITH FLASK
