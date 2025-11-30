@@ -1,7 +1,6 @@
 import os
 import telebot
 from telebot import types
-from flask import Flask, request
 import threading
 import time
 import requests
@@ -10,12 +9,9 @@ from datetime import datetime
 import pytz
 
 # ===============================
-# BOT TOKEN & URL (Environment Variables)
+# BOT TOKEN
 # ===============================
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4')
-WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
-PING_URL = "https://oscar-library-bot.onrender.com"
-
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
 # ===============================
@@ -36,7 +32,7 @@ def get_myanmar_time():
     return datetime.now(MYANMAR_TZ)
 
 BIRTHDAY_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
-BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
+BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes🎁💌</b>
 
 <b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
 <b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
@@ -45,7 +41,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
-ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲ အေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
+ဘ၀ခရီးကို မပူမပင်မကြောင့်ကြစေရပဲအေးအေးချမ်းချမ်း ဖြတ်သန်းသွားနိုင်ပါစေ 💞
 
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
@@ -78,11 +74,11 @@ post_in_progress = False
 def keep_alive():
     while True:
         try:
-            requests.get(PING_URL, timeout=10)
+            requests.get("https://oscar-library-bot.onrender.com", timeout=10)
             print("🌐 Keep-alive ping sent")
         except Exception as e:
             print(f"🌐 Keep-alive error: {e}")
-        time.sleep(300)  # 5 minutes
+        time.sleep(300)
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
@@ -91,7 +87,7 @@ threading.Thread(target=keep_alive, daemon=True).start()
 # ===============================
 def track_active_group(chat_id):
     """Active group တွေကို track လုပ်ခြင်း"""
-    if chat_id < 0:  # Groups and channels only
+    if chat_id < 0:
         active_groups.add(chat_id)
         if len(active_groups) > 100:
             active_groups.pop()
@@ -99,7 +95,6 @@ def track_active_group(chat_id):
 # ===============================
 # IMPROVED TIME CHECK SYSTEM
 # ===============================
-
 def should_send_birthday_post():
     """မနက် ၈ နာရီကျရင် True return ပြန်ခြင်း - FIXED"""
     try:
@@ -109,11 +104,8 @@ def should_send_birthday_post():
         
         print(f"⏰ Time check: {current_time} (Myanmar Time)")
         
-        # ✅ FIXED: 08:00 နာရီတစ်ခုလုံးစစ်ဆေးခြင်း
         if current_time.startswith("08:"):
-            # တစ်ရက်ကို ၁ ခါပဲ post တင်ရန်
             global last_birthday_post
-            
             if last_birthday_post != current_date:
                 last_birthday_post = current_date
                 print("✅ Birthday post triggered!")
@@ -126,9 +118,8 @@ def should_send_birthday_post():
 # ===============================
 # IMPROVED CHANNEL POSTING SYSTEM
 # ===============================
-
 def send_to_target_channels():
-    """Target channels အားလုံးကို birthday post တင်ခြင်း - IMPROVED"""
+    """Target channels အားလုံးကို birthday post တင်ခြင်း"""
     results = []
     
     if not MANUAL_CHANNEL_IDS:
@@ -143,31 +134,19 @@ def send_to_target_channels():
     
     for channel_id in MANUAL_CHANNEL_IDS:
         try:
-            # Check if bot can send messages to channel
-            try:
-                chat = bot.get_chat(channel_id)
-                print(f"📢 Channel info: {chat.title}")
-            except Exception as e:
-                error_msg = f"Cannot access channel: {e}"
+            # Check channel access
+            chat = bot.get_chat(channel_id)
+            print(f"📢 Channel info: {chat.title}")
+            
+            # Check bot permissions
+            chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
+            if chat_member.status not in ['administrator', 'creator']:
+                error_msg = "Bot is not admin in channel"
                 print(f"❌ {error_msg}")
                 results.append((channel_id, False, error_msg))
                 continue
             
-            # Check bot permissions in channel
-            try:
-                chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
-                if chat_member.status not in ['administrator', 'creator']:
-                    error_msg = "Bot is not admin in channel"
-                    print(f"❌ {error_msg}")
-                    results.append((channel_id, False, error_msg))
-                    continue
-            except Exception as e:
-                error_msg = f"Cannot check bot permissions: {e}"
-                print(f"❌ {error_msg}")
-                results.append((channel_id, False, error_msg))
-                continue
-            
-            # ✅ Send photo to channel
+            # Send photo to channel
             bot.send_photo(
                 channel_id,
                 BIRTHDAY_IMAGE_URL,
@@ -181,27 +160,13 @@ def send_to_target_channels():
         except Exception as e:
             error_msg = str(e)
             print(f"❌ Channel post failed for {channel_id}: {error_msg}")
-            
-            # Specific error handling for channels
-            if "CHAT_WRITE_FORBIDDEN" in error_msg:
-                detailed_error = "Bot doesn't have permission to post in channel"
-            elif "CHAT_NOT_FOUND" in error_msg:
-                detailed_error = "Channel not found or bot not in channel"
-            elif "bot is not a member" in error_msg.lower():
-                detailed_error = "Bot is not a member of the channel"
-            elif "Too Many Requests" in error_msg:
-                detailed_error = "Rate limit exceeded, try again later"
-            else:
-                detailed_error = error_msg
-                
-            results.append((channel_id, False, detailed_error))
+            results.append((channel_id, False, error_msg))
     
     return results
 
 # ===============================
-# IMPROVED GROUP DISCOVERY AND POSTING
+# GROUP DISCOVERY AND POSTING
 # ===============================
-
 def discover_all_admin_chats():
     """Admin ဖြစ်တဲ့ group အားလုံးကို auto discover လုပ်ခြင်း"""
     admin_chats = set()
@@ -209,13 +174,10 @@ def discover_all_admin_chats():
     try:
         print("🕵️ Auto-discovering admin chats...")
         
-        # Use tracked active groups (groups only)
-        print(f"🔍 Checking {len(active_groups)} tracked chats...")
         for chat_id in list(active_groups):
             try:
                 chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
                 if chat_member.status in ['administrator', 'creator']:
-                    # Check if bot can send messages
                     try:
                         bot.send_chat_action(chat_id, 'typing')
                         admin_chats.add(chat_id)
@@ -235,7 +197,7 @@ def discover_all_admin_chats():
         return list(active_groups)
 
 def send_to_groups(admin_groups):
-    """Groups များအားလုံးကို post တင်ခြင်း - IMPROVED"""
+    """Groups များအားလုံးကို post တင်ခြင်း"""
     success_count = 0
     failed_groups = []
     
@@ -247,7 +209,6 @@ def send_to_groups(admin_groups):
     
     for i, chat_id in enumerate(admin_groups):
         try:
-            # ✅ Rate limiting: 1 second delay between messages
             if i > 0:
                 time.sleep(1)
             
@@ -265,14 +226,13 @@ def send_to_groups(admin_groups):
             print(f"❌ [{i+1}/{len(admin_groups)}] Failed for group {chat_id}: {error_msg}")
             failed_groups.append((chat_id, error_msg))
             
-            # Remove if no permission
             if any(x in error_msg for x in ["Forbidden", "blocked", "no rights", "kicked"]):
                 active_groups.discard(chat_id)
     
     return success_count, failed_groups
 
 def send_birthday_to_all_chats():
-    """Groups နဲ့ channels အားလုံးကို post တင်ခြင်း - IMPROVED"""
+    """Groups နဲ့ channels အားလုံးကို post တင်ခြင်း"""
     global post_in_progress
     
     if post_in_progress:
@@ -282,90 +242,36 @@ def send_birthday_to_all_chats():
     post_in_progress = True
     try:
         total_success = 0
-        results = {
-            'channels_success': 0,
-            'channels_total': 0,
-            'channels_failed': [],
-            'groups_success': 0,
-            'groups_total': 0,
-            'groups_failed': []
-        }
         
-        print("🎂 Starting birthday posts...")
-        
-        # 1. First, send to target channels
+        # 1. Send to target channels
         if MANUAL_CHANNEL_IDS:
             print("📢 Posting to channels...")
             channel_results = send_to_target_channels()
-            results['channels_total'] = len(channel_results)
-            
             for channel_id, success, error in channel_results:
                 if success:
-                    results['channels_success'] += 1
                     total_success += 1
-                else:
-                    results['channels_failed'].append((channel_id, error))
         
-        # 2. Then send to all admin groups
+        # 2. Send to all admin groups
         admin_groups = discover_all_admin_chats()
-        results['groups_total'] = len(admin_groups)
-        
         if admin_groups:
             print(f"👥 Posting to {len(admin_groups)} groups...")
             groups_success, groups_failed = send_to_groups(admin_groups)
-            results['groups_success'] = groups_success
-            results['groups_failed'] = groups_failed
             total_success += groups_success
-        else:
-            print("ℹ️ No admin groups found to post")
         
-        # 3. Print summary
         total_targets = len(MANUAL_CHANNEL_IDS) + len(admin_groups)
         print(f"✅ Birthday posts completed: {total_success}/{total_targets} chats")
-        
-        # 4. Log detailed results
-        log_birthday_results(results)
         
     except Exception as e:
         print(f"🎂 Birthday system error: {e}")
     finally:
         post_in_progress = False
 
-def log_birthday_results(results):
-    """Birthday post results ကို log ရေးခြင်း"""
-    try:
-        log_entry = f"""
-📊 BIRTHDAY POST RESULTS - {get_myanmar_time().strftime('%Y-%m-%d %H:%M:%S')}
-        
-📢 Channels: {results['channels_success']}/{results['channels_total']} successful
-👥 Groups: {results['groups_success']}/{results['groups_total']} successful
-
-📈 Overall: {results['channels_success'] + results['groups_success']}/{results['channels_total'] + results['groups_total']} targets
-"""
-        print(log_entry)
-        
-        # Failed channels details
-        if results['channels_failed']:
-            print("❌ Failed Channels:")
-            for channel_id, error in results['channels_failed']:
-                print(f"   - {channel_id}: {error}")
-                
-        # Failed groups details
-        if results['groups_failed']:
-            print("❌ Failed Groups:")
-            for chat_id, error in results['groups_failed']:
-                print(f"   - {chat_id}: {error}")
-                
-    except Exception as e:
-        print(f"📊 Results logging error: {e}")
-
 # ===============================
 # SCHEDULER SYSTEM
 # ===============================
-
 def birthday_scheduler():
-    """မနက် ၈ နာရီတိုင်း post တင်ခြင်း - IMPROVED"""
-    print("🎂 IMPROVED Birthday Scheduler Started!")
+    """မနက် ၈ နာရီတိုင်း post တင်ခြင်း"""
+    print("🎂 Birthday Scheduler Started!")
     print("⏰ Will post daily throughout 8:00 AM hour (Myanmar Time)")
     print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
     
@@ -376,7 +282,6 @@ def birthday_scheduler():
             current_time = get_myanmar_time()
             current_minute = current_time.strftime("%H:%M")
             
-            # ✅ Check every minute, but only process once per minute
             if last_check != current_minute:
                 last_check = current_minute
                 
@@ -389,94 +294,57 @@ def birthday_scheduler():
         except Exception as e:
             print(f"🎂 Scheduler error: {e}")
         
-        time.sleep(30)  # Check every 30 seconds
+        time.sleep(30)
 
 # Start birthday scheduler
 birthday_thread = threading.Thread(target=birthday_scheduler, daemon=True)
 birthday_thread.start()
 
 # ===============================
-# ENHANCED LINK DETECTION SYSTEM
+# LINK DETECTION SYSTEM
 # ===============================
-
 def is_link(text):
-    """Comprehensive link detection with more patterns"""
+    """Comprehensive link detection"""
     if not text:
         return False
     
     text_lower = text.lower()
-    
-    # Comprehensive link patterns
     link_patterns = [
         "http://", "https://", "www.", ".com", ".org", ".net", 
         ".io", ".me", ".tk", ".ml", ".ga", ".cf", 
         "t.me/", "telegram.me/", "telegram.dog/",
         "youtube.com/", "youtu.be/", "facebook.com/", "fb.me/",
-        "twitter.com/", "x.com/", "instagram.com/", "whatsapp.com/",
-        "discord.gg/", "discord.com/", "messenger.com/",
-        "bit.ly/", "tinyurl.com/", "shorturl.at/",
-        "drive.google.com/", "docs.google.com/", "dropbox.com/",
-        "pastebin.com/", "github.com/", "git.io/",
-        "//", "://", ".co/", ".tk/", ".ml/", ".ga/", ".cf/"
+        "//", "://", ".co/"
     ]
     
     return any(pattern in text_lower for pattern in link_patterns)
 
 def has_link_api(message):
-    """Comprehensive link detection in all message parts including forwarded"""
-    
-    # 1) Check normal message text
+    """Comprehensive link detection in all message parts"""
     if message.text and is_link(message.text):
-        print(f"🔗 Link found in text: {message.text[:50]}...")
         return True
-    
-    # 2) Check normal caption
     if message.caption and is_link(message.caption):
-        print(f"🔗 Link found in caption: {message.caption[:50]}...")
         return True
-    
-    # 3) Check entities (URLs, text links) in normal message
     try:
         if message.entities:
             for entity in message.entities:
                 if entity.type in ["url", "text_link"]:
-                    print(f"🔗 Link found in entity: {entity.type}")
                     return True
-    except:
-        pass
-    
-    # 4) Check caption entities
+    except: pass
     try:
         if message.caption_entities:
             for entity in message.caption_entities:
                 if entity.type in ["url", "text_link"]:
-                    print(f"🔗 Link found in caption entity: {entity.type}")
                     return True
-    except:
-        pass
-    
-    # 5) Check forwarded messages - IMPROVED
+    except: pass
     if message.forward_from_chat or message.forward_from:
-        print(f"🔍 Checking forwarded message from: {message.forward_from_chat or message.forward_from}")
-        
-        # Get the actual text content from forwarded message
         forwarded_text = ""
-        
-        # Method 1: Direct text from forward
         if message.text:
             forwarded_text = message.text
-            print(f"📨 Forwarded text: {forwarded_text[:100]}...")
-        
-        # Method 2: Caption from forwarded media
         elif message.caption:
             forwarded_text = message.caption
-            print(f"📷 Forwarded caption: {forwarded_text[:100]}...")
-        
-        # Check if forwarded content has links
         if forwarded_text and is_link(forwarded_text):
-            print(f"🚨 LINK DETECTED in forwarded content!")
             return True
-    
     return False
 
 # ======================================================
@@ -486,7 +354,7 @@ WELCOME_IMAGE = "welcome_photo.jpg"
 
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
-    track_active_group(message.chat.id)  # ✅ Track group
+    track_active_group(message.chat.id)
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
 <b>{user.first_name} ...🥰</b>
@@ -525,9 +393,8 @@ def welcome_new_member(message):
             )
 
 # ======================================================
-# 2️⃣ LINK BLOCKER (GROUP ONLY) - WITH USER MENTION
+# 2️⃣ LINK BLOCKER (GROUP ONLY)
 # ======================================================
-
 def is_admin(chat_id, user_id):
     try:
         admins = bot.get_chat_administrators(chat_id)
@@ -544,23 +411,19 @@ def handle_group_messages(message):
     if message.new_chat_members:
         return
 
-    track_active_group(message.chat.id)  # ✅ Track group
+    track_active_group(message.chat.id)
 
     if has_link_api(message):
         if not is_admin(message.chat.id, message.from_user.id):
             try:
                 bot.delete_message(message.chat.id, message.message_id)
-                
-                # ✅ User mention with notification
                 warning_msg = f'⚠️ <a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a> 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်...'
-                
                 bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
-                
             except Exception as e:
                 print(f"Link blocker error: {e}")
 
 # ===============================
-# /START MESSAGE - HTML FORMAT
+# /START MESSAGE
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -642,7 +505,72 @@ def handle_private_messages(message):
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
 
 # ===============================
-# CATEGORY REDIRECT
+# ADMIN MANAGEMENT COMMANDS
+# ===============================
+@bot.message_handler(commands=['forcepost'])
+def force_birthday_post(message):
+    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း"""
+    try:
+        if not is_admin(message.chat.id, message.from_user.id):
+            bot.reply_to(message, "❌ Admin permission required")
+            return
+            
+        bot.reply_to(message, "🚀 Force sending birthday posts...")
+        send_birthday_to_all_chats()
+        bot.reply_to(message, "✅ Force post completed!")
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Force post error: {e}")
+
+@bot.message_handler(commands=['testchannel'])
+def test_channel_post(message):
+    """Channel post test command"""
+    try:
+        if not is_admin(message.chat.id, message.from_user.id):
+            bot.reply_to(message, "❌ Admin permission required")
+            return
+            
+        if not MANUAL_CHANNEL_IDS:
+            bot.reply_to(message, "❌ No channels configured")
+            return
+            
+        bot.reply_to(message, "🧪 Testing channel posts...")
+        
+        results = send_to_target_channels()
+        
+        for channel_id, success, error in results:
+            if success:
+                bot.reply_to(message, f"✅ Channel {channel_id}: Success")
+            else:
+                bot.reply_to(message, f"❌ Channel {channel_id}: {error}")
+            
+    except Exception as e:
+        bot.reply_to(message, f"❌ Channel test error: {e}")
+
+@bot.message_handler(commands=['poststatus'])
+def post_status(message):
+    """Current post status ကြည့်ရန်"""
+    try:
+        status = "✅ Idle" if not post_in_progress else "🔄 Post in progress"
+        last_post = last_birthday_post or "Never"
+        
+        response = f"""📊 **Post Status**
+
+🔄 Current Status: {status}
+📅 Last Post Date: {last_post}
+👥 Tracked Groups: {len(active_groups)}
+📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}
+
+⏰ Next check: Every minute
+🕐 Myanmar Time: {get_myanmar_time().strftime('%H:%M:%S')}"""
+
+        bot.reply_to(message, response, parse_mode="Markdown")
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Status error: {e}")
+
+# ===============================
+# CALLBACK HANDLERS
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "category")
 def category_redirect(call):
@@ -652,9 +580,6 @@ def category_redirect(call):
         parse_mode="HTML"
     )
 
-# ===============================
-# AUTHORS MENU (WITH BACK BUTTON)
-# ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "author_menu")
 def author_menu(call):
     text = "<b>✍️ စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ</b>\n\n<b>🌼 Oscar's Library 🌼</b>"
@@ -670,18 +595,11 @@ def author_menu(call):
     kb = types.InlineKeyboardMarkup()
     for r in rows:
         kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-    
-    # ✅ Back button ထည့်ရန်
     kb.row(types.InlineKeyboardButton("⬅ Back", callback_data="back_to_main"))
-    
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
 
-# ===============================
-# BACK TO MAIN MENU HANDLER
-# ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "back_to_main")
 def back_to_main(call):
-    """မူလ menu ကိုပြန်သွားခြင်း"""
     first = call.from_user.first_name or "Friend"
     text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
 <b>{first}</b> ...🥰
@@ -722,9 +640,6 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
 
-# ===============================
-# AUTHOR LINKS
-# ===============================
 AUTHOR_LINKS = {
     "က": "https://t.me/oscarhelpservices/5",
     "ခ": "https://t.me/oscarhelpservices/7",
@@ -769,130 +684,25 @@ def author_redirect(call):
         )
 
 # ===============================
-# ADMIN MANAGEMENT COMMANDS
+# BOT INITIALIZATION
 # ===============================
-
-@bot.message_handler(commands=['discover'])
-def discover_admin_chats(message):
-    """လက်ရှိ admin chats အားလုံးကို discover လုပ်ခြင်း"""
-    try:
-        if not is_admin(message.chat.id, message.from_user.id):
-            return
-            
-        bot.reply_to(message, "🕵️ Discovering all admin chats...")
-        admin_chats = discover_all_admin_chats()
-        
-        response = f"""👑 **Admin Chats Discovery**
-
-✅ **Total Admin Groups Found**: {len(admin_chats)}
-📊 **Tracked Active Groups**: {len(active_groups)}
-📢 **Manual Channels**: {len(MANUAL_CHANNEL_IDS)}
-
-မနက် ၈ နာရီတိုင်း ဒီ chat {len(admin_chats)} ခုဆီ ပို့ပေးပါလိမ့်မယ်!"""
-
-        bot.reply_to(message, response, parse_mode="Markdown")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Discovery error: {e}")
-
-@bot.message_handler(commands=['forcepost'])
-def force_birthday_post(message):
-    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း"""
-    try:
-        if not is_admin(message.chat.id, message.from_user.id):
-            return
-            
-        bot.reply_to(message, "🚀 Force sending birthday posts...")
-        send_birthday_to_all_chats()
-        bot.reply_to(message, "✅ Force post completed!")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Force post error: {e}")
-
-@bot.message_handler(commands=['testchannel'])
-def test_channel_post(message):
-    """Channel post test command"""
-    try:
-        if not is_admin(message.chat.id, message.from_user.id):
-            return
-            
-        if not MANUAL_CHANNEL_IDS:
-            bot.reply_to(message, "❌ No channels configured")
-            return
-            
-        bot.reply_to(message, "🧪 Testing channel posts...")
-        
-        results = send_to_target_channels()
-        
-        for channel_id, success, error in results:
-            if success:
-                bot.reply_to(message, f"✅ Channel {channel_id}: Success")
-            else:
-                bot.reply_to(message, f"❌ Channel {channel_id}: {error}")
-            
-    except Exception as e:
-        bot.reply_to(message, f"❌ Channel test error: {e}")
-
-@bot.message_handler(commands=['poststatus'])
-def post_status(message):
-    """Current post status ကြည့်ရန်"""
-    try:
-        status = "✅ Idle" if not post_in_progress else "🔄 Post in progress"
-        last_post = last_birthday_post or "Never"
-        
-        response = f"""📊 **Post Status**
-
-🔄 Current Status: {status}
-📅 Last Post Date: {last_post}
-👥 Tracked Groups: {len(active_groups)}
-📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}
-
-⏰ Next check: Every minute
-🕐 Myanmar Time: {get_myanmar_time().strftime('%H:%M:%S')}"""
-
-        bot.reply_to(message, response, parse_mode="Markdown")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Status error: {e}")
-
-# ===============================
-# FLASK SERVER
-# ===============================
-app = Flask(__name__)
-
-@app.route(f"/{BOT_TOKEN}", methods=['POST'])
-def webhook():
-    json_data = request.get_json(force=True)
-    if json_data:
-        update = telebot.types.Update.de_json(json_data)
-        bot.process_new_updates([update])
-    return "OK", 200
-
-@app.route("/", methods=['GET'])
-def index():
-    return "Bot is running…", 200
-
-# ===============================
-# INITIALIZE WEBHOOK
-# ===============================
-print("🤖 INITIALIZING IMPROVED BOT...")
+print("🤖 STARTING BOT IN POLLING MODE...")
 try:
     bot.remove_webhook()
     time.sleep(1)
-    bot.set_webhook(url=WEBHOOK_URL)
-    print(f"✅ Webhook set: {WEBHOOK_URL}")
-    print("🎂 IMPROVED Birthday Scheduler: ACTIVE")
-    print("⏰ Fixed time check: Will trigger throughout 8:00 AM hour")
+    print("✅ Webhook removed")
+    print("🎂 Birthday Scheduler: ACTIVE")
+    print("⏰ Will post daily at 8:00 AM Myanmar Time")
     print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
-    print("🔗 Enhanced link detection: ACTIVE")
-    print("📊 Detailed logging implemented")
-    
+    print("🔗 Link detection: ACTIVE")
+    print("👥 Welcome system: ACTIVE")
+    print("🚀 All commands should work now!")
 except Exception as e:
-    print(f"❌ Webhook error: {e}")
+    print(f"❌ Initialization error: {e}")
 
 # ===============================
-# RUN
+# RUN WITH POLLING
 # ===============================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    print("🚀 Bot polling started...")
+    bot.infinity_polling(timeout=60, long_polling_timeout=60)
