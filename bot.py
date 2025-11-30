@@ -87,12 +87,6 @@ last_birthday_post = None
 post_in_progress = False
 
 # ===============================
-# ADMIN USER IDs
-# ===============================
-ADMIN_IDS = [6272937931]  # 🔧 သင့် User ID ကိုဒီမှာထည့်ပါ
-print(f"👑 Admin IDs: {ADMIN_IDS}")
-
-# ===============================
 # KEEP ALIVE
 # ===============================
 def keep_alive():
@@ -549,19 +543,15 @@ def handle_private_messages(message):
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
 
 # ===============================
-# ADMIN MANAGEMENT COMMANDS - FIXED
+# ADMIN MANAGEMENT COMMANDS - ALL USERS CAN USE
 # ===============================
 @bot.message_handler(commands=['forcepost'])
 def force_birthday_post(message):
-    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း"""
+    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း - ALL USERS"""
     try:
-        print(f"🔧 Forcepost command received from: {message.from_user.id}")
+        print(f"🔧 Forcepost command from: {message.from_user.id}")
         
-        # Admin check
-        if message.from_user.id not in ADMIN_IDS:
-            bot.reply_to(message, "❌ Admin permission required")
-            return
-            
+        # ✅ ALL USERS CAN USE - NO ADMIN CHECK
         bot.reply_to(message, "🚀 Force sending birthday posts...")
         send_birthday_to_all_chats()
         bot.reply_to(message, "✅ Force post completed!")
@@ -573,14 +563,10 @@ def force_birthday_post(message):
 
 @bot.message_handler(commands=['testchannel'])
 def test_channel_post(message):
-    """Channel post test command"""
+    """Channel post test command - ALL USERS"""
     try:
-        print(f"🔧 Testchannel command received from: {message.from_user.id}")
+        print(f"🔧 Testchannel command from: {message.from_user.id}")
         
-        if message.from_user.id not in ADMIN_IDS:
-            bot.reply_to(message, "❌ Admin permission required")
-            return
-            
         if not MANUAL_CHANNEL_IDS:
             bot.reply_to(message, "❌ No channels configured")
             return
@@ -603,9 +589,9 @@ def test_channel_post(message):
 
 @bot.message_handler(commands=['poststatus'])
 def post_status(message):
-    """Current post status ကြည့်ရန်"""
+    """Current post status ကြည့်ရန် - ALL USERS"""
     try:
-        print(f"🔧 Poststatus command received from: {message.from_user.id}")
+        print(f"🔧 Poststatus command from: {message.from_user.id}")
         
         status = "✅ Idle" if not post_in_progress else "🔄 Post in progress"
         last_post = last_birthday_post or "Never"
@@ -627,14 +613,10 @@ def post_status(message):
 
 @bot.message_handler(commands=['discover'])
 def discover_admin_chats(message):
-    """လက်ရှိ admin chats အားလုံးကို discover လုပ်ခြင်း"""
+    """လက်ရှိ admin chats အားလုံးကို discover လုပ်ခြင်း - ALL USERS"""
     try:
-        print(f"🔧 Discover command received from: {message.from_user.id}")
+        print(f"🔧 Discover command from: {message.from_user.id}")
         
-        if message.from_user.id not in ADMIN_IDS:
-            bot.reply_to(message, "❌ Admin permission required")
-            return
-            
         bot.reply_to(message, "🕵️ Discovering all admin chats...")
         admin_chats = discover_all_admin_chats()
         
@@ -813,6 +795,7 @@ try:
     print("⏰ Will post daily at 8:00 AM Myanmar Time")
     print("🔧 All systems ready!")
     print("🚀 Bot is now LIVE!")
+    print("💡 Available Commands: /start, /forcepost, /testchannel, /poststatus, /discover")
     
 except Exception as e:
     print(f"❌❌❌ CRITICAL ERROR IN INITIALIZATION: {e}")
