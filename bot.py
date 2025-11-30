@@ -1,6 +1,7 @@
 import os
 import telebot
 from telebot import types
+from flask import Flask, request
 import threading
 import time
 import requests
@@ -9,10 +10,14 @@ from datetime import datetime
 import pytz
 
 # ===============================
-# BOT TOKEN
+# BOT TOKEN & URL
 # ===============================
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4')
+WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
+PING_URL = "https://oscar-library-bot.onrender.com"
+
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
+app = Flask(__name__)
 
 # ===============================
 # RENDER FONT FIX
@@ -32,7 +37,7 @@ def get_myanmar_time():
     return datetime.now(MYANMAR_TZ)
 
 BIRTHDAY_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
-BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes🎁💌</b>
+BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 <b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
 <b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
@@ -69,12 +74,17 @@ last_birthday_post = None
 post_in_progress = False
 
 # ===============================
+# ADMIN USER IDs (YOUR USER ID HERE)
+# ===============================
+ADMIN_IDS = [6272937931]  # 🔧 သင့် User ID ကိုဒီမှာထည့်ပါ
+
+# ===============================
 # KEEP ALIVE
 # ===============================
 def keep_alive():
     while True:
         try:
-            requests.get("https://oscar-library-bot.onrender.com", timeout=10)
+            requests.get(PING_URL, timeout=10)
             print("🌐 Keep-alive ping sent")
         except Exception as e:
             print(f"🌐 Keep-alive error: {e}")
@@ -505,13 +515,16 @@ def handle_private_messages(message):
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
 
 # ===============================
-# ADMIN MANAGEMENT COMMANDS
+# ADMIN MANAGEMENT COMMANDS - FIXED
 # ===============================
 @bot.message_handler(commands=['forcepost'])
 def force_birthday_post(message):
-    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း"""
+    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း - FIXED"""
     try:
-        if not is_admin(message.chat.id, message.from_user.id):
+        print(f"🔧 Forcepost command received from: {message.from_user.id}")
+        
+        # Admin check
+        if message.from_user.id not in ADMIN_IDS:
             bot.reply_to(message, "❌ Admin permission required")
             return
             
@@ -520,13 +533,17 @@ def force_birthday_post(message):
         bot.reply_to(message, "✅ Force post completed!")
         
     except Exception as e:
-        bot.reply_to(message, f"❌ Force post error: {e}")
+        error_msg = f"❌ Force post error: {e}"
+        print(error_msg)
+        bot.reply_to(message, error_msg)
 
 @bot.message_handler(commands=['testchannel'])
 def test_channel_post(message):
-    """Channel post test command"""
+    """Channel post test command - FIXED"""
     try:
-        if not is_admin(message.chat.id, message.from_user.id):
+        print(f"🔧 Testchannel command received from: {message.from_user.id}")
+        
+        if message.from_user.id not in ADMIN_IDS:
             bot.reply_to(message, "❌ Admin permission required")
             return
             
@@ -538,19 +555,24 @@ def test_channel_post(message):
         
         results = send_to_target_channels()
         
+        response = "📊 **Channel Test Results:**\n\n"
         for channel_id, success, error in results:
             if success:
-                bot.reply_to(message, f"✅ Channel {channel_id}: Success")
+                response += f"✅ Channel {channel_id}: Success\n"
             else:
-                bot.reply_to(message, f"❌ Channel {channel_id}: {error}")
+                response += f"❌ Channel {channel_id}: {error}\n"
+        
+        bot.reply_to(message, response, parse_mode="Markdown")
             
     except Exception as e:
         bot.reply_to(message, f"❌ Channel test error: {e}")
 
 @bot.message_handler(commands=['poststatus'])
 def post_status(message):
-    """Current post status ကြည့်ရန်"""
+    """Current post status ကြည့်ရန် - FIXED"""
     try:
+        print(f"🔧 Poststatus command received from: {message.from_user.id}")
+        
         status = "✅ Idle" if not post_in_progress else "🔄 Post in progress"
         last_post = last_birthday_post or "Never"
         
@@ -568,6 +590,32 @@ def post_status(message):
         
     except Exception as e:
         bot.reply_to(message, f"❌ Status error: {e}")
+
+@bot.message_handler(commands=['discover'])
+def discover_admin_chats(message):
+    """လက်ရှိ admin chats အားလုံးကို discover လုပ်ခြင်း - FIXED"""
+    try:
+        print(f"🔧 Discover command received from: {message.from_user.id}")
+        
+        if message.from_user.id not in ADMIN_IDS:
+            bot.reply_to(message, "❌ Admin permission required")
+            return
+            
+        bot.reply_to(message, "🕵️ Discovering all admin chats...")
+        admin_chats = discover_all_admin_chats()
+        
+        response = f"""👑 **Admin Chats Discovery**
+
+✅ **Total Admin Groups Found**: {len(admin_chats)}
+📊 **Tracked Active Groups**: {len(active_groups)}
+📢 **Manual Channels**: {len(MANUAL_CHANNEL_IDS)}
+
+မနက် ၈ နာရီတိုင်း ဒီ chat {len(admin_chats)} ခုဆီ ပို့ပေးပါလိမ့်မယ်!"""
+
+        bot.reply_to(message, response, parse_mode="Markdown")
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Discovery error: {e}")
 
 # ===============================
 # CALLBACK HANDLERS
@@ -684,25 +732,48 @@ def author_redirect(call):
         )
 
 # ===============================
-# BOT INITIALIZATION
+# WEBHOOK HANDLERS
 # ===============================
-print("🤖 STARTING BOT IN POLLING MODE...")
-try:
-    bot.remove_webhook()
-    time.sleep(1)
-    print("✅ Webhook removed")
-    print("🎂 Birthday Scheduler: ACTIVE")
-    print("⏰ Will post daily at 8:00 AM Myanmar Time")
-    print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
-    print("🔗 Link detection: ACTIVE")
-    print("👥 Welcome system: ACTIVE")
-    print("🚀 All commands should work now!")
-except Exception as e:
-    print(f"❌ Initialization error: {e}")
+@app.route(f"/{BOT_TOKEN}", methods=['POST'])
+def webhook():
+    """Webhook handler with better error handling"""
+    try:
+        if request.method == 'POST':
+            json_data = request.get_json(force=True)
+            if json_data:
+                update = telebot.types.Update.de_json(json_data)
+                bot.process_new_updates([update])
+                return "OK", 200
+        return "OK", 200
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return "OK", 200
+
+@app.route("/", methods=['GET', 'POST'])
+def index():
+    return "Bot is running with fixed commands...", 200
 
 # ===============================
-# RUN WITH POLLING
+# INITIALIZE WEBHOOK
+# ===============================
+print("🤖 STARTING BOT WITH FIXED COMMANDS...")
+try:
+    bot.remove_webhook()
+    time.sleep(2)
+    bot.set_webhook(url=WEBHOOK_URL)
+    print(f"✅ Webhook set: {WEBHOOK_URL}")
+    print("🎂 Birthday Scheduler: ACTIVE")
+    print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
+    print(f"👑 Admin IDs: {ADMIN_IDS}")
+    print("🔧 All commands should work now!")
+    print("⏰ Commands: /forcepost, /testchannel, /poststatus, /discover")
+except Exception as e:
+    print(f"❌ Webhook error: {e}")
+
+# ===============================
+# RUN WITH FLASK
 # ===============================
 if __name__ == "__main__":
-    print("🚀 Bot polling started...")
-    bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    port = int(os.environ.get("PORT", 10000))
+    print(f"🚀 Starting Flask server on port {port}...")
+    app.run(host="0.0.0.0", port=port, debug=False)
