@@ -504,23 +504,32 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ======================================================
-# "စာအုပ်" AUTO REPLY SYSTEM
+# "စာအုပ်" AUTO REPLY SYSTEM - ALL CHATS
 # ======================================================
-@bot.message_handler(func=lambda m: m.chat.type == 'private' and m.text and 'စာအုပ်' in m.text)
+@bot.message_handler(func=lambda m: m.text and 'စာအုပ်' in m.text)
 def book_keyword_reply(message):
-    """User က "စာအုပ်" ပြောရင် စာပြန်ခြင်း"""
-    print(f"📚 'စာအုပ်' keyword detected from user {message.from_user.id}")
+    """ALL CHATS (private, group, supergroup) - User က "စာအုပ်" ပြောရင် စာပြန်ခြင်း"""
+    
+    # Command တွေကို skip
+    if message.text.startswith('/'):
+        return
+    
+    # New chat members ကို skip (welcome system အတွက်)
+    if message.new_chat_members:
+        return
+    
+    print(f"📚 'စာအုပ်' keyword detected from user {message.from_user.id} in chat {message.chat.id}")
     
     # သင်ပြောတဲ့စာကြောင်း
-    reply_text = "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် <b>စာရေးဆရာအမည်</b>လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰"
+    reply_text = "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် <b>စာရေးဆရာအမည်</b> လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰"
     
     try:
-        bot.send_message(
-            message.chat.id,
+        bot.reply_to(
+            message,
             reply_text,
             parse_mode="HTML"
         )
-        print(f"✅ Sent book reply to user {message.from_user.id}")
+        print(f"✅ Sent book reply to user {message.from_user.id} in chat {message.chat.id}")
     except Exception as e:
         print(f"❌ Error sending book reply: {e}")
 
@@ -601,7 +610,7 @@ def author_menu(call):
         ["ဋ္ဌ","တ","ထ","ဒ"],
         ["ဓ","န","ပ","ဖ"],
         ["ဗ","ဘ","မ","ယ"],
-        ["ရ","လ","�","သ"],
+        ["ရ","လ","ဝ","သ"],
         ["ဟ","အ","ဥ","Eng"]
     ]
     kb = types.InlineKeyboardMarkup()
@@ -753,7 +762,7 @@ except Exception as e:
 
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
-print("📚 'စာအုပ်' Auto Reply: ENABLED")
+print("📚 'စာအုပ်' Auto Reply: ENABLED FOR ALL CHATS")
 print("🔧 All systems ready!")
 print("🚀 Bot is now LIVE!")
 print("💡 Available Commands: /start, /forcepost")
