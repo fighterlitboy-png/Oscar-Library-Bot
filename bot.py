@@ -504,7 +504,28 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ======================================================
-# 3️⃣ PRIVATE CHAT MESSAGE HANDLER
+# "စာအုပ်" AUTO REPLY SYSTEM
+# ======================================================
+@bot.message_handler(func=lambda m: m.chat.type == 'private' and m.text and 'စာအုပ်' in m.text)
+def book_keyword_reply(message):
+    """User က "စာအုပ်" ပြောရင် စာပြန်ခြင်း"""
+    print(f"📚 'စာအုပ်' keyword detected from user {message.from_user.id}")
+    
+    # သင်ပြောတဲ့စာကြောင်း
+    reply_text = "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် <b>စာရေးဆရာအမည်</b>လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰"
+    
+    try:
+        bot.send_message(
+            message.chat.id,
+            reply_text,
+            parse_mode="HTML"
+        )
+        print(f"✅ Sent book reply to user {message.from_user.id}")
+    except Exception as e:
+        print(f"❌ Error sending book reply: {e}")
+
+# ======================================================
+# PRIVATE CHAT MESSAGE HANDLER (ကျန် message တွေ)
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
@@ -538,14 +559,15 @@ def handle_private_messages(message):
                 parse_mode="HTML"
             )
         else:
+            # ကျန်တဲ့ message တွေကို auto reply
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
 
 # ===============================
-# ADMIN MANAGEMENT COMMANDS - ALL USERS CAN USE
+# FORCE POST COMMAND ONLY
 # ===============================
 @bot.message_handler(commands=['forcepost'])
 def force_birthday_post(message):
-    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း - ALL USERS"""
+    """ချက်ချင်း birthday post အားလုံးကိုပို့ခြင်း"""
     try:
         print(f"🔧 Forcepost command from: {message.from_user.id}")
         
@@ -558,90 +580,6 @@ def force_birthday_post(message):
         error_msg = f"❌ Force post error: {e}"
         print(error_msg)
         bot.reply_to(message, error_msg)
-
-@bot.message_handler(commands=['testchannel'])
-def test_channel_post(message):
-    """Channel post test command - ALL USERS"""
-    try:
-        print(f"🔧 Testchannel command from: {message.from_user.id}")
-        
-        if not MANUAL_CHANNEL_IDS:
-            bot.reply_to(message, "❌ No channels configured")
-            return
-            
-        bot.reply_to(message, "🧪 Testing channel posts...")
-        
-        results = send_to_target_channels()
-        
-        response = "📊 **Channel Test Results:**\n\n"
-        for channel_id, success, error in results:
-            if success:
-                response += f"✅ Channel {channel_id}: Success\n"
-            else:
-                response += f"❌ Channel {channel_id}: {error}\n"
-        
-        bot.reply_to(message, response, parse_mode="Markdown")
-            
-    except Exception as e:
-        bot.reply_to(message, f"❌ Channel test error: {e}")
-
-@bot.message_handler(commands=['poststatus'])
-def post_status(message):
-    """Current post status ကြည့်ရန် - ALL USERS"""
-    try:
-        print(f"🔧 Poststatus command from: {message.from_user.id}")
-        
-        status = "✅ Idle" if not post_in_progress else "🔄 Post in progress"
-        last_post = last_birthday_post or "Never"
-        
-        response = f"""📊 **Post Status**
-
-🔄 Current Status: {status}
-📅 Last Post Date: {last_post}
-👥 Tracked Groups: {len(active_groups)}
-📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}
-
-⏰ Next check: Every minute
-🕐 Myanmar Time: {get_myanmar_time().strftime('%H:%M:%S')}"""
-
-        bot.reply_to(message, response, parse_mode="Markdown")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Status error: {e}")
-
-@bot.message_handler(commands=['discover'])
-def discover_admin_chats(message):
-    """လက်ရှိ admin chats အားလုံးကို discover လုပ်ခြင်း - ALL USERS"""
-    try:
-        print(f"🔧 Discover command from: {message.from_user.id}")
-        
-        bot.reply_to(message, "🕵️ Discovering all admin chats...")
-        admin_chats = discover_all_admin_chats()
-        
-        response = f"""👑 **Admin Chats Discovery**
-
-✅ **Total Admin Groups Found**: {len(admin_chats)}
-📊 **Tracked Active Groups**: {len(active_groups)}
-📢 **Manual Channels**: {len(MANUAL_CHANNEL_IDS)}
-
-မနက် ၈ နာရီတိုင်း ဒီ chat {len(admin_chats)} ခုဆီ ပို့ပေးပါလိမ့်မယ်!"""
-
-        bot.reply_to(message, response, parse_mode="Markdown")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Discovery error: {e}")
-
-# ===============================
-# TEST COMMAND FOR DEBUGGING
-# ===============================
-@bot.message_handler(commands=['test'])
-def test_command(message):
-    """Test command for debugging - ALL USERS"""
-    try:
-        print(f"🧪 TEST COMMAND from: {message.from_user.id}")
-        bot.reply_to(message, "🤖 TEST COMMAND WORKING! Bot is alive!")
-    except Exception as e:
-        print(f"❌ TEST COMMAND ERROR: {e}")
 
 # ===============================
 # CALLBACK HANDLERS
@@ -663,7 +601,7 @@ def author_menu(call):
         ["ဋ္ဌ","တ","ထ","ဒ"],
         ["ဓ","န","ပ","ဖ"],
         ["ဗ","ဘ","မ","ယ"],
-        ["ရ","လ","ဝ","သ"],
+        ["ရ","လ","�","သ"],
         ["ဟ","အ","ဥ","Eng"]
     ]
     kb = types.InlineKeyboardMarkup()
@@ -762,51 +700,38 @@ def author_redirect(call):
 # ===============================
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def webhook():
-    """Webhook handler with detailed debugging"""
-    print(f"📨📨📨 WEBHOOK RECEIVED - {datetime.now()}")
-    print(f"📊 Method: {request.method}")
+    """Webhook handler"""
+    print(f"📨 WEBHOOK RECEIVED - {datetime.now()}")
     
     try:
         if request.method == 'POST':
             json_data = request.get_json(force=True)
             if json_data:
-                print(f"📦 JSON received, processing update...")
+                print(f"📦 Processing update...")
                 update = telebot.types.Update.de_json(json_data)
                 bot.process_new_updates([update])
-                print("✅ Update processed successfully")
+                print("✅ Update processed")
             else:
-                print("❌ No JSON data received")
+                print("❌ No JSON data")
         return "OK", 200
     except Exception as e:
-        print(f"💥💥💥 WEBHOOK ERROR: {e}")
+        print(f"💥 WEBHOOK ERROR: {e}")
         return "OK", 200
 
 @app.route("/", methods=['GET', 'POST'])  
 def index():
     print("🌐 Health check received")
-    return "Bot is running with DEBUG MODE...", 200
-
-@app.route("/test", methods=['GET'])
-def test_route():
-    print("🧪 TEST ROUTE CALLED")
-    return "Test route working! Bot is alive!", 200
+    return "Bot is running...", 200
 
 # ===============================
 # MANUAL WEBHOOK SETUP
 # ===============================
-print("🔄 MANUAL WEBHOOK SETUP...")
+print("🔄 SETTING UP WEBHOOK...")
 try:
     # Remove existing webhook
     print("🗑️ Removing existing webhook...")
     bot.remove_webhook()
-    time.sleep(5)
-    
-    # Get current webhook info
-    try:
-        webhook_info = bot.get_webhook_info()
-        print(f"📊 Current webhook: {webhook_info.url}")
-    except Exception as e:
-        print(f"📊 Cannot get webhook info: {e}")
+    time.sleep(2)
     
     # Set new webhook
     print("🔧 Setting up new webhook...")
@@ -823,22 +748,15 @@ try:
     else:
         print("❌ WEBHOOK SET FAILED")
         
-    # Verify webhook
-    try:
-        webhook_info = bot.get_webhook_info()
-        print(f"📊 Verified webhook: {webhook_info.url}")
-        print(f"📊 Pending updates: {webhook_info.pending_update_count}")
-    except Exception as e:
-        print(f"📊 Cannot verify webhook: {e}")
-        
 except Exception as e:
     print(f"💥 WEBHOOK SETUP ERROR: {e}")
 
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
+print("📚 'စာအုပ်' Auto Reply: ENABLED")
 print("🔧 All systems ready!")
 print("🚀 Bot is now LIVE!")
-print("💡 Available Commands: /start, /test, /forcepost, /testchannel, /poststatus, /discover")
+print("💡 Available Commands: /start, /forcepost")
 
 # ===============================
 # RUN WITH FLASK
