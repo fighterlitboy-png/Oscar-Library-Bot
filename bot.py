@@ -483,38 +483,24 @@ def welcome_new_member(message):
                 print(f"❌ Failed to send welcome message: {e2}")
 
 # ======================================================
-# FIXED ADMIN CHECK FUNCTION - BOT ADMIN CHECK FIRST
+# FIXED ADMIN CHECK FUNCTION - CORRECTED VERSION
 # ======================================================
 def is_admin(chat_id, user_id):
-    """Check if user is admin in chat - FIXED VERSION (Admin/Owner NOT Blocked)"""
+    """Check if user is admin or owner in chat - CORRECTED VERSION"""
     try:
-        # 1. ပထမဆုံး Bot ကိုယ်တိုင်က Admin ဟုတ်မဟုတ် စစ်ဆေးခြင်း
-        bot_user = bot.get_me()
-        try:
-            bot_member = bot.get_chat_member(chat_id, bot_user.id)
-            # Bot က Admin မဟုတ်ရင် ဘာမှမစစ်ဘူး
-            if bot_member.status not in ['administrator', 'creator']:
-                print(f"🤖 Bot is NOT admin in chat {chat_id}")
-                return False  # Bot Admin မဟုတ်ရင် ဘာမှမလုပ်ဘူး
-        except Exception as bot_err:
-            print(f"🤖 Bot admin check failed: {bot_err}")
-            return False  # Error ဖြစ်ရင်လည်း ဘာမှမလုပ်ဘူး
+        # Directly check user's status in chat
+        chat_member = bot.get_chat_member(chat_id, user_id)
         
-        # 2. Bot Admin ဖြစ်မှသာ User Admin စစ်မယ်
-        admins = bot.get_chat_administrators(chat_id)
+        if chat_member.status in ['administrator', 'creator']:
+            print(f"✅ User {user_id} is admin/owner (status: {chat_member.status}) in chat {chat_id}")
+            return True
         
-        # Check if user is in admin list
-        for admin in admins:
-            if admin.user.id == user_id:
-                print(f"✅ User {user_id} is admin (status: {admin.status}) in chat {chat_id}")
-                return True
-        
-        print(f"❌ User {user_id} is NOT admin in chat {chat_id}")
+        print(f"❌ User {user_id} is NOT admin (status: {chat_member.status}) in chat {chat_id}")
         return False
         
     except Exception as e:
         print(f"⚠️ Admin check error: {e}")
-        return False  # Error ဖြစ်ရင်လည်း ဘာမှမလုပ်ဘူး
+        return False
 
 # ======================================================
 # 2️⃣ GROUP MESSAGE HANDLER WITH RANDOM REPLIES
@@ -542,79 +528,18 @@ def handle_group_messages(message):
 
     # 2. ပြီးမှ Link ရှိမရှိစစ်ပါ
     if has_link_api(message):
-        # Admin check - Admin (or creator) ဆိုရင် မဘမ်းဘူး
-        if not is_admin(message.chat.id, message.from_user.id):
+        # Admin check - Admin ဆိုရင် မဘမ်းဘူး
+        if is_admin(message.chat.id, message.from_user.id):
+            print(f"✅ Admin/Owner {message.from_user.id} posted link, allowing...")
+            return
+        else:
             print(f"🚫 Non-admin user {message.from_user.id} posted link, deleting...")
             try:
                 bot.delete_message(message.chat.id, message.message_id)
                 warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
                 bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
                 return
-            except Exception as e:
-                print(f"Link blocker error: {e}")
-                return
-        else:
-            print(f"✅ Admin {message.from_user.id} posted link, allowing...")
-            return
-
-# ======================================================
-# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY)
-# ======================================================
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
-def handle_forwarded_messages(message):
-    """Forwarded messages ထဲက link တွေကို ပိတ်ခြင်း - FIXED"""
-    
-    # Bot command တွေကို skip
-    if message.text and message.text.startswith('/'):
-        return
-    
-    track_active_group(message.chat.id)
-    
-    print(f"📩 Forwarded message detected in group {message.chat.id}")
-    
-    # Check if forwarded message contains links
-    has_link = has_link_api(message)
-    
-    if has_link:
-        print(f"   ↳ Contains link: YES")
-        # Admin check - Admin ဆိုရင် မဘမ်းဘူး
-        if not is_admin(message.chat.id, message.from_user.id):
-            try:
-                # Delete the forwarded message
-                bot.delete_message(message.chat.id, message.message_id)
-                
-                # Send warning
-                warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Forwarded message တွေထဲက Link🔗 တွေကိုလည်း ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
-                bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
-                
-                print(f"✅ Deleted forwarded message with link")
-            except Exception as e:
-                print(f"❌ Error deleting forwarded message: {e}")
-        else:
-            print(f"   ↳ Admin {message.from_user.id} forwarded link, allowing...")
-    else:
-        print(f"   ↳ Contains link: NO - Allowing forwarded message")
-
-# ===============================
-# /START MESSAGE
-# ===============================
-@bot.message_handler(commands=['start'])
-def start_message(message):
-    print(f"🔄 /start command from user: {message.from_user.id}")
-    first = message.from_user.first_name or "Friend"
-    text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
-<b>{first}</b> ...🥰
-<b>🌼 Oscar's Library 🌼</b> မှကြိုဆိုပါတယ်။
-စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
-
-<b>စာအုပ်ရှာဖို့ နှစ်ပေါင်းခွဲထားတယ်</b>
-<b>📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
-
-Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
-စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
-<b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
-
-စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
+ လိုက်ရှာဖတ်ချင်ရင် 
 <b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
 
 <b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
@@ -861,7 +786,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
-print("🔗 Link Blocker: ENABLED (Admin/Owner များကို မဘမ်း)")
+print("🔗 Link Blocker: ENABLED (Admin/Owner များကို မဘမ်း - FIXED)")
 print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
