@@ -9,6 +9,7 @@ import sys
 from datetime import datetime
 import pytz
 import logging
+import random
 
 # ===============================
 # DEBUG MODE - FORCE LOGGING
@@ -51,8 +52,8 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 <b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
-အနာဂတ်မှာ 🤍
 
+အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
 ချစ်နိုင်ကြပါစေ 💞
@@ -324,7 +325,6 @@ def welcome_new_member(message):
     
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
-
 <b>{user.first_name} ...🥰</b>
 
 <b>📚 Oscar's Library မှ</b>
@@ -355,14 +355,14 @@ def welcome_new_member(message):
             print(f"❌ Welcome error: {e}")
 
 # ======================================================
-# 🎯 PERFECT LINK BLOCKER - NO BUGS
+# 🎯 PERFECT LINK BLOCKER WITH BOOK REPLY FIX
 # ======================================================
 def perfect_link_blocker(message):
     """
     အကောင်းဆုံး လင့်ဘောင်းစနစ်:
-    1. Bot Admin ဖြစ်မှ စစ်မယ်
-    2. User Admin ဆိုရင် ခွင့်ပြုမယ်
-    3. ဘာမှမရှုပ်ဘူး
+    1. "စာအုပ်" keyword အတွက် random replies with bold
+    2. Bot Admin ဖြစ်မှ လင့်ဘမ်း
+    3. Admin/Owner တွေကို မဘမ်း
     """
     
     # Basic skips
@@ -373,17 +373,40 @@ def perfect_link_blocker(message):
     if message.from_user.is_bot:
         return
     
-    # Link ရှိမှ ဆက်စစ်
-    if not has_link_api(message):
-        # "စာအုပ်" keyword reply
-        if message.text and 'စာအုပ်' in message.text:
-            try:
-                bot.reply_to(message, "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် စာရေးဆရာအမည်လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰", parse_mode="HTML")
-            except:
-                pass
-        return
+    # ===========================================
+    # 1. "စာအုပ်" KEYWORD RANDOM REPLIES
+    # ===========================================
+    if message.text and 'စာအုပ်' in message.text:
+        try:
+            print(f"📚 'စာအုပ်' keyword found from {message.from_user.first_name}")
+            
+            # Random replies with bold for "စာရေးဆရာ"
+            replies = [
+                "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် <b>စာရေးဆရာ</b>အမည်လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰",
+                "စာအုပ်လေးတွေ ရှာဖွေဖတ်ရှုချင်တယ်ဆိုရင် <b>စာရေးဆရာ</b>အမည်လေးကို ပြောပြပါဦး...📚",
+                "စာအုပ်လေးတွေ ဖတ်ချင်တယ်လား? <b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါအုံး...🤓",
+                "စာဖတ်ချစ်သူလေး ဘယ်<b>စာရေးဆရာ</b>ရဲ့စာအုပ်စဉ်ကို ဖတ်ချင်လဲ? ပြောပြပါ...✨",
+                "ကြိုက်နှစ်သက်ရာ <b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါ စာအုပ်ရှာပေးပါရစေ...📖",
+                "<b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါလား စာအုပ်လေးတွေ ရှာပေးပါမယ်...🥰"
+            ]
+            
+            reply_text = random.choice(replies)
+            
+            # Reply format နဲ့ပို့ (မူရင်း message ကို ထောက်ပြီးပို့)
+            bot.reply_to(message, reply_text, parse_mode="HTML")
+            
+        except Exception as e:
+            print(f"❌ Book reply error: {e}")
+        return  # "စာအုပ်" keyword ရှိရင် ဒီကနေ return ပြန်
     
-    # အခုမှ စစ်မယ်
+    # ===========================================
+    # 2. LINK CHECK AND BLOCK SYSTEM
+    # ===========================================
+    # Link ရှိမှသာ ဆက်စစ်မယ်
+    if not has_link_api(message):
+        return  # Link မရှိရင် ဒီကနေ return ပြန်
+    
+    # အခုမှ Link blocker system ကို စစ်မယ်
     try:
         # 1. Bot က Admin ဟုတ်မဟုတ် စစ်
         bot_user = bot.get_me()
@@ -391,43 +414,43 @@ def perfect_link_blocker(message):
         
         # Bot က Admin မဟုတ်ရင် ဘာမှမလုပ်
         if bot_member.status not in ['administrator', 'creator']:
-            print(f"🤖 Bot not admin - skipping")
+            print(f"🤖 Bot not admin - skipping link check")
             return
         
         # 2. User က Admin ဟုတ်မဟုတ် စစ်
         user_admin = False
         
-        # နည်းလမ်း 1: get_chat_member နဲ့စစ် (ပိုမြန်)
+        # get_chat_member နဲ့စစ်
         try:
             user_member = bot.get_chat_member(message.chat.id, message.from_user.id)
             user_admin = user_member.status in ['administrator', 'creator']
-            print(f"📊 User status: {user_member.status}")
+            print(f"📊 User {message.from_user.first_name} status: {user_member.status}")
         except Exception as e:
             print(f"⚠️ User status check failed: {e}")
             user_admin = False
         
         # 3. Decision
         if user_admin:
-            print(f"✅ Admin {message.from_user.first_name} - ALLOW")
+            print(f"✅ Admin {message.from_user.first_name} posted link - ALLOWING")
             return
         else:
-            print(f"🚫 User {message.from_user.first_name} - DELETE")
+            print(f"🚫 Non-admin {message.from_user.first_name} posted link - DELETING")
             try:
                 bot.delete_message(message.chat.id, message.message_id)
                 
-                # Warning message
+                # Warning message - reply format နဲ့ပို့
                 try:
-                    warning = f"⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id})\nလင့်တင်ခြင်းကို ပိတ်ထားပါတယ်။"
-                    sent = bot.send_message(message.chat.id, warning, parse_mode="Markdown")
+                    warning = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
+                    sent = bot.reply_to(message, warning, parse_mode="Markdown")
                     
-                    # Auto delete warning
+                    # Auto delete warning after 10 seconds
                     def delete_warn():
                         try:
                             bot.delete_message(message.chat.id, sent.message_id)
                         except:
                             pass
                     
-                    threading.Timer(8.0, delete_warn).start()
+                    threading.Timer(10.0, delete_warn).start()
                 except:
                     pass
                     
@@ -699,20 +722,19 @@ except Exception as e:
     print(f"💥 WEBHOOK SETUP ERROR: {e}")
 
 print("=" * 50)
-print("🎯 PERFECT LINK BLOCKER ACTIVE!")
-print("✅ Bot Admin ဖြစ်မှသာ လင့်ဘမ်းပါမယ်")
-print("✅ Admin/Owner တွေကို ဘယ်တော့မှ မဘမ်းပါ")
-print("✅ ရိုးရှင်းပြီး ထိရောက်တဲ့စနစ်")
+print("🎯 BOT FEATURES SUMMARY:")
+print("✅ 'စာအုပ်' keyword - Random replies with <b>စာရေးဆရာ</b> in bold")
+print("✅ Link blocker - Bot Admin ဖြစ်မှသာ လင့်ဘမ်း")
+print("✅ Admin/Owner တွေကို ဘယ်တော့မှ မဘမ်း")
+print("✅ Reply format နဲ့စာပြန် (မူရင်း message ထောက်)")
+print("✅ Random replies - ၆မျိုးလှည့်ပြန်")
 print("=" * 50)
 print("🚀 Bot is now LIVE!")
 
 # ===============================
-# 🔴 FIX FOR RENDER PORT ISSUE
+# FIX FOR RENDER PORT ISSUE
 # ===============================
 if __name__ == "__main__":
-    # Render မှာ port ကို environment variable ကနေရမယ်
-    port = int(os.environ.get("PORT", 8080))  # ✅ ပြင်ဆင်ပြီး
+    port = int(os.environ.get("PORT", 8080))
     print(f"🚀 Starting Flask server on port {port}...")
-    
-    # Debug mode ကို ပိတ်ထားပါ
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
