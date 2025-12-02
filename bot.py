@@ -277,46 +277,136 @@ birthday_thread.start()
 print("✅ Birthday scheduler started")
 
 # ===============================
-# LINK DETECTION SYSTEM
+# UPDATED LINK DETECTION SYSTEM
 # ===============================
 def is_link(text):
-    if not text:
+    """Link detection - @username နဲ့ လင့်မျိုးစုံကို စစ်ဆေးခြင်း"""
+    if not text or not isinstance(text, str):
         return False
+    
     text_lower = text.lower()
-    link_patterns = [
+    
+    # 1. Basic URL patterns စစ်ဆေးခြင်း
+    url_patterns = [
         "http://", "https://", "www.", ".com", ".org", ".net", 
-        ".io", ".me", ".tk", ".ml", ".ga", ".cf", 
+        ".io", ".me", ".tk", ".ml", ".ga", ".cf", ".gq",
         "t.me/", "telegram.me/", "telegram.dog/",
         "youtube.com/", "youtu.be/", "facebook.com/", "fb.me/",
-        "//", "://", ".co/"
+        "instagram.com/", "twitter.com/", "x.com/",
+        "//", "://", ".co/", ".info", ".xyz", ".top"
     ]
-    return any(pattern in text_lower for pattern in link_patterns)
+    
+    for pattern in url_patterns:
+        if pattern in text_lower:
+            return True
+    
+    # 2. @username pattern စစ်ဆေးခြင်း
+    import re
+    # @ နဲ့စပြီး စာလုံး၊ ဂဏန်း၊ underscore တွေပါတဲ့ username
+    username_pattern = r'@[a-zA-Z0-9_]{4,}'
+    if re.search(username_pattern, text):
+        return True
+    
+    # 3. Telegram invite links စစ်ဆေးခြင်း
+    telegram_patterns = [
+        r't\.me/\+[\w-]+',  # t.me/+invitecode
+        r't\.me/joinchat/[\w-]+',  # t.me/joinchat/invitecode
+    ]
+    
+    for pattern in telegram_patterns:
+        if re.search(pattern, text_lower):
+            return True
+    
+    return False
 
 def has_link_api(message):
+    """Message ထဲက link/username အားလုံးကို စစ်ဆေးခြင်း - Forwarded messages အပါအဝင်"""
+    
+    # Debug logging
+    print(f"🔍 Checking message from {message.from_user.id if message.from_user else 'unknown'}")
+    
+    # 1. Direct text ထဲက link စစ်ဆေးခြင်း
     if message.text and is_link(message.text):
+        print(f"✅ Direct text link found: {message.text[:50]}")
         return True
+    
+    # 2. Caption ထဲက link စစ်ဆေးခြင်း
     if message.caption and is_link(message.caption):
+        print(f"✅ Caption link found: {message.caption[:50]}")
         return True
+    
+    # 3. Message entities စစ်ဆေးခြင်း (ဒါက forwarded messages အတွက် အရေးကြီးပါတယ်)
     try:
         if message.entities:
             for entity in message.entities:
                 if entity.type in ["url", "text_link"]:
+                    print(f"✅ Entity link found: {entity.type}")
+                    
+                    # Get the actual link text from entity
+                    if entity.type == "url" and message.text:
+                        start = entity.offset
+                        end = start + entity.length
+                        link_text = message.text[start:end]
+                        print(f"📎 URL entity text: {link_text}")
+                    
                     return True
-    except: pass
+    except Exception as e:
+        print(f"⚠️ Error checking entities: {e}")
+        pass
+    
+    # 4. Caption entities စစ်ဆေးခြင်း
     try:
         if message.caption_entities:
             for entity in message.caption_entities:
                 if entity.type in ["url", "text_link"]:
+                    print(f"✅ Caption entity link found: {entity.type}")
                     return True
-    except: pass
+    except Exception as e:
+        print(f"⚠️ Error checking caption entities: {e}")
+        pass
+    
+    # 5. Forwarded messages အတွက် အထူးစစ်ဆေးခြင်း
     if message.forward_from_chat or message.forward_from:
+        print(f"📩 Forwarded message detected")
+        
+        # Forwarded message ရဲ့ text ကို ရယူကြိုးစားခြင်း
         forwarded_text = ""
+        
         if message.text:
             forwarded_text = message.text
+            print(f"📩 Forwarded text: {forwarded_text[:100]}")
         elif message.caption:
             forwarded_text = message.caption
+            print(f"📩 Forwarded caption: {forwarded_text[:100]}")
+        
+        # Forwarded chat info ရှိရင် log ထုတ်ခြင်း
+        if message.forward_from_chat:
+            print(f"📩 Forwarded from: {message.forward_from_chat.title} (ID: {message.forward_from_chat.id})")
+        
+        if message.forward_from:
+            print(f"📩 Forwarded from user: {message.forward_from.first_name}")
+        
+        # Forwarded text ထဲမှာ link ရှိမရှိစစ်ဆေးခြင်း
         if forwarded_text and is_link(forwarded_text):
+            print(f"✅ Forwarded link found: {forwarded_text[:50]}")
             return True
+    
+    # 6. Additional check: Message ထဲက text အားလုံးကို ပေါင်းပြီး @username ရှာခြင်း
+    all_text = ""
+    if message.text:
+        all_text += message.text + " "
+    if message.caption:
+        all_text += message.caption + " "
+    
+    if all_text:
+        # @username pattern အတွက် ထပ်စစ်ဆေးခြင်း
+        import re
+        usernames = re.findall(r'@[a-zA-Z0-9_]{4,}', all_text)
+        if usernames:
+            print(f"✅ Usernames found in text: {usernames}")
+            return True
+    
+    print(f"❌ No links found in message")
     return False
 
 # ======================================================
@@ -404,6 +494,47 @@ def handle_group_messages(message):
             print(f"✅ Group ထဲမှာ book reply ပြန်လိုက်ပြီ")
         except Exception as e:
             print(f"❌ Group ထဲမှာ reply မပြန်နိုင်: {e}")
+
+# ======================================================
+# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY)
+# ======================================================
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
+def handle_forwarded_messages(message):
+    """Forwarded messages ထဲက link တွေကို ပိတ်ခြင်း"""
+    
+    # Bot command တွေကို skip
+    if message.text and message.text.startswith('/'):
+        return
+    
+    track_active_group(message.chat.id)
+    
+    print(f"📩 Forwarded message detected in group {message.chat.id}")
+    
+    # Forwarded message info
+    if message.forward_from_chat:
+        print(f"   ↳ From chat: {message.forward_from_chat.title} (ID: {message.forward_from_chat.id})")
+    if message.forward_from:
+        print(f"   ↳ From user: {message.forward_from.first_name} (ID: {message.forward_from.id})")
+    
+    # Check if forwarded message contains links
+    has_link = has_link_api(message)
+    
+    if has_link:
+        print(f"   ↳ Contains link: YES")
+        if not is_admin(message.chat.id, message.from_user.id):
+            try:
+                # Delete the forwarded message
+                bot.delete_message(message.chat.id, message.message_id)
+                
+                # Send warning
+                warning_msg = f'⚠️ <a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a> 💢\n\n<b>Forwarded message တွေထဲက Link🔗 တွေကိုလည်း ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်...'
+                bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
+                
+                print(f"✅ Deleted forwarded message with link")
+            except Exception as e:
+                print(f"❌ Error deleting forwarded message: {e}")
+    else:
+        print(f"   ↳ Contains link: NO - Allowing forwarded message")
 
 # ===============================
 # /START MESSAGE
@@ -659,6 +790,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: ENABLED FOR ALL CHATS")
+print("🔗 Link Blocker: ENABLED (including @username and forwarded messages)")
 print("🔧 All systems ready!")
 print("🚀 Bot is now LIVE!")
 print("💡 Available Commands: /start, /forcepost")
