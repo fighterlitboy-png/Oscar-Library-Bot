@@ -9,6 +9,7 @@ import sys
 from datetime import datetime
 import pytz
 import logging
+import random
 
 # ===============================
 # DEBUG MODE - FORCE LOGGING
@@ -410,6 +411,23 @@ def has_link_api(message):
     return False
 
 # ======================================================
+# RANDOM REPLIES FOR "စာအုပ်" KEYWORD
+# ======================================================
+def get_random_book_reply():
+    """Random book replies with bold "စာရေးဆရာ" """
+    replies = [
+        "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် <b>စာရေးဆရာ</b>အမည်လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰",
+        "စာအုပ်လေးတွေ ရှာဖွေဖတ်ရှုချင်တယ်ဆိုရင် <b>စာရေးဆရာ</b>အမည်လေးကို ပြောပြပါဦး...📚",
+        "စာအုပ်လေးတွေ ဖတ်ချင်တယ်လား? <b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါအုံး...🤓",
+        "စာဖတ်ချစ်သူလေး ဘယ်<b>စာရေးဆရာ</b>ရဲ့စာအုပ်စဉ်ကို ဖတ်ချင်လဲ? ပြောပြပါ...✨",
+        "ကြိုက်နှစ်သက်ရာ <b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါ...စာအုပ်ရှာပေးပါရစေ...📖",
+        "<b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါလား စာအုပ်လေးတွေ ရှာပေးပါမယ်...🥰",
+        "စာဖတ်ချစ်သူလေး ဘယ်လိုအကြိုက်စာအုပ်မျိုးဖတ်ချင်လဲ? <b>စာရေးဆရာ</b>အမည်လေးပြောပြပါ...🌸",
+        "စာအုပ်ရှာဖွေဖို့ <b>စာရေးဆရာ</b>အမည်လေးကို ပြောပြပေးပါ ကူညီရှာပေးပါ့မယ်...💕"
+    ]
+    return random.choice(replies)
+
+# ======================================================
 # 1️⃣ GROUP WELCOME SYSTEM (FIXED VERSION)
 # ======================================================
 WELCOME_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
@@ -499,7 +517,7 @@ def is_admin(chat_id, user_id):
         return False  # Error ဖြစ်ရင်လည်း ဘာမှမလုပ်ဘူး
 
 # ======================================================
-# 2️⃣ FIXED GROUP MESSAGE HANDLER - ADMIN/OWNER NOT BLOCKED
+# 2️⃣ GROUP MESSAGE HANDLER WITH RANDOM REPLIES
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
 def handle_group_messages(message):
@@ -511,7 +529,18 @@ def handle_group_messages(message):
 
     track_active_group(message.chat.id)
 
-    # 1. ပထမဆုံး Link ရှိမရှိစစ်ပါ
+    # 1. ပထမဆုံး "စာအုပ်" keyword စစ်ပါ (RANDOM REPLY)
+    if message.text and 'စာအုပ်' in message.text:
+        print(f"📚 Group/Supergroup မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
+        try:
+            reply_text = get_random_book_reply()
+            bot.reply_to(message, reply_text, parse_mode="HTML")
+            print(f"✅ Group ထဲမှာ RANDOM book reply ပြန်လိုက်ပြီ")
+        except Exception as e:
+            print(f"❌ Group ထဲမှာ reply မပြန်နိုင်: {e}")
+        return  # "စာအုပ်" keyword ရှိရင် ဒီကနေ return ပြန်
+
+    # 2. ပြီးမှ Link ရှိမရှိစစ်ပါ
     if has_link_api(message):
         # Admin check - Admin (or creator) ဆိုရင် မဘမ်းဘူး
         if not is_admin(message.chat.id, message.from_user.id):
@@ -527,19 +556,9 @@ def handle_group_messages(message):
         else:
             print(f"✅ Admin {message.from_user.id} posted link, allowing...")
             return
-    
-    # 2. Link မဟုတ်ဘူးဆိုရင် "စာအုပ်" စကားကို ဆက်စစ်ပါ
-    if message.text and 'စာအုပ်' in message.text:
-        print(f"📚 Group/Supergroup မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
-        reply_text = "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် စာရေးဆရာအမည်လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰"
-        try:
-            bot.reply_to(message, reply_text, parse_mode="HTML")
-            print(f"✅ Group ထဲမှာ book reply ပြန်လိုက်ပြီ")
-        except Exception as e:
-            print(f"❌ Group ထဲမှာ reply မပြန်နိုင်: {e}")
 
 # ======================================================
-# 3️⃣ FIXED FORWARDED MESSAGE LINK BLOCKER (ADMIN/OWNER NOT BLOCKED)
+# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY)
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
 def handle_forwarded_messages(message):
@@ -625,6 +644,18 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 def handle_private_messages(message):
     if message.text and message.text.startswith('/'):
         return
+    
+    # Private chat တွင် "စာအုပ်" keyword အတွက် RANDOM REPLY
+    if message.text and 'စာအုပ်' in message.text:
+        print(f"📚 Private chat မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
+        try:
+            reply_text = get_random_book_reply()
+            bot.send_message(message.chat.id, reply_text, parse_mode="HTML")
+            print(f"✅ Private chat မှာ RANDOM book reply ပြန်လိုက်ပြီ")
+        except Exception as e:
+            print(f"❌ Private chat မှာ reply မပြန်နိုင်: {e}")
+        return
+    
     if message.forward_from_chat or message.forward_from:
         if message.text and is_link(message.text):
             bot.send_message(
@@ -829,9 +860,9 @@ except Exception as e:
 
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
-print("📚 'စာအုပ်' Auto Reply: ENABLED FOR ALL CHATS")
-print("🔗 Link Blocker: FIXED - Admin/Owner များကို မဘမ်းတော့ပါ")
-print("🤖 Bot Admin ဖြစ်မှသာ Link Blocker လုပ်ပါမယ်")
+print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
+print("🔗 Link Blocker: ENABLED (Admin/Owner များကို မဘမ်း)")
+print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
 print("🚀 Bot is now LIVE!")
