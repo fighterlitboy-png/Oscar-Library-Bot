@@ -49,8 +49,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 <b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
 <b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
 
-<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
-
+<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 အနာဂတ်မှာ 🤍
 
@@ -422,6 +421,7 @@ def welcome_new_member(message):
     
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
+
 <b>{user.first_name} ...🥰</b>
 
 <b>📚 Oscar's Library မှ</b>
@@ -491,8 +491,8 @@ def handle_group_messages(message):
         if not is_admin(message.chat.id, message.from_user.id):
             try:
                 bot.delete_message(message.chat.id, message.message_id)
-                warning_msg = f'⚠️ <a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a> 💢 <b>Link🔗 များကို ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်...'
-                bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
+                warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
+                bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
                 return  # Link ကိုင်တွယ်ပြီးရင် ဒီ function ကို ရပ်လိုက်ပါ
             except Exception as e:
                 print(f"Link blocker error: {e}")
@@ -539,9 +539,9 @@ def handle_forwarded_messages(message):
                 # Delete the forwarded message
                 bot.delete_message(message.chat.id, message.message_id)
                 
-                # Send warning
-                warning_msg = f'⚠️ <a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a> 💢\n\n<b>Forwarded message တွေထဲက Link🔗 တွေကိုလည်း ပိတ်ထားပါတယ်</b> 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် <b>Owner</b> ကို ဆက်သွယ်ပါနော်...'
-                bot.send_message(message.chat.id, warning_msg, parse_mode="HTML")
+                # Send warning - FIXED VERSION
+                warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Forwarded message တွေထဲက Link🔗 တွေကိုလည်း ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
+                bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
                 
                 print(f"✅ Deleted forwarded message with link")
             except Exception as e:
@@ -686,7 +686,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
 <b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
-စာရေးဆရာအလိုက်ရှာဖတ်ချင်ရင် 
+စာရေးဆရာအ�ိုက်ရှာဖတ်ချင်ရင် 
 <b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
 
 <b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
@@ -803,7 +803,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: ENABLED FOR ALL CHATS")
-print("🔗 Link Blocker: ENABLED (including @username and forwarded messages)")
+print("🔗 Link Blocker: ENABLED (with mention notifications)")
 print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
 print("🚀 Bot is now LIVE!")
