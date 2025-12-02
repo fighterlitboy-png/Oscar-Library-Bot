@@ -49,7 +49,8 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 <b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
 <b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
 
-<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
+<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်...
+
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 အနာဂတ်မှာ 🤍
 
@@ -410,22 +411,26 @@ def has_link_api(message):
     return False
 
 # ======================================================
-# 1️⃣ GROUP WELCOME SYSTEM
+# 1️⃣ GROUP WELCOME SYSTEM (FIXED VERSION)
 # ======================================================
-WELCOME_IMAGE = "welcome_photo.jpg"
+WELCOME_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
+
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
     print(f"👋 Welcome message for new member in chat: {message.chat.id}")
     track_active_group(message.chat.id)
+    
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
 <b>{user.first_name} ...🥰</b>
+
 <b>📚 Oscar's Library မှ</b>
 မင်းရဲ့စာဖတ်ခြင်းအတွက် 
 အမြဲအသင့်ရှိပါတယ်...🤓 
 
 ✨📚 မင်းကြိုက်တဲ့စာအုပ်တွေ 
 🗃️ ရွေးဖတ်ဖို့ <b>Button</b> ကိုနှိပ်ပါ ✨"""
+        
         welcome_kb = types.InlineKeyboardMarkup()
         welcome_kb.row(
             types.InlineKeyboardButton(
@@ -433,23 +438,31 @@ def welcome_new_member(message):
                 url="https://t.me/oscar_libray_bot"
             )
         )
+        
         try:
-            with open(WELCOME_IMAGE, "rb") as img:
-                bot.send_photo(
-                    message.chat.id, 
-                    img, 
-                    caption=caption,
-                    reply_markup=welcome_kb,
-                    parse_mode="HTML"
-                )
-        except Exception as e:
-            print(f"Welcome image error: {e}")
-            bot.send_message(
-                message.chat.id,
-                caption,
+            # Use URL instead of local file
+            print(f"🖼️ Sending welcome image from URL...")
+            bot.send_photo(
+                message.chat.id, 
+                WELCOME_IMAGE_URL, 
+                caption=caption,
                 reply_markup=welcome_kb,
                 parse_mode="HTML"
             )
+            print(f"✅ Welcome message sent successfully")
+        except Exception as e:
+            print(f"❌ Welcome image error: {e}")
+            # Fallback: Send text-only welcome message
+            try:
+                bot.send_message(
+                    message.chat.id,
+                    caption,
+                    reply_markup=welcome_kb,
+                    parse_mode="HTML"
+                )
+                print(f"✅ Sent text-only welcome message")
+            except Exception as e2:
+                print(f"❌ Failed to send welcome message: {e2}")
 
 # ======================================================
 # 2️⃣ GROUP MESSAGE HANDLER - UPDATED VERSION
@@ -791,6 +804,7 @@ print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: ENABLED FOR ALL CHATS")
 print("🔗 Link Blocker: ENABLED (including @username and forwarded messages)")
+print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
 print("🚀 Bot is now LIVE!")
 print("💡 Available Commands: /start, /forcepost")
