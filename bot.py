@@ -539,7 +539,69 @@ def handle_group_messages(message):
                 warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
                 bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
                 return
- လိုက်ရှာဖတ်ချင်ရင် 
+            except Exception as e:
+                print(f"Link blocker error: {e}")
+                return
+
+# ======================================================
+# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY)
+# ======================================================
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
+def handle_forwarded_messages(message):
+    """Forwarded messages ထဲက link တွေကို ပိတ်ခြင်း - FIXED"""
+    
+    # Bot command တွေကို skip
+    if message.text and message.text.startswith('/'):
+        return
+    
+    track_active_group(message.chat.id)
+    
+    print(f"📩 Forwarded message detected in group {message.chat.id}")
+    
+    # Check if forwarded message contains links
+    has_link = has_link_api(message)
+    
+    if has_link:
+        print(f"   ↳ Contains link: YES")
+        # Admin check - Admin ဆိုရင် မဘမ်းဘူး
+        if is_admin(message.chat.id, message.from_user.id):
+            print(f"   ↳ Admin {message.from_user.id} forwarded link, allowing...")
+            return
+        else:
+            try:
+                # Delete the forwarded message
+                bot.delete_message(message.chat.id, message.message_id)
+                
+                # Send warning
+                warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Forwarded message တွေထဲက Link🔗 တွေကိုလည်း ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
+                bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
+                
+                print(f"✅ Deleted forwarded message with link")
+            except Exception as e:
+                print(f"❌ Error deleting forwarded message: {e}")
+    else:
+        print(f"   ↳ Contains link: NO - Allowing forwarded message")
+
+# ===============================
+# /START MESSAGE
+# ===============================
+@bot.message_handler(commands=['start'])
+def start_message(message):
+    print(f"🔄 /start command from user: {message.from_user.id}")
+    first = message.from_user.first_name or "Friend"
+    text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
+<b>{first}</b> ...🥰
+<b>🌼 Oscar's Library 🌼</b> မှကြိုဆိုပါတယ်။
+စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
+
+<b>စာအုပ်ရှာဖို့ နှစ်ပေါင်းခွဲထားတယ်</b>
+<b>📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
+
+Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
+စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
+<b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
+
+စာရေးဆရာအအလိုက်ရှာဖတ်ချင်ရင် 
 <b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
 
 <b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
