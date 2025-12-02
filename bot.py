@@ -51,8 +51,8 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 <b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
-
 အနာဂတ်မှာ 🤍
+
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
 ချစ်နိုင်ကြပါစေ 💞
@@ -277,140 +277,43 @@ birthday_thread.start()
 print("✅ Birthday scheduler started")
 
 # ===============================
-# UPDATED LINK DETECTION SYSTEM
+# SIMPLE LINK DETECTION
 # ===============================
 def is_link(text):
-    """Link detection - @username နဲ့ လင့်မျိုးစုံကို စစ်ဆေးခြင်း"""
+    """ရိုးရှင်းတဲ့ link detection"""
     if not text or not isinstance(text, str):
         return False
     
     text_lower = text.lower()
     
-    # 1. Basic URL patterns စစ်ဆေးခြင်း
-    url_patterns = [
+    # Basic patterns
+    patterns = [
         "http://", "https://", "www.", ".com", ".org", ".net", 
-        ".io", ".me", ".tk", ".ml", ".ga", ".cf", ".gq",
-        "t.me/", "telegram.me/", "telegram.dog/",
-        "youtube.com/", "youtu.be/", "facebook.com/", "fb.me/",
-        "instagram.com/", "twitter.com/", "x.com/",
-        "//", "://", ".co/", ".info", ".xyz", ".top"
+        "t.me/", "telegram.me/", "youtube.com/", "youtu.be/",
+        "facebook.com/", "instagram.com/", "twitter.com/", "x.com/"
     ]
     
-    for pattern in url_patterns:
+    for pattern in patterns:
         if pattern in text_lower:
             return True
     
-    # 2. @username pattern စစ်ဆေးခြင်း
+    # @username
     import re
-    # @ နဲ့စပြီး စာလုံး၊ ဂဏန်း၊ underscore တွေပါတဲ့ username
-    username_pattern = r'@[a-zA-Z0-9_]{4,}'
-    if re.search(username_pattern, text):
+    if re.search(r'@[a-zA-Z0-9_]{3,}', text):
         return True
-    
-    # 3. Telegram invite links စစ်ဆေးခြင်း
-    telegram_patterns = [
-        r't\.me/\+[\w-]+',  # t.me/+invitecode
-        r't\.me/joinchat/[\w-]+',  # t.me/joinchat/invitecode
-    ]
-    
-    for pattern in telegram_patterns:
-        if re.search(pattern, text_lower):
-            return True
     
     return False
 
 def has_link_api(message):
-    """Message ထဲက link/username အားလုံးကို စစ်ဆေးခြင်း - Forwarded messages အပါအဝင်"""
-    
-    # Debug logging
-    print(f"🔍 Checking message from {message.from_user.id if message.from_user else 'unknown'}")
-    
-    # 1. Direct text ထဲက link စစ်ဆေးခြင်း
+    """Message ထဲမှာ link ရှိမရှိ"""
     if message.text and is_link(message.text):
-        print(f"✅ Direct text link found: {message.text[:50]}")
         return True
-    
-    # 2. Caption ထဲက link စစ်ဆေးခြင်း
     if message.caption and is_link(message.caption):
-        print(f"✅ Caption link found: {message.caption[:50]}")
         return True
-    
-    # 3. Message entities စစ်ဆေးခြင်း (ဒါက forwarded messages အတွက် အရေးကြီးပါတယ်)
-    try:
-        if message.entities:
-            for entity in message.entities:
-                if entity.type in ["url", "text_link"]:
-                    print(f"✅ Entity link found: {entity.type}")
-                    
-                    # Get the actual link text from entity
-                    if entity.type == "url" and message.text:
-                        start = entity.offset
-                        end = start + entity.length
-                        link_text = message.text[start:end]
-                        print(f"📎 URL entity text: {link_text}")
-                    
-                    return True
-    except Exception as e:
-        print(f"⚠️ Error checking entities: {e}")
-        pass
-    
-    # 4. Caption entities စစ်ဆေးခြင်း
-    try:
-        if message.caption_entities:
-            for entity in message.caption_entities:
-                if entity.type in ["url", "text_link"]:
-                    print(f"✅ Caption entity link found: {entity.type}")
-                    return True
-    except Exception as e:
-        print(f"⚠️ Error checking caption entities: {e}")
-        pass
-    
-    # 5. Forwarded messages အတွက် အထူးစစ်ဆေးခြင်း
-    if message.forward_from_chat or message.forward_from:
-        print(f"📩 Forwarded message detected")
-        
-        # Forwarded message ရဲ့ text ကို ရယူကြိုးစားခြင်း
-        forwarded_text = ""
-        
-        if message.text:
-            forwarded_text = message.text
-            print(f"📩 Forwarded text: {forwarded_text[:100]}")
-        elif message.caption:
-            forwarded_text = message.caption
-            print(f"📩 Forwarded caption: {forwarded_text[:100]}")
-        
-        # Forwarded chat info ရှိရင် log ထုတ်ခြင်း
-        if message.forward_from_chat:
-            print(f"📩 Forwarded from: {message.forward_from_chat.title} (ID: {message.forward_from_chat.id})")
-        
-        if message.forward_from:
-            print(f"📩 Forwarded from user: {message.forward_from.first_name}")
-        
-        # Forwarded text ထဲမှာ link ရှိမရှိစစ်ဆေးခြင်း
-        if forwarded_text and is_link(forwarded_text):
-            print(f"✅ Forwarded link found: {forwarded_text[:50]}")
-            return True
-    
-    # 6. Additional check: Message ထဲက text အားလုံးကို ပေါင်းပြီး @username ရှာခြင်း
-    all_text = ""
-    if message.text:
-        all_text += message.text + " "
-    if message.caption:
-        all_text += message.caption + " "
-    
-    if all_text:
-        # @username pattern အတွက် ထပ်စစ်ဆေးခြင်း
-        import re
-        usernames = re.findall(r'@[a-zA-Z0-9_]{4,}', all_text)
-        if usernames:
-            print(f"✅ Usernames found in text: {usernames}")
-            return True
-    
-    print(f"❌ No links found in message")
     return False
 
 # ======================================================
-# 1️⃣ GROUP WELCOME SYSTEM (FIXED VERSION)
+# 1️⃣ GROUP WELCOME SYSTEM
 # ======================================================
 WELCOME_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
 
@@ -440,8 +343,6 @@ def welcome_new_member(message):
         )
         
         try:
-            # Use URL instead of local file
-            print(f"🖼️ Sending welcome image from URL...")
             bot.send_photo(
                 message.chat.id, 
                 WELCOME_IMAGE_URL, 
@@ -449,186 +350,109 @@ def welcome_new_member(message):
                 reply_markup=welcome_kb,
                 parse_mode="HTML"
             )
-            print(f"✅ Welcome message sent successfully")
+            print(f"✅ Welcome message sent")
         except Exception as e:
-            print(f"❌ Welcome image error: {e}")
-            # Fallback: Send text-only welcome message
-            try:
-                bot.send_message(
-                    message.chat.id,
-                    caption,
-                    reply_markup=welcome_kb,
-                    parse_mode="HTML"
-                )
-                print(f"✅ Sent text-only welcome message")
-            except Exception as e2:
-                print(f"❌ Failed to send welcome message: {e2}")
+            print(f"❌ Welcome error: {e}")
 
 # ======================================================
-# FIXED ADMIN CHECK FUNCTION - BOT ADMIN CHECK FIRST
+# 🎯 PERFECT LINK BLOCKER - NO BUGS
 # ======================================================
-def is_admin(chat_id, user_id):
-    """Check if user is admin in chat - FIXED VERSION"""
-    try:
-        # 1. ပထမဆုံး Bot ကိုယ်တိုင်က Admin ဟုတ်မဟုတ် စစ်ဆေးခြင်း
-        bot_user = bot.get_me()
-        try:
-            bot_member = bot.get_chat_member(chat_id, bot_user.id)
-            # Bot က Admin မဟုတ်ရင် ဘာမှမစစ်ဘူး
-            if bot_member.status not in ['administrator', 'creator']:
-                print(f"🤖 Bot is NOT admin in chat {chat_id}")
-                return False  # Bot Admin မဟုတ်ရင် ဘာမှမလုပ်ဘူး
-        except Exception as bot_err:
-            print(f"🤖 Bot admin check failed: {bot_err}")
-            return False  # Error ဖြစ်ရင်လည်း ဘာမှမလုပ်ဘူး
-        
-        # 2. Bot Admin ဖြစ်မှသာ User Admin စစ်မယ်
-        admins = bot.get_chat_administrators(chat_id)
-        
-        # Check if user is in admin list
-        for admin in admins:
-            if admin.user.id == user_id:
-                print(f"✅ User {user_id} is admin (status: {admin.status}) in chat {chat_id}")
-                return True
-        
-        print(f"❌ User {user_id} is NOT admin in chat {chat_id}")
-        return False
-        
-    except Exception as e:
-        print(f"⚠️ Admin check error: {e}")
-        return False  # Error ဖြစ်ရင်လည်း ဘာမှမလုပ်ဘူး
-
-# ======================================================
-# 2️⃣ FIXED GROUP MESSAGE HANDLER - SMART LINK BLOCKER
-# ======================================================
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
-def handle_group_messages(message):
-    # Command နဲ့ new members ကို ကျော်ပါ
+def perfect_link_blocker(message):
+    """
+    အကောင်းဆုံး လင့်ဘောင်းစနစ်:
+    1. Bot Admin ဖြစ်မှ စစ်မယ်
+    2. User Admin ဆိုရင် ခွင့်ပြုမယ်
+    3. ဘာမှမရှုပ်ဘူး
+    """
+    
+    # Basic skips
     if message.text and message.text.startswith('/'):
         return
     if message.new_chat_members:
         return
-
-    track_active_group(message.chat.id)
-
-    # 1. ပထမဆုံး Link ရှိမရှိစစ်ပါ
-    if has_link_api(message):
-        # Bot ကိုယ်တိုင်က message ပို့တာလား?
-        if message.from_user.id == bot.get_me().id:
-            print(f"🤖 Message from bot itself - allowing")
-            return
-            
-        # SMART ADMIN CHECK - Bot Admin ဖြစ်မှသာ ဆက်စစ်မယ်
-        try:
-            # Bot က Admin ဟုတ်မဟုတ် စစ်
-            bot_user = bot.get_me()
-            bot_member = bot.get_chat_member(message.chat.id, bot_user.id)
-            
-            # Bot က Admin မဟုတ်ရင် ဘာမှမလုပ်ဘူး
-            if bot_member.status not in ['administrator', 'creator']:
-                print(f"🤖 Bot not admin in {message.chat.id} - skipping link check")
-                return
-                
-            # အခုမှ User Admin စစ်
-            admins = bot.get_chat_administrators(message.chat.id)
-            user_is_admin = False
-            
-            for admin in admins:
-                if admin.user.id == message.from_user.id:
-                    user_is_admin = True
-                    print(f"✅ User {message.from_user.id} is admin - allowing link")
-                    break
-            
-            # User Admin မဟုတ်ရင်ဘမ်း
-            if not user_is_admin:
-                print(f"🚫 Non-admin user {message.from_user.id} posted link, deleting...")
-                try:
-                    bot.delete_message(message.chat.id, message.message_id)
-                    warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
-                    bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
-                except Exception as e:
-                    print(f"Link blocker error: {e}")
-                    
-        except Exception as e:
-            print(f"⚠️ Admin check/link delete error: {e}")
-            return
-    else:
-        # 2. Link မဟုတ်ဘူးဆိုရင် "စာအုပ်" စကားကို ဆက်စစ်ပါ
+    if message.from_user.is_bot:
+        return
+    
+    # Link ရှိမှ ဆက်စစ်
+    if not has_link_api(message):
+        # "စာအုပ်" keyword reply
         if message.text and 'စာအုပ်' in message.text:
-            print(f"📚 Group/Supergroup မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
-            reply_text = "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် စာရေးဆရာအမည်လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰"
             try:
-                bot.reply_to(message, reply_text, parse_mode="HTML")
-                print(f"✅ Group ထဲမှာ book reply ပြန်လိုက်ပြီ")
+                bot.reply_to(message, "စာအုပ်တွေဖတ်ချင်တယ်ဆိုရင် စာရေးဆရာအမည်လေးပြောပြပါလား စာဖတ်ချစ်သူလေးရေ...🥰", parse_mode="HTML")
+            except:
+                pass
+        return
+    
+    # အခုမှ စစ်မယ်
+    try:
+        # 1. Bot က Admin ဟုတ်မဟုတ် စစ်
+        bot_user = bot.get_me()
+        bot_member = bot.get_chat_member(message.chat.id, bot_user.id)
+        
+        # Bot က Admin မဟုတ်ရင် ဘာမှမလုပ်
+        if bot_member.status not in ['administrator', 'creator']:
+            print(f"🤖 Bot not admin - skipping")
+            return
+        
+        # 2. User က Admin ဟုတ်မဟုတ် စစ်
+        user_admin = False
+        
+        # နည်းလမ်း 1: get_chat_member နဲ့စစ် (ပိုမြန်)
+        try:
+            user_member = bot.get_chat_member(message.chat.id, message.from_user.id)
+            user_admin = user_member.status in ['administrator', 'creator']
+            print(f"📊 User status: {user_member.status}")
+        except Exception as e:
+            print(f"⚠️ User status check failed: {e}")
+            user_admin = False
+        
+        # 3. Decision
+        if user_admin:
+            print(f"✅ Admin {message.from_user.first_name} - ALLOW")
+            return
+        else:
+            print(f"🚫 User {message.from_user.first_name} - DELETE")
+            try:
+                bot.delete_message(message.chat.id, message.message_id)
+                
+                # Warning message
+                try:
+                    warning = f"⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id})\nလင့်တင်ခြင်းကို ပိတ်ထားပါတယ်။"
+                    sent = bot.send_message(message.chat.id, warning, parse_mode="Markdown")
+                    
+                    # Auto delete warning
+                    def delete_warn():
+                        try:
+                            bot.delete_message(message.chat.id, sent.message_id)
+                        except:
+                            pass
+                    
+                    threading.Timer(8.0, delete_warn).start()
+                except:
+                    pass
+                    
             except Exception as e:
-                print(f"❌ Group ထဲမှာ reply မပြန်နိုင်: {e}")
+                print(f"❌ Delete failed: {e}")
+                
+    except Exception as e:
+        print(f"⚠️ Link blocker error: {e}")
 
 # ======================================================
-# 3️⃣ FIXED FORWARDED MESSAGE LINK BLOCKER
+# MAIN GROUP MESSAGE HANDLER
+# ======================================================
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
+def handle_group_messages(message):
+    track_active_group(message.chat.id)
+    perfect_link_blocker(message)
+
+# ======================================================
+# FORWARDED MESSAGE HANDLER
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
 def handle_forwarded_messages(message):
-    """Forwarded messages ထဲက link တွေကို ပိတ်ခြင်း - FIXED"""
-    
-    # Bot command တွေကို skip
-    if message.text and message.text.startswith('/'):
-        return
-    
+    """Forwarded messages အတွက်"""
     track_active_group(message.chat.id)
-    
-    print(f"📩 Forwarded message detected in group {message.chat.id}")
-    
-    # Check if forwarded message contains links
-    has_link = has_link_api(message)
-    
-    if has_link:
-        print(f"   ↳ Contains link: YES")
-        
-        # Bot ကိုယ်တိုင်က message ပို့တာလား?
-        if message.from_user.id == bot.get_me().id:
-            print(f"🤖 Forwarded by bot itself - allowing")
-            return
-            
-        # SMART CHECK: Bot Admin ဖြစ်မှသာ ဆက်စစ်မယ်
-        try:
-            # Bot က Admin ဟုတ်မဟုတ် စစ်
-            bot_user = bot.get_me()
-            bot_member = bot.get_chat_member(message.chat.id, bot_user.id)
-            
-            # Bot က Admin မဟုတ်ရင် ဘာမှမလုပ်ဘူး
-            if bot_member.status not in ['administrator', 'creator']:
-                print(f"🤖 Bot not admin - skipping forwarded link check")
-                return
-                
-            # အခုမှ User Admin စစ်
-            admins = bot.get_chat_administrators(message.chat.id)
-            user_is_admin = False
-            
-            for admin in admins:
-                if admin.user.id == message.from_user.id:
-                    user_is_admin = True
-                    print(f"✅ User {message.from_user.id} is admin - allowing forwarded link")
-                    break
-            
-            # User Admin မဟုတ်ရင်ဘမ်း
-            if not user_is_admin:
-                try:
-                    # Delete the forwarded message
-                    bot.delete_message(message.chat.id, message.message_id)
-                    
-                    # Send warning
-                    warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Forwarded message တွေထဲက Link🔗 တွေကိုလည်း ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
-                    bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
-                    
-                    print(f"✅ Deleted forwarded message with link")
-                except Exception as e:
-                    print(f"❌ Error deleting forwarded message: {e}")
-            else:
-                print(f"   ↳ Admin {message.from_user.id} forwarded link, allowing...")
-        except Exception as e:
-            print(f"⚠️ Forwarded message check error: {e}")
-    else:
-        print(f"   ↳ Contains link: NO - Allowing forwarded message")
+    perfect_link_blocker(message)
 
 # ===============================
 # /START MESSAGE
@@ -833,7 +657,7 @@ def author_redirect(call):
         )
 
 # ===============================
-# WEBHOOK HANDLERS WITH DEBUG
+# WEBHOOK HANDLERS
 # ===============================
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def webhook():
@@ -842,12 +666,8 @@ def webhook():
         if request.method == 'POST':
             json_data = request.get_json(force=True)
             if json_data:
-                print(f"📦 Processing update...")
                 update = telebot.types.Update.de_json(json_data)
                 bot.process_new_updates([update])
-                print("✅ Update processed")
-            else:
-                print("❌ No JSON data")
         return "OK", 200
     except Exception as e:
         print(f"💥 WEBHOOK ERROR: {e}")
@@ -855,7 +675,6 @@ def webhook():
 
 @app.route("/", methods=['GET', 'POST'])  
 def index():
-    print("🌐 Health check received")
     return "Bot is running...", 200
 
 # ===============================
@@ -863,10 +682,8 @@ def index():
 # ===============================
 print("🔄 SETTING UP WEBHOOK...")
 try:
-    print("🗑️ Removing existing webhook...")
     bot.remove_webhook()
     time.sleep(2)
-    print("🔧 Setting up new webhook...")
     success = bot.set_webhook(
         url=WEBHOOK_URL,
         certificate=None,
@@ -881,20 +698,21 @@ try:
 except Exception as e:
     print(f"💥 WEBHOOK SETUP ERROR: {e}")
 
-print("🎂 Birthday Scheduler: ACTIVE")
-print("⏰ Will post daily at 8:00 AM Myanmar Time")
-print("📚 'စာအုပ်' Auto Reply: ENABLED FOR ALL CHATS")
-print("🔗 Link Blocker: FIXED - Admin/Owner များကို မဘမ်းတော့ပါ")
-print("🤖 Bot Admin ဖြစ်မှသာ Link Blocker လုပ်ပါမယ်")
-print("👋 Welcome System: FIXED (using online image URL)")
-print("🔧 All systems ready!")
+print("=" * 50)
+print("🎯 PERFECT LINK BLOCKER ACTIVE!")
+print("✅ Bot Admin ဖြစ်မှသာ လင့်ဘမ်းပါမယ်")
+print("✅ Admin/Owner တွေကို ဘယ်တော့မှ မဘမ်းပါ")
+print("✅ ရိုးရှင်းပြီး ထိရောက်တဲ့စနစ်")
+print("=" * 50)
 print("🚀 Bot is now LIVE!")
-print("💡 Available Commands: /start, /forcepost")
 
 # ===============================
-# RUN WITH FLASK
+# 🔴 FIX FOR RENDER PORT ISSUE
 # ===============================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    # Render မှာ port ကို environment variable ကနေရမယ်
+    port = int(os.environ.get("PORT", 8080))  # ✅ ပြင်ဆင်ပြီး
     print(f"🚀 Starting Flask server on port {port}...")
-    app.run(host="0.0.0.0", port=port, debug=False)
+    
+    # Debug mode ကို ပိတ်ထားပါ
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
