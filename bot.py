@@ -451,6 +451,7 @@ def welcome_new_member(message):
     
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
+
 <b>{user.first_name} ...🥰</b>
 
 <b>📚 Oscar's Library မှ</b>
@@ -519,7 +520,7 @@ def is_admin(chat_id, user_id):
         return False
 
 # ======================================================
-# 2️⃣ GROUP MESSAGE HANDLER WITH RANDOM REPLIES
+# 2️⃣ GROUP MESSAGE HANDLER WITH RANDOM REPLIES (FIXED VERSION)
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
 def handle_group_messages(message):
@@ -531,6 +532,12 @@ def handle_group_messages(message):
 
     track_active_group(message.chat.id)
 
+    # ပထမဆုံး SPECIAL ALLOWED USERS စစ်ပါ
+    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
+        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} in group - Allowing all messages")
+        # SPECIAL ALLOWED USER ဆိုရင် "စာအုပ်" keyword အတွက်ပါ မစစ်တော့ပါ
+        return
+
     # 1. ပထမဆုံး "စာအုပ်" keyword စစ်ပါ (RANDOM REPLY)
     if message.text and 'စာအုပ်' in message.text:
         print(f"📚 Group/Supergroup မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
@@ -538,17 +545,13 @@ def handle_group_messages(message):
             reply_text = get_random_book_reply()
             bot.reply_to(message, reply_text, parse_mode="HTML")
             print(f"✅ Group ထဲမှာ RANDOM book reply ပြန်လိုက်ပြီ")
+            return  # "စာအုပ်" keyword ရှိရင် ဒီကနေ return ပြန်
         except Exception as e:
             print(f"❌ Group ထဲမှာ reply မပြန်နိုင်: {e}")
-        return  # "စာအုပ်" keyword ရှိရင် ဒီကနေ return ပြန်
+            return
 
     # 2. ပြီးမှ Link ရှိမရှိစစ်ပါ
     if has_link_api(message):
-        # SPECIAL ALLOWED USERS - ဒီ user ID များကို မဘမ်းပါ
-        if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
-            print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} posted link - ALLOWED")
-            return
-            
         # Admin check - Admin ဆိုရင် မဘမ်းဘူး
         if is_admin(message.chat.id, message.from_user.id):
             print(f"✅ Admin/Owner {message.from_user.id} posted link, allowing...")
@@ -565,7 +568,7 @@ def handle_group_messages(message):
                 return
 
 # ======================================================
-# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY)
+# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY) - FIXED
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
 def handle_forwarded_messages(message):
@@ -670,9 +673,10 @@ def handle_private_messages(message):
             reply_text = get_random_book_reply()
             bot.send_message(message.chat.id, reply_text, parse_mode="HTML")
             print(f"✅ Private chat မှာ RANDOM book reply ပြန်လိုက်ပြီ")
+            return
         except Exception as e:
             print(f"❌ Private chat မှာ reply မပြန်နိုင်: {e}")
-        return
+            return
     
     if message.forward_from_chat or message.forward_from:
         if message.text and is_link(message.text):
