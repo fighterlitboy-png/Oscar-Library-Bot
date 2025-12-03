@@ -78,13 +78,6 @@ last_birthday_post = None
 post_in_progress = False
 
 # ===============================
-# SPECIAL ALLOWED USER IDs
-# ===============================
-# ဒီ user IDs များကို လုံးဝလွတ်ခွင့်ပေးထားမည် (link blocker မဘမ်းပါ)
-SPECIAL_ALLOWED_IDS = {6904606472, 6272937931}
-print(f"👑 Special Allowed Users: {SPECIAL_ALLOWED_IDS}")
-
-# ===============================
 # KEEP ALIVE
 # ===============================
 def keep_alive():
@@ -333,11 +326,6 @@ def has_link_api(message):
     # Debug logging
     print(f"🔍 Checking message from {message.from_user.id if message.from_user else 'unknown'}")
     
-    # SPECIAL ALLOWED USERS - ဒီ user ID များအတွက် စစ်ဆေးခြင်းကို ကျော်ပါ
-    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
-        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} - Skipping link check")
-        return False
-    
     # 1. Direct text ထဲက link စစ်ဆေးခြင်း
     if message.text and is_link(message.text):
         print(f"✅ Direct text link found: {message.text[:50]}")
@@ -404,7 +392,7 @@ def has_link_api(message):
             print(f"✅ Forwarded link found: {forwarded_text[:50]}")
             return True
     
-    # 6. Additional check: Message ထဲက text အားလုံးကို ပေါင်းပြီး @username ရာခြင်း
+    # 6. Additional check: Message ထဲက text အားလုံးကို ပေါင်းပြီး @username ရှာခြင်း
     all_text = ""
     if message.text:
         all_text += message.text + " "
@@ -500,11 +488,6 @@ def welcome_new_member(message):
 def is_admin(chat_id, user_id):
     """Check if user is admin or owner in chat - CORRECTED VERSION"""
     try:
-        # SPECIAL ALLOWED USERS - ဒီ user ID များကို အလိုအလျောက် admin အဖြစ် သတ်မှတ်ပါ
-        if user_id in SPECIAL_ALLOWED_IDS:
-            print(f"👑 SPECIAL ALLOWED USER {user_id} - Auto admin status granted")
-            return True
-            
         # Directly check user's status in chat
         chat_member = bot.get_chat_member(chat_id, user_id)
         
@@ -520,7 +503,7 @@ def is_admin(chat_id, user_id):
         return False
 
 # ======================================================
-# 2️⃣ GROUP MESSAGE HANDLER WITH RANDOM REPLIES (FIXED VERSION)
+# 2️⃣ GROUP MESSAGE HANDLER WITH RANDOM REPLIES
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
 def handle_group_messages(message):
@@ -532,12 +515,6 @@ def handle_group_messages(message):
 
     track_active_group(message.chat.id)
 
-    # ပထမဆုံး SPECIAL ALLOWED USERS စစ်ပါ
-    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
-        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} in group - Allowing all messages")
-        # SPECIAL ALLOWED USER ဆိုရင် "စာအုပ်" keyword အတွက်ပါ မစစ်တော့ပါ
-        return
-
     # 1. ပထမဆုံး "စာအုပ်" keyword စစ်ပါ (RANDOM REPLY)
     if message.text and 'စာအုပ်' in message.text:
         print(f"📚 Group/Supergroup မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
@@ -545,10 +522,9 @@ def handle_group_messages(message):
             reply_text = get_random_book_reply()
             bot.reply_to(message, reply_text, parse_mode="HTML")
             print(f"✅ Group ထဲမှာ RANDOM book reply ပြန်လိုက်ပြီ")
-            return  # "စာအုပ်" keyword ရှိရင် ဒီကနေ return ပြန်
         except Exception as e:
             print(f"❌ Group ထဲမှာ reply မပြန်နိုင်: {e}")
-            return
+        return  # "စာအုပ်" keyword ရှိရင် ဒီကနေ return ပြန်
 
     # 2. ပြီးမှ Link ရှိမရှိစစ်ပါ
     if has_link_api(message):
@@ -568,7 +544,7 @@ def handle_group_messages(message):
                 return
 
 # ======================================================
-# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY) - FIXED
+# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY)
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
 def handle_forwarded_messages(message):
@@ -581,11 +557,6 @@ def handle_forwarded_messages(message):
     track_active_group(message.chat.id)
     
     print(f"📩 Forwarded message detected in group {message.chat.id}")
-    
-    # SPECIAL ALLOWED USERS - ဒီ user ID များကို မဘမ်းပါ
-    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
-        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} forwarded message - ALLOWED")
-        return
     
     # Check if forwarded message contains links
     has_link = has_link_api(message)
@@ -661,11 +632,6 @@ def handle_private_messages(message):
     if message.text and message.text.startswith('/'):
         return
     
-    # SPECIAL ALLOWED USERS - private chat တွင်လည်း အတူတူပင်
-    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
-        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} in private chat - Allowing all messages")
-        return
-    
     # Private chat တွင် "စာအုပ်" keyword အတွက် RANDOM REPLY
     if message.text and 'စာအုပ်' in message.text:
         print(f"📚 Private chat မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
@@ -673,10 +639,9 @@ def handle_private_messages(message):
             reply_text = get_random_book_reply()
             bot.send_message(message.chat.id, reply_text, parse_mode="HTML")
             print(f"✅ Private chat မှာ RANDOM book reply ပြန်လိုက်ပြီ")
-            return
         except Exception as e:
             print(f"❌ Private chat မှာ reply မပြန်နိုင်: {e}")
-            return
+        return
     
     if message.forward_from_chat or message.forward_from:
         if message.text and is_link(message.text):
@@ -883,7 +848,6 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
-print(f"👑 SPECIAL ALLOWED USERS: {SPECIAL_ALLOWED_IDS} - LINK BLOCKER BYPASSED")
 print("🔗 Link Blocker: ENABLED (Admin/Owner များကို မဘမ်း - FIXED)")
 print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
