@@ -78,6 +78,13 @@ last_birthday_post = None
 post_in_progress = False
 
 # ===============================
+# SPECIAL ALLOWED USER IDs
+# ===============================
+# ဒီ user IDs များကို လုံးဝလွတ်ခွင့်ပေးထားမည် (link blocker မဘမ်းပါ)
+SPECIAL_ALLOWED_IDS = {6904606472, 6272937931}
+print(f"👑 Special Allowed Users: {SPECIAL_ALLOWED_IDS}")
+
+# ===============================
 # KEEP ALIVE
 # ===============================
 def keep_alive():
@@ -326,6 +333,11 @@ def has_link_api(message):
     # Debug logging
     print(f"🔍 Checking message from {message.from_user.id if message.from_user else 'unknown'}")
     
+    # SPECIAL ALLOWED USERS - ဒီ user ID များအတွက် စစ်ဆေးခြင်းကို ကျော်ပါ
+    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
+        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} - Skipping link check")
+        return False
+    
     # 1. Direct text ထဲက link စစ်ဆေးခြင်း
     if message.text and is_link(message.text):
         print(f"✅ Direct text link found: {message.text[:50]}")
@@ -392,7 +404,7 @@ def has_link_api(message):
             print(f"✅ Forwarded link found: {forwarded_text[:50]}")
             return True
     
-    # 6. Additional check: Message ထဲက text အားလုံးကို ပေါင်းပြီး @username ရှာခြင်း
+    # 6. Additional check: Message ထဲက text အားလုံးကို ပေါင်းပြီး @username ရာခြင်း
     all_text = ""
     if message.text:
         all_text += message.text + " "
@@ -439,7 +451,6 @@ def welcome_new_member(message):
     
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
-
 <b>{user.first_name} ...🥰</b>
 
 <b>📚 Oscar's Library မှ</b>
@@ -488,6 +499,11 @@ def welcome_new_member(message):
 def is_admin(chat_id, user_id):
     """Check if user is admin or owner in chat - CORRECTED VERSION"""
     try:
+        # SPECIAL ALLOWED USERS - ဒီ user ID များကို အလိုအလျောက် admin အဖြစ် သတ်မှတ်ပါ
+        if user_id in SPECIAL_ALLOWED_IDS:
+            print(f"👑 SPECIAL ALLOWED USER {user_id} - Auto admin status granted")
+            return True
+            
         # Directly check user's status in chat
         chat_member = bot.get_chat_member(chat_id, user_id)
         
@@ -528,6 +544,11 @@ def handle_group_messages(message):
 
     # 2. ပြီးမှ Link ရှိမရှိစစ်ပါ
     if has_link_api(message):
+        # SPECIAL ALLOWED USERS - ဒီ user ID များကို မဘမ်းပါ
+        if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
+            print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} posted link - ALLOWED")
+            return
+            
         # Admin check - Admin ဆိုရင် မဘမ်းဘူး
         if is_admin(message.chat.id, message.from_user.id):
             print(f"✅ Admin/Owner {message.from_user.id} posted link, allowing...")
@@ -557,6 +578,11 @@ def handle_forwarded_messages(message):
     track_active_group(message.chat.id)
     
     print(f"📩 Forwarded message detected in group {message.chat.id}")
+    
+    # SPECIAL ALLOWED USERS - ဒီ user ID များကို မဘမ်းပါ
+    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
+        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} forwarded message - ALLOWED")
+        return
     
     # Check if forwarded message contains links
     has_link = has_link_api(message)
@@ -630,6 +656,11 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
     if message.text and message.text.startswith('/'):
+        return
+    
+    # SPECIAL ALLOWED USERS - private chat တွင်လည်း အတူတူပင်
+    if message.from_user and message.from_user.id in SPECIAL_ALLOWED_IDS:
+        print(f"👑 SPECIAL ALLOWED USER {message.from_user.id} in private chat - Allowing all messages")
         return
     
     # Private chat တွင် "စာအုပ်" keyword အတွက် RANDOM REPLY
@@ -848,6 +879,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
+print(f"👑 SPECIAL ALLOWED USERS: {SPECIAL_ALLOWED_IDS} - LINK BLOCKER BYPASSED")
 print("🔗 Link Blocker: ENABLED (Admin/Owner များကို မဘမ်း - FIXED)")
 print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
