@@ -323,37 +323,6 @@ def is_link(text):
     return False
 
 # ======================================================
-# MESSAGE SKIP CHECK
-# ======================================================
-def should_skip_message(message):
-    """Message ကို skip လုပ်သင့်မလုပ်သင့် ဆုံးဖြတ်ခြင်း"""
-    
-    # 1. Channel posts အားလုံး skip
-    if message.chat.type == "channel":
-        print(f"📢 Skipping: Direct channel post")
-        return True
-    
-    # 2. Forwarded from channel
-    if message.forward_from_chat and message.forward_from_chat.type == "channel":
-        print(f"📢 Skipping: Forwarded from channel '{message.forward_from_chat.title}'")
-        return True
-    
-    # 3. Author signature ရှိရင် (channels only)
-    if hasattr(message, 'author_signature') and message.author_signature:
-        print(f"📢 Skipping: Has author signature (likely channel)")
-        return True
-    
-    # 4. Channel username ရှိရင်
-    if hasattr(message.chat, 'username') and message.chat.username:
-        # Check if it's a known channel
-        channel_usernames = ['oscarhelpservices', 'sharebykosoemoe', 'oscar_libray_bot']
-        if message.chat.username in channel_usernames:
-            print(f"📢 Skipping: Known channel @{message.chat.username}")
-            return True
-    
-    return False
-
-# ======================================================
 # ADMIN STATUS CHECK (NO ID CHECKING)
 # ======================================================
 def is_user_admin(message):
@@ -473,22 +442,24 @@ def welcome_new_member(message):
                 print(f"❌ Failed to send welcome: {e2}")
 
 # ======================================================
-# MAIN VALID MESSAGE HANDLER (NO CHANNEL POSTS)
+# MAIN GROUP MESSAGE HANDLER
 # ======================================================
-@bot.message_handler(func=lambda m: not should_skip_message(m) and m.chat.type in ["group", "supergroup", "private"])
-def handle_valid_messages(message):
-    """Valid messages only (no channel posts)"""
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio'])
+def handle_group_messages(message):
+    """Group messages handler"""
     
-    # Skip commands
+    # Skip commands and new members
     if message.text and message.text.startswith('/'):
+        return
+    if message.new_chat_members:
         return
     
     track_active_group(message.chat.id)
     
     print(f"\n" + "="*50)
-    print(f"📨 VALID MESSAGE (No Channel)")
+    print(f"📨 GROUP MESSAGE")
     print(f"👤 From: {message.from_user.first_name if message.from_user else 'Unknown'}")
-    print(f"💬 Chat: {message.chat.title if hasattr(message.chat, 'title') else message.chat.type}")
+    print(f"💬 Chat: {message.chat.title if hasattr(message.chat, 'title') else 'Group'}")
     print(f"📝 Text: {message.text[:100] if message.text else 'Media'}")
     
     # "စာအုပ်" keyword စစ်ပါ
@@ -499,14 +470,6 @@ def handle_valid_messages(message):
         except Exception as e:
             print(f"❌ Reply error: {e}")
         return
-    
-    # Group မဟုတ်ရင် private chat ဆိုရင် return
-    if message.chat.type == "private":
-        print(f"💬 Private chat - no link check")
-        return
-    
-    # Group အတွက်သာ link check လုပ်ပါ
-    print(f"👥 Group message - checking admin status...")
     
     # Admin check - STATUS နဲ့ပဲစစ်
     if is_user_admin(message):
@@ -655,6 +618,23 @@ def check_admin_status(message):
         
     except Exception as e:
         bot.reply_to(message, f"❌ Error: {e}")
+
+# ======================================================
+# PRIVATE CHAT HANDLER
+# ======================================================
+@bot.message_handler(func=lambda m: m.chat.type == 'private')
+def handle_private_messages(message):
+    if message.text and message.text.startswith('/'):
+        return
+    
+    # "စာအုပ်" keyword စစ်ပါ
+    if message.text and 'စာအုပ်' in message.text:
+        print(f"📚 Private chat 'စာအုပ်' keyword")
+        try:
+            bot.send_message(message.chat.id, get_random_book_reply(), parse_mode="HTML")
+        except Exception as e:
+            print(f"❌ Reply error: {e}")
+        return
 
 # ======================================================
 # FORCE POST COMMAND
@@ -868,7 +848,6 @@ print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: ENABLED")
 print("🔗 Link Blocker: ADMIN STATUS CHECK ONLY")
 print("👑 Admin Check: By STATUS (not ID)")
-print("🚫 Channel Posts: SKIPPED (Not processed)")
 print("🚀 Bot is now LIVE!")
 print("💡 Commands: /start, /forcepost, /myid, /admincheck")
 print("🔒 Admin users can post links automatically")
@@ -877,13 +856,14 @@ print("🔒 Admin users can post links automatically")
 # RUN WITH FLASK
 # ===============================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # 10000 ကနေ 5000 ပြောင်းပါ
+    port = int(os.environ.get("PORT", 10000))
     
     print("\n" + "="*60)
     print("🚀 STARTING FLASK SERVER")
     print("="*60)
     print(f"📡 Port: {port}")
     print(f"🌐 Webhook URL: {WEBHOOK_URL}")
+    print(f"🤖 Bot: @oscar_libray_bot")
     print("="*60 + "\n")
     
     import sys
