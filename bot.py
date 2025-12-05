@@ -283,9 +283,6 @@ print("✅ Birthday scheduler started")
 # ===============================
 # UPDATED LINK DETECTION SYSTEM
 # ===============================
-# Owner / Admin bypass 
-if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
-    return  # ဘမ်းမလုပ်ပါ
 def is_link(text):
     """Link detection - @username နဲ့ လင့်မျိုးစုံကို စစ်ဆေးခြင်း"""
     if not text or not isinstance(text, str):
@@ -684,7 +681,7 @@ def handle_private_messages(message):
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def check_links(message):
 
-    # 🟢 Owner / Admin bypass
+    # 🟢 Owner / Admin bypass (မှန်ကန်)
     if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
         return
 
