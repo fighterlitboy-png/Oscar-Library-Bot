@@ -678,13 +678,15 @@ def handle_private_messages(message):
 # ======================================================
 # 🔗 LINK BLOCK SYSTEM (Admin / Owner Bypass) - FINAL VERSION
 # ======================================================
-@bot.message_handler(func=lambda m: True, content_types=['text'])
+# --- ဒီနေရာမှာ ပြောင်းလဲခဲ့ပါတယ် ---
+# Group တွေမှာ ဒီ handler ကို အလုပ်မလုပ်နဲ့ ပိတ်လိုက်ခြင်းဖြစ်ပါတယ်။
+@bot.message_handler(func=lambda m: m.chat.type not in ["group", "supergroup"], content_types=['text'])
 def check_links(message):
     # 🟢 GLOBAL OWNER / ADMIN BYPASS (ပထမဆုံးစစ်ချက်)
     if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
         return
 
-    # 🟢 LOCAL GROUP ADMIN BYPASS (ဒုတိယစစ်ချက်)
+    # 🟢 LOCAL GROUP ADMIN BYPASS (ဒုတိယစစ်ချက်) - Private chat မှာ လုပ်ဆောင်မည်မဟုတ်သော်လည်း ထားထားပါတယ်။
     if is_admin(message.chat.id, message.from_user.id):
         return
 
@@ -877,7 +879,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
-print("🔗 Link Blocker: ENABLED (Global & Local Admins များကို မဘမ်း - FINAL)")
+print("🔗 Link Blocker: ENABLED (Global & Local Admins များကို မဘမ်း - FINAL & FIXED)")
 print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
