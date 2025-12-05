@@ -477,36 +477,18 @@ def welcome_new_member(message):
             except Exception as e2:
                 print(f"❌ Failed to send welcome message: {e2}")
 
-# ======================================================
-# FIXED ADMIN CHECK FUNCTION - CORRECTED VERSION
-# ======================================================
-def is_admin(chat_id, user_id):
-    """Check if user is admin or owner in chat - CORRECTED VERSION"""
-    try:
-        # Directly check user's status in chat
-        chat_member = bot.get_chat_member(chat_id, user_id)
-        
-        if chat_member.status in ['administrator', 'creator']:
-            print(f"✅ User {user_id} is admin/owner (status: {chat_member.status}) in chat {chat_id}")
-            return True
-        
-        print(f"❌ User {user_id} is NOT admin (status: {chat_member.status}) in chat {chat_id}")
-        return False
-        
-    except Exception as e:
-        print(f"⚠️ Admin check error: {e}")
-        return False
 
 # ======================================================
-# 🌟🌟🌟 NEW UNIFIED GROUP HANDLER 🌟🌟🌟
+# --- MODIFIED SECTION ---
 # ======================================================
-# --- အောက်က Handler နှစ်ခုကို ဖယ်ရှားပြီး ဒီအသစ်နဲ့ အစားထိုးပါ ---
+# အောက်က Handler အဟောင်းတွေကို ဖယ်ရှားလိုက်ပြီး၊ အသစ်တစ်ခုတည်းနဲ့ အစားထိုးပေးထားပါတယ်။
 # def handle_group_messages(message): ...
 # def handle_forwarded_messages(message): ...
+# def check_links(message): ...
 
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio'])
 def handle_all_group_activity(message):
-    """အရာအားလုံးကို စုပေါင်းထားတဲ့ Group Handler - Admin Check ကို ပထမဆုံးဆောင်ရွက်ပါမယ်။"""
+    """Group အတွင်းက ဖြစ်တဲ့ အရာအားလုံးကို စီမံတဲ့ စုပေါင်းထားတဲ့ Handler"""
     
     # Command နဲ့ new members ကို ကျော်ပါ
     if message.text and message.text.startswith('/'):
@@ -517,40 +499,60 @@ def handle_all_group_activity(message):
     track_active_group(message.chat.id)
     user_id = message.from_user.id
     chat_id = message.chat.id
+    user_name = message.from_user.first_name
 
-    # 🟢🟢🟢 အရေးကြီးဆုံးအပိုင်း - Admin စစ်ချက် 🟢🟢🟢
-    # Global Admin ဖြစ်မဖြစ်
-    is_global_admin = (user_id == OWNER_ID or user_id in ADMIN_IDS)
-    # Local Group Admin ဖြစ်မဖြစ်
-    is_local_admin = is_admin(chat_id, user_id)
+    print(f"--- NEW MESSAGE IN GROUP {chat_id} FROM {user_name} ({user_id}) ---")
 
-    if is_global_admin or is_local_admin:
-        print(f"✅ User {user_id} is an admin (Global or Local). All actions allowed.")
-        return # Admin ဆိုတာနဲ့ ဒီ function ကို ရပ်ပေးမယ်။ အောက်က စစ်ဆေးချက်တွေ ဆက်မလုပ်ဘူး။
+    # 1️⃣ GLOBAL ADMIN CHECK (ပထမဆုံးစစ်ပါ)
+    if user_id == OWNER_ID or user_id in ADMIN_IDS:
+        print(f"✅ PASS: User {user_name} ({user_id}) is a GLOBAL ADMIN. Ignoring message completely.")
+        return
 
-    # --- ဒေါင့်ကနေ့စွဲက အောက်ကအပိုင်းတွေက Non-Admin တွေအတွက်ပဲ ---
+    # 2️⃣ LOCAL ADMIN CHECK (ဒုတိယအနေနဲ့ စစ်ပါ)
+    print(f"🔍 Checking if user {user_name} ({user_id}) is a local admin in chat {chat_id}...")
+    try:
+        chat_member = bot.get_chat_member(chat_id, user_id)
+        if chat_member.status in ['administrator', 'creator']:
+            print(f"✅ PASS: User {user_name} ({user_id}) is a LOCAL ADMIN (status: {chat_member.status}). Ignoring message completely.")
+            return
+        else:
+            print(f"❌ FAIL: User {user_name} ({user_id}) is NOT an admin (status: {chat_member.status}).")
+    except Exception as e:
+        print(f"💥 ERROR: Could not check admin status for {user_name} ({user_id}). Error: {e}. Assuming NOT an admin.")
+        # API call မအောင်ဘဲ သူက admin မဟုတ်ဘူးလို့ ယူဆပါမယ်။
 
-    # 1. "စာအုပ်" keyword စစ်ပါ (RANDOM REPLY)
+    # --- ဒေါင့်ကနေ့စွဲက အောက်က အပိုင်းတွေက Non-Admin တွေအတွက်ပဲ ---
+
+    # 3️⃣ "စာအုပ်" keyword စစ်ပါ
     if message.text and 'စာအုပ်' in message.text:
-        print(f"📚 Non-admin user {user_id} typed 'စာအုပ်'")
+        print(f"📚 Non-admin {user_name} ({user_id}) typed 'စာအုပ်'. Sending reply.")
         try:
             reply_text = get_random_book_reply()
             bot.reply_to(message, reply_text, parse_mode="HTML")
-            print(f"✅ Replied to non-admin's book query.")
+            print(f"✅ Replied to {user_name} ({user_id}).")
         except Exception as e:
-            print(f"❌ Failed to reply: {e}")
+            print(f"❌ Failed to reply to {user_name} ({user_id}): {e}")
         return
 
-    # 2. Link ရှိမရှိစစ်ပါ (Forwarded လည်း အပါအဝင်)
+    # 4️⃣ Link ရှိမရှိစစ်ပါ
     if has_link_api(message):
-        print(f"🚫 Non-admin user {user_id} posted a link. Deleting message...")
+        print(f"🚫 Non-admin {user_name} ({user_id}) posted a link. DELETING MESSAGE.")
         try:
             bot.delete_message(chat_id, message.message_id)
             warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={user_id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
             bot.send_message(chat_id, warning_msg, parse_mode="Markdown")
+            print(f"✅ Successfully deleted link from {user_name} ({user_id}) and sent warning.")
         except Exception as e:
-            print(f"❌ Error deleting non-admin's link: {e}")
+            print(f"❌ Error deleting link from {user_name} ({user_id}): {e}")
         return
+
+    # 5️⃣ Normal Message
+    print(f"--- Message from {user_name} ({user_id}) was normal. No action taken. ---")
+
+# ======================================================
+# --- END MODIFIED SECTION ---
+# ======================================================
+
 
 # ===============================
 # /START MESSAGE
@@ -839,7 +841,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
-print("🔗 Link Blocker: ENABLED (UNIFIED HANDLER - FINAL FIX)")
+print("🔗 Link Blocker: ENABLED (UNIFIED HANDLER - FINAL & DEBUGGED VERSION)")
 print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
