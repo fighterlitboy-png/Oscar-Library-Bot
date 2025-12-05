@@ -877,14 +877,13 @@ print("🔒 Admin users can post links automatically")
 # RUN WITH FLASK
 # ===============================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 5000))  # 10000 ကနေ 5000 ပြောင်းပါ
     
     print("\n" + "="*60)
     print("🚀 STARTING FLASK SERVER")
     print("="*60)
     print(f"📡 Port: {port}")
     print(f"🌐 Webhook URL: {WEBHOOK_URL}")
-    print(f"🤖 Bot: @oscar_libray_bot")
     print("="*60 + "\n")
     
     import sys
