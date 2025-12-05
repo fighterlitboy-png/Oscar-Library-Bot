@@ -10,6 +10,7 @@ from datetime import datetime
 import pytz
 import logging
 import random
+import re
 
 # ===============================
 # DEBUG MODE - FORCE LOGGING
@@ -305,7 +306,6 @@ def is_link(text):
             return True
     
     # 2. @username pattern စစ်ဆေးခြင်း
-    import re
     # @ နဲ့စပြီး စာလုံး၊ ဂဏန်း၊ underscore တွေပါတဲ့ username
     username_pattern = r'@[a-zA-Z0-9_]{4,}'
     if re.search(username_pattern, text):
@@ -396,7 +396,6 @@ def has_link_api(message):
     
     if all_text:
         # @username pattern အတွက် ထပ်စစ်ဆေးခြင်း
-        import re
         usernames = re.findall(r'@[a-zA-Z0-9_]{4,}', all_text)
         if usernames:
             print(f"✅ Usernames found in text: {usernames}")
@@ -477,29 +476,8 @@ def welcome_new_member(message):
             except Exception as e2:
                 print(f"❌ Failed to send welcome message: {e2}")
 
-
 # ======================================================
-# FIXED ADMIN CHECK FUNCTION - CORRECTED VERSION
-# ======================================================
-def is_admin(chat_id, user_id):
-    """Check if user is admin or owner in chat - CORRECTED VERSION"""
-    try:
-        # Directly check user's status in chat
-        chat_member = bot.get_chat_member(chat_id, user_id)
-        
-        if chat_member.status in ['administrator', 'creator']:
-            print(f"✅ User {user_id} is admin/owner (status: {chat_member.status}) in chat {chat_id}")
-            return True
-        
-        print(f"❌ User {user_id} is NOT admin (status: {chat_member.status}) in chat {chat_id}")
-        return False
-        
-    except Exception as e:
-        print(f"⚠️ Admin check error: {e}")
-        return False
-
-# ======================================================
-# 🌟🌟🌟 UNIFIED GROUP HANDLER 🌟🌟🌟
+# 🌟🌟🌟 UNIFIED GROUP HANDLER (FIXED VERSION) 🌟🌟🌟
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio'])
 def handle_all_group_activity(message):
@@ -529,10 +507,10 @@ def handle_all_group_activity(message):
             print(f"✅ PASS: User {user_name} ({user_id}) is a LOCAL ADMIN (status: {chat_member.status}). Ignoring message completely.")
             return
         else:
-            print(f"❌ FAIL: User {user_name} ({user_id}) is NOT an admin (status: {chat_member.status}).")
+            print(f"❌ User {user_name} ({user_id}) is NOT an admin (status: {chat_member.status}).")
     except Exception as e:
-        print(f"💥 ERROR: Could not check admin status for {user_name} ({user_id}). Error: {e}. Assuming NOT an admin.")
-        # API call မအောင်ဘဲ သူက admin မဟုတ်ဘူးလို့ ယူဆပါမယ်။
+        print(f"⚠️ Admin check error: {e}")
+        # Admin check မအောင်မြင်ရင် ဒီအတိုင်းဆက်သွားမယ်
 
     # --- ဒေါင့်ကနေ့စွဲက အောက်က အပိုင်းတွေက Non-Admin တွေအတွက်ပဲ ---
 
@@ -560,7 +538,6 @@ def handle_all_group_activity(message):
 
     # 3️⃣ Normal Message
     print(f"--- Message from {user_name} ({user_id}) was normal. No action taken. ---")
-
 
 # ===============================
 # /START MESSAGE
@@ -651,31 +628,10 @@ def handle_private_messages(message):
             )
         else:
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
-            
+
 # ======================================================
-# 🔗 LINK BLOCK SYSTEM (Private Chat Only)
-# ======================================================
-@bot.message_handler(func=lambda m: m.chat.type not in ["group", "supergroup"], content_types=['text'])
-def check_links_private(message):
-    # 🟢 GLOBAL OWNER / ADMIN BYPASS
-    if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
-        return
-
-    text = message.text.lower()
-
-    # 🔗 Link detector
-    if "http://" in text or "https://" in text or "t.me/" in text:
-        try:
-            bot.delete_message(message.chat.id, message.message_id)
-            bot.reply_to(message, "⚠️ Link မပို့နိုင်ပါဘူး…")
-        except Exception as e:
-            print("Delete error:", e)
-            pass
-
-
-# ===============================
 # FORCE POST COMMAND ONLY
-# ===============================
+# ======================================================
 @bot.message_handler(commands=['forcepost'])
 def force_birthday_post(message):
     try:
@@ -855,6 +811,8 @@ print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
 print("🚀 Bot is now LIVE!")
 print("💡 Available Commands: /start, /forcepost")
+print("🔒 Admin Protection: GLOBAL ADMIN IDs -", ADMIN_IDS)
+print("🔒 Owner ID:", OWNER_ID)
 
 # ===============================
 # RUN WITH FLASK
