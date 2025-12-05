@@ -676,18 +676,19 @@ def handle_private_messages(message):
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
             
 # ======================================================
-# 🔗 LINK BLOCK SYSTEM (Admin / Owner Bypass) - FIXED VERSION
+# 🔗 LINK BLOCK SYSTEM (Admin / Owner Bypass) - FINAL VERSION
 # ======================================================
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def check_links(message):
-    # 🟢 Owner / Admin bypass (မှန်ကန်)
-    # --- ဒီနေရာမှာ ပြောင်းလဲခဲ့ပါတယ် ---
-    # အဟောင်း: if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
-    # အသစ်: လက်ရှိ group မှာ admin ဖြစ်မဖြစ်ကို စစ်ဆေးအောင် ပြောင်းလဲခြင်းဖြစ်ပါတယ်။
+    # 🟢 GLOBAL OWNER / ADMIN BYPASS (ပထမဆုံးစစ်ချက်)
+    if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
+        return
+
+    # 🟢 LOCAL GROUP ADMIN BYPASS (ဒုတိယစစ်ချက်)
     if is_admin(message.chat.id, message.from_user.id):
         return
-    # --- ပြောင်းလဲမှုပြီးဆုံး ---
 
+    # စစ်ချက်နှစ်ခုလုံးမှားရင် လင့်ကို ဘန်မယ်
     text = message.text.lower()
 
     # 🔗 Link detector
@@ -876,7 +877,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
-print("🔗 Link Blocker: ENABLED (Admin/Owner များကို မဘမ်း - FIXED)")
+print("🔗 Link Blocker: ENABLED (Global & Local Admins များကို မဘမ်း - FINAL)")
 print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
