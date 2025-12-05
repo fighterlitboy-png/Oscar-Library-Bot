@@ -345,14 +345,6 @@ def has_link_api(message):
             for entity in message.entities:
                 if entity.type in ["url", "text_link"]:
                     print(f"✅ Entity link found: {entity.type}")
-                    
-                    # Get the actual link text from entity
-                    if entity.type == "url" and message.text:
-                        start = entity.offset
-                        end = start + entity.length
-                        link_text = message.text[start:end]
-                        print(f"📎 URL entity text: {link_text}")
-                    
                     return True
     except Exception as e:
         print(f"⚠️ Error checking entities: {e}")
@@ -506,10 +498,16 @@ def is_admin(chat_id, user_id):
         return False
 
 # ======================================================
-# 2️⃣ GROUP MESSAGE HANDLER WITH RANDOM REPLIES
+# 🌟🌟🌟 NEW UNIFIED GROUP HANDLER 🌟🌟🌟
 # ======================================================
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"])
-def handle_group_messages(message):
+# --- အောက်က Handler နှစ်ခုကို ဖယ်ရှားပြီး ဒီအသစ်နဲ့ အစားထိုးပါ ---
+# def handle_group_messages(message): ...
+# def handle_forwarded_messages(message): ...
+
+@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio'])
+def handle_all_group_activity(message):
+    """အရာအားလုံးကို စုပေါင်းထားတဲ့ Group Handler - Admin Check ကို ပထမဆုံးဆောင်ရွက်ပါမယ်။"""
+    
     # Command နဲ့ new members ကို ကျော်ပါ
     if message.text and message.text.startswith('/'):
         return
@@ -517,73 +515,42 @@ def handle_group_messages(message):
         return
 
     track_active_group(message.chat.id)
+    user_id = message.from_user.id
+    chat_id = message.chat.id
 
-    # 1. ပထမဆုံး "စာအုပ်" keyword စစ်ပါ (RANDOM REPLY)
+    # 🟢🟢🟢 အရေးကြီးဆုံးအပိုင်း - Admin စစ်ချက် 🟢🟢🟢
+    # Global Admin ဖြစ်မဖြစ်
+    is_global_admin = (user_id == OWNER_ID or user_id in ADMIN_IDS)
+    # Local Group Admin ဖြစ်မဖြစ်
+    is_local_admin = is_admin(chat_id, user_id)
+
+    if is_global_admin or is_local_admin:
+        print(f"✅ User {user_id} is an admin (Global or Local). All actions allowed.")
+        return # Admin ဆိုတာနဲ့ ဒီ function ကို ရပ်ပေးမယ်။ အောက်က စစ်ဆေးချက်တွေ ဆက်မလုပ်ဘူး။
+
+    # --- ဒေါင့်ကနေ့စွဲက အောက်ကအပိုင်းတွေက Non-Admin တွေအတွက်ပဲ ---
+
+    # 1. "စာအုပ်" keyword စစ်ပါ (RANDOM REPLY)
     if message.text and 'စာအုပ်' in message.text:
-        print(f"📚 Group/Supergroup မှာ 'စာအုပ်' keyword ရှာတွေ့: {message.from_user.id}")
+        print(f"📚 Non-admin user {user_id} typed 'စာအုပ်'")
         try:
             reply_text = get_random_book_reply()
             bot.reply_to(message, reply_text, parse_mode="HTML")
-            print(f"✅ Group ထဲမှာ RANDOM book reply ပြန်လိုက်ပြီ")
+            print(f"✅ Replied to non-admin's book query.")
         except Exception as e:
-            print(f"❌ Group ထဲမှာ reply မပြန်နိုင်: {e}")
-        return  # "စာအုပ်" keyword ရှိရင် ဒီကနေ return ပြန်
-
-    # 2. ပြီးမှ Link ရှိမရှိစစ်ပါ
-    if has_link_api(message):
-        # Admin check - Admin ဆိုရင် မဘမ်းဘူး
-        if is_admin(message.chat.id, message.from_user.id):
-            print(f"✅ Admin/Owner {message.from_user.id} posted link, allowing...")
-            return
-        else:
-            print(f"🚫 Non-admin user {message.from_user.id} posted link, deleting...")
-            try:
-                bot.delete_message(message.chat.id, message.message_id)
-                warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
-                bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
-                return
-            except Exception as e:
-                print(f"Link blocker error: {e}")
-                return
-
-# ======================================================
-# 3️⃣ FORWARDED MESSAGE LINK BLOCKER (GROUP ONLY)
-# ======================================================
-@bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"] and (m.forward_from or m.forward_from_chat))
-def handle_forwarded_messages(message):
-    """Forwarded messages ထဲက link တွေကို ပိတ်ခြင်း - FIXED"""
-    
-    # Bot command တွေကို skip
-    if message.text and message.text.startswith('/'):
+            print(f"❌ Failed to reply: {e}")
         return
-    
-    track_active_group(message.chat.id)
-    
-    print(f"📩 Forwarded message detected in group {message.chat.id}")
-    
-    # Check if forwarded message contains links
-    has_link = has_link_api(message)
-    
-    if has_link:
-        print(f"   ↳ Contains link: YES")
-        # Admin check - Admin ဆိုရင် မဘမ်းဘူး
-        if is_admin(message.chat.id, message.from_user.id):
-            print(f"   ↳ Admin {message.from_user.id} forwarded link, allowing...")
-            return
-        else:
-            try:
-                # Delete the forwarded message
-                bot.delete_message(message.chat.id, message.message_id)
-                
-                # Send warning
-                warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={message.from_user.id}) 💢\n\n**Forwarded message တွေထဲက Link🔗 တွေကိုလည်း ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Owner** ကို ဆက်သွယ်ပါနော်...'
-                bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
-                
-                print(f"✅ Deleted forwarded message with link")
-            except Exception as e:
-                print(f"❌ Error deleting forwarded message: {e}")
-    else:
-        print(f"   ↳ Contains link: NO - Allowing forwarded message")
+
+    # 2. Link ရှိမရှိစစ်ပါ (Forwarded လည်း အပါအဝင်)
+    if has_link_api(message):
+        print(f"🚫 Non-admin user {user_id} posted a link. Deleting message...")
+        try:
+            bot.delete_message(chat_id, message.message_id)
+            warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={user_id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
+            bot.send_message(chat_id, warning_msg, parse_mode="Markdown")
+        except Exception as e:
+            print(f"❌ Error deleting non-admin's link: {e}")
+        return
 
 # ===============================
 # /START MESSAGE
@@ -676,21 +643,14 @@ def handle_private_messages(message):
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
             
 # ======================================================
-# 🔗 LINK BLOCK SYSTEM (Admin / Owner Bypass) - FINAL VERSION
+# 🔗 LINK BLOCK SYSTEM (Private Chat Only)
 # ======================================================
-# --- ဒီနေရာမှာ ပြောင်းလဲခဲ့ပါတယ် ---
-# Group တွေမှာ ဒီ handler ကို အလုပ်မလုပ်နဲ့ ပိတ်လိုက်ခြင်းဖြစ်ပါတယ်။
 @bot.message_handler(func=lambda m: m.chat.type not in ["group", "supergroup"], content_types=['text'])
-def check_links(message):
-    # 🟢 GLOBAL OWNER / ADMIN BYPASS (ပထမဆုံးစစ်ချက်)
+def check_links_private(message):
+    # 🟢 GLOBAL OWNER / ADMIN BYPASS
     if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
         return
 
-    # 🟢 LOCAL GROUP ADMIN BYPASS (ဒုတိယစစ်ချက်) - Private chat မှာ လုပ်ဆောင်မည်မဟုတ်သော်လည်း ထားထားပါတယ်။
-    if is_admin(message.chat.id, message.from_user.id):
-        return
-
-    # စစ်ချက်နှစ်ခုလုံးမှားရင် လင့်ကို ဘန်မယ်
     text = message.text.lower()
 
     # 🔗 Link detector
@@ -879,7 +839,7 @@ except Exception as e:
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
 print("📚 'စာအုပ်' Auto Reply: RANDOM REPLIES ENABLED (၈မျိုး)")
-print("🔗 Link Blocker: ENABLED (Global & Local Admins များကို မဘမ်း - FINAL & FIXED)")
+print("🔗 Link Blocker: ENABLED (UNIFIED HANDLER - FINAL FIX)")
 print("🎲 Random Function: ACTIVE - Different replies each time")
 print("👋 Welcome System: FIXED (using online image URL)")
 print("🔧 All systems ready!")
