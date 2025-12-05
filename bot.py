@@ -1,4 +1,5 @@
 import os
+import json
 import telebot
 from telebot import types
 from flask import Flask, request
@@ -477,7 +478,7 @@ def welcome_new_member(message):
                 print(f"❌ Failed to send welcome message: {e2}")
 
 # ======================================================
-# 🌟🌟🌟 UNIFIED GROUP HANDLER (FIXED VERSION) 🌟🌟🌟
+# 🌟🌟🌟 UNIFIED GROUP HANDLER (FINAL FIXED VERSION) 🌟🌟🌟
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio'])
 def handle_all_group_activity(message):
@@ -494,25 +495,27 @@ def handle_all_group_activity(message):
     chat_id = message.chat.id
     user_name = message.from_user.first_name
 
-    # 1️⃣ GLOBAL ADMIN CHECK (ပထမဆုံးစစ်ပါ)
+    print(f"🔍 Processing message from {user_name} ({user_id}) in chat {chat_id}")
+
+    # 1️⃣ GLOBAL ADMIN CHECK (ပထမဆုံးစစ်ပါ) - BYPASS ALL CHECKS
     if user_id == OWNER_ID or user_id in ADMIN_IDS:
-        print(f"✅ PASS: User {user_name} ({user_id}) is a GLOBAL ADMIN. Ignoring message completely.")
+        print(f"✅✅✅ GLOBAL ADMIN BYPASS: User {user_name} ({user_id}) is GLOBAL ADMIN. NO ACTION.")
         return
 
-    # 2️⃣ LOCAL ADMIN CHECK (ဒုတိယအနေဲ့ စစ်ပါ)
-    print(f"🔍 Checking if user {user_name} ({user_id}) is a local admin in chat {chat_id}...")
+    # 2️⃣ LOCAL ADMIN CHECK (ဒုတိယအနေဲ့ စစ်ပါ) - BYPASS ALL CHECKS
     try:
         chat_member = bot.get_chat_member(chat_id, user_id)
         if chat_member.status in ['administrator', 'creator']:
-            print(f"✅ PASS: User {user_name} ({user_id}) is a LOCAL ADMIN (status: {chat_member.status}). Ignoring message completely.")
+            print(f"✅✅✅ LOCAL ADMIN BYPASS: User {user_name} ({user_id}) is LOCAL ADMIN (status: {chat_member.status}). NO ACTION.")
             return
         else:
-            print(f"❌ User {user_name} ({user_id}) is NOT an admin (status: {chat_member.status}).")
+            print(f"❌ User {user_name} ({user_id}) is NOT an admin (status: {chat_member.status})")
+            # ဒီနေရာမှာ non-admin ဖြစ်လို့ ဆက်စစ်မယ်
     except Exception as e:
         print(f"⚠️ Admin check error: {e}")
-        # Admin check မအောင်မြင်ရင် ဒီအတိုင်းဆက်သွားမယ်
+        # Admin check မအောင်မြင်ရင် non-admin လို့မှတ်ယူပြီး ဆက်စစ်မယ်
 
-    # --- ဒေါင့်ကနေ့စွဲက အောက်က အပိုင်းတွေက Non-Admin တွေအတွက်ပဲ ---
+    # --- ဒီအောက်ကကုဒ်တွေက NON-ADMIN တွေအတွက်ပဲ run မယ် ---
 
     # 1️⃣ "စာအုပ်" keyword စစ်ပါ (RANDOM REPLY)
     if message.text and 'စာအုပ်' in message.text:
@@ -527,16 +530,17 @@ def handle_all_group_activity(message):
 
     # 2️⃣ Link ရှိမရှိစစ်ပါ (Forwarded လည်း အပါအဝင်)
     if has_link_api(message):
-        print(f"🚫 Non-admin {user_name} ({user_id}) posted a link. DELETING MESSAGE.")
+        print(f"🚫🚫🚫 Non-admin {user_name} ({user_id}) posted a link. DELETING MESSAGE.")
         try:
             bot.delete_message(chat_id, message.message_id)
             warning_msg = f'⚠️ [{message.from_user.first_name}](tg://user?id={user_id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
             bot.send_message(chat_id, warning_msg, parse_mode="Markdown")
+            print(f"✅ Deleted message from non-admin {user_name} ({user_id})")
         except Exception as e:
             print(f"❌ Error deleting non-admin's link: {e}")
         return
 
-    # 3️⃣ Normal Message
+    # 3️⃣ Normal Message - No action
     print(f"--- Message from {user_name} ({user_id}) was normal. No action taken. ---")
 
 # ===============================
@@ -582,10 +586,15 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ======================================================
-# PRIVATE CHAT MESSAGE HANDLER
+# PRIVATE CHAT MESSAGE HANDLER (FIXED VERSION)
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
+    # GLOBAL ADMIN BYPASS - PRIVATE CHAT
+    if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
+        print(f"✅ Private chat: Global admin {message.from_user.id} bypassed")
+        return
+    
     if message.text and message.text.startswith('/'):
         return
     
@@ -598,6 +607,16 @@ def handle_private_messages(message):
             print(f"✅ Private chat မှာ RANDOM book reply ပြန်လိုက်ပြီ")
         except Exception as e:
             print(f"❌ Private chat မှာ reply မပြန်နိုင်: {e}")
+        return
+    
+    # Private chat တွင် link စစ်ဆေးခြင်း (NON-ADMIN များအတွက်သာ)
+    if message.text and is_link(message.text):
+        print(f"🔗 Private chat: Non-admin {message.from_user.id} tried to send link")
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(message.chat.id, "⚠️ Link မပို့နိုင်ပါဘူး…")
+        except Exception as e:
+            print(f"❌ Private chat delete error: {e}")
         return
     
     if message.forward_from_chat or message.forward_from:
@@ -758,49 +777,173 @@ def author_redirect(call):
 # ===============================
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def webhook():
-    print(f"📨 WEBHOOK RECEIVED - {datetime.now()}")
+    print(f"📨📨📨 WEBHOOK RECEIVED - {datetime.now()} 📨📨📨")
+    print(f"📦 Method: {request.method}")
+    print(f"📦 Content-Type: {request.headers.get('Content-Type')}")
+    print(f"📦 Content-Length: {request.headers.get('Content-Length')}")
+    
     try:
         if request.method == 'POST':
-            json_data = request.get_json(force=True)
-            if json_data:
-                print(f"📦 Processing update...")
-                update = telebot.types.Update.de_json(json_data)
-                bot.process_new_updates([update])
-                print("✅ Update processed")
+            # Get raw data first
+            raw_data = request.get_data(as_text=True)
+            print(f"📦 Raw data received: {len(raw_data)} chars")
+            
+            if raw_data:
+                # Try to parse JSON
+                try:
+                    json_data = json.loads(raw_data)
+                    print(f"✅✅✅ JSON PARSED SUCCESSFULLY!")
+                    print(f"📦 Update ID: {json_data.get('update_id')}")
+                    
+                    # Check what type of update
+                    if 'message' in json_data:
+                        msg = json_data['message']
+                        chat_id = msg.get('chat', {}).get('id')
+                        user_id = msg.get('from', {}).get('id')
+                        text = msg.get('text', '')[:100]
+                        print(f"💬 MESSAGE DETECTED:")
+                        print(f"   👤 User ID: {user_id}")
+                        print(f"   💬 Chat ID: {chat_id}")
+                        print(f"   📝 Text: {text}")
+                        
+                        # Check if it's admin
+                        if user_id == OWNER_ID or user_id in ADMIN_IDS:
+                            print(f"   👑 ADMIN USER DETECTED!")
+                        else:
+                            print(f"   👤 NORMAL USER DETECTED!")
+                    
+                    elif 'callback_query' in json_data:
+                        print(f"🔄 CALLBACK QUERY DETECTED")
+                    
+                    # Process the update
+                    update = telebot.types.Update.de_json(json_data)
+                    
+                    # IMPORTANT: Process in background thread
+                    def process_update():
+                        try:
+                            bot.process_new_updates([update])
+                            print(f"✅✅✅ UPDATE PROCESSED SUCCESSFULLY")
+                        except Exception as e:
+                            print(f"❌❌❌ Error in bot.process_new_updates: {e}")
+                            import traceback
+                            traceback.print_exc()
+                    
+                    # Start processing in background
+                    import threading
+                    thread = threading.Thread(target=process_update)
+                    thread.daemon = True
+                    thread.start()
+                    
+                    print(f"✅ Update queued for processing")
+                    
+                except json.JSONDecodeError as e:
+                    print(f"❌❌❌ JSON DECODE ERROR: {e}")
+                    print(f"📦 First 500 chars of raw data:")
+                    print(raw_data[:500])
+                except Exception as e:
+                    print(f"❌❌❌ GENERAL ERROR: {e}")
+                    import traceback
+                    traceback.print_exc()
             else:
-                print("❌ No JSON data")
+                print(f"❌ No data received")
+        else:
+            print(f"⚠️ Not a POST request")
+            
         return "OK", 200
+        
     except Exception as e:
-        print(f"💥 WEBHOOK ERROR: {e}")
+        print(f"💥💥💥 CRITICAL ERROR in webhook handler: {e}")
+        import traceback
+        traceback.print_exc()
         return "OK", 200
+
+@app.route("/test-webhook", methods=['POST', 'GET'])
+def test_webhook():
+    """Test webhook manually"""
+    print(f"🧪 TEST WEBHOOK ENDPOINT CALLED")
+    
+    # Simulate a test update
+    test_update = {
+        "update_id": 999999999,
+        "message": {
+            "message_id": 123,
+            "from": {
+                "id": 6272937931,
+                "is_bot": False,
+                "first_name": "Test",
+                "username": "testuser"
+            },
+            "chat": {
+                "id": 6272937931,
+                "first_name": "Test",
+                "username": "testuser",
+                "type": "private"
+            },
+            "date": 1764961559,
+            "text": "/start"
+        }
+    }
+    
+    try:
+        update = telebot.types.Update.de_json(test_update)
+        bot.process_new_updates([update])
+        return "✅ Test webhook processed", 200
+    except Exception as e:
+        return f"❌ Error: {e}", 500
 
 @app.route("/", methods=['GET', 'POST'])  
 def index():
     print("🌐 Health check received")
-    return "Bot is running...", 200
+    return "✅ Bot is running...", 200
 
 # ===============================
-# MANUAL WEBHOOK SETUP
+# MANUAL WEBHOOK SETUP WITH VERIFICATION
 # ===============================
 print("🔄 SETTING UP WEBHOOK...")
 try:
+    # Remove existing webhook
     print("🗑️ Removing existing webhook...")
-    bot.remove_webhook()
+    removed = bot.remove_webhook()
+    print(f"🗑️ Remove result: {removed}")
     time.sleep(2)
-    print("🔧 Setting up new webhook...")
+    
+    # Set new webhook
+    print(f"🔧 Setting webhook to: {WEBHOOK_URL}")
     success = bot.set_webhook(
         url=WEBHOOK_URL,
         certificate=None,
         max_connections=100,
-        allowed_updates=None,
+        allowed_updates=["message", "callback_query", "chat_member"],
         timeout=60
     )
+    
     if success:
-        print(f"✅ WEBHOOK SET SUCCESSFULLY: {WEBHOOK_URL}")
+        print(f"✅✅✅ WEBHOOK SET SUCCESSFULLY")
+        
+        # Verify webhook
+        time.sleep(1)
+        try:
+            webhook_info = bot.get_webhook_info()
+            print(f"🎯 Current Webhook URL: {webhook_info.url}")
+            print(f"🎯 Pending updates: {webhook_info.pending_update_count}")
+            print(f"🎯 Last error: {webhook_info.last_error_message}")
+            
+            if webhook_info.url == WEBHOOK_URL:
+                print(f"🎯✅ Webhook verified and active!")
+            else:
+                print(f"🎯❌ Webhook URL mismatch!")
+                print(f"🎯 Expected: {WEBHOOK_URL}")
+                print(f"🎯 Got: {webhook_info.url}")
+        except Exception as e:
+            print(f"🎯⚠️ Cannot verify webhook: {e}")
+            
     else:
-        print("❌ WEBHOOK SET FAILED")
+        print("❌❌❌ WEBHOOK SET FAILED")
+        
 except Exception as e:
-    print(f"💥 WEBHOOK SETUP ERROR: {e}")
+    print(f"💥💥💥 WEBHOOK SETUP ERROR: {e}")
+    import traceback
+    traceback.print_exc()
 
 print("🎂 Birthday Scheduler: ACTIVE")
 print("⏰ Will post daily at 8:00 AM Myanmar Time")
@@ -813,11 +956,26 @@ print("🚀 Bot is now LIVE!")
 print("💡 Available Commands: /start, /forcepost")
 print("🔒 Admin Protection: GLOBAL ADMIN IDs -", ADMIN_IDS)
 print("🔒 Owner ID:", OWNER_ID)
+print("🌐 Test Webhook: https://oscar-library-bot.onrender.com/test-webhook")
 
 # ===============================
 # RUN WITH FLASK
 # ===============================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    print(f"🚀 Starting Flask server on port {port}...")
-    app.run(host="0.0.0.0", port=port, debug=False)
+    
+    print("\n" + "="*60)
+    print("🚀 STARTING FLASK SERVER")
+    print("="*60)
+    print(f"📡 Port: {port}")
+    print(f"🌐 Webhook URL: {WEBHOOK_URL}")
+    print(f"🤖 Bot: @oscar_libray_bot")
+    print(f"🔒 Admin IDs: {ADMIN_IDS}")
+    print(f"👑 Owner ID: {OWNER_ID}")
+    print("="*60 + "\n")
+    
+    # Force print to stdout
+    import sys
+    sys.stdout.flush()
+    
+    app.run(host="0.0.0.0", port=port, debug=True)
