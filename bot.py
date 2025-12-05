@@ -676,14 +676,17 @@ def handle_private_messages(message):
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
             
 # ======================================================
-# 🔗 LINK BLOCK SYSTEM (Admin / Owner Bypass)
+# 🔗 LINK BLOCK SYSTEM (Admin / Owner Bypass) - FIXED VERSION
 # ======================================================
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def check_links(message):
-
     # 🟢 Owner / Admin bypass (မှန်ကန်)
-    if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
+    # --- ဒီနေရာမှာ ပြောင်းလဲခဲ့ပါတယ် ---
+    # အဟောင်း: if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
+    # အသစ်: လက်ရှိ group မှာ admin ဖြစ်မဖြစ်ကို စစ်ဆေးအောင် ပြောင်းလဲခြင်းဖြစ်ပါတယ်။
+    if is_admin(message.chat.id, message.from_user.id):
         return
+    # --- ပြောင်းလဲမှုပြီးဆုံး ---
 
     text = message.text.lower()
 
