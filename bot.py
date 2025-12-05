@@ -24,6 +24,9 @@ print("Initializing Oscar Library Bot...")
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4')
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
+OWNER_ID = 6272937931  
+ADMIN_IDS = [6904606472, 6272937931]   # Admin ID list
+
 print(f"🤖 Bot Token: {BOT_TOKEN[:10]}...")
 print(f"🌐 Webhook URL: {WEBHOOK_URL}")
 
@@ -280,6 +283,9 @@ print("✅ Birthday scheduler started")
 # ===============================
 # UPDATED LINK DETECTION SYSTEM
 # ===============================
+# Owner / Admin bypass 
+if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
+    return  # ဘမ်းမလုပ်ပါ
 def is_link(text):
     """Link detection - @username နဲ့ လင့်မျိုးစုံကို စစ်ဆေးခြင်း"""
     if not text or not isinstance(text, str):
@@ -671,6 +677,28 @@ def handle_private_messages(message):
             )
         else:
             bot.send_message(message.chat.id, f"<b>🤖 Auto Reply:</b>\n{message.text}", parse_mode="HTML")
+            
+# ======================================================
+# 🔗 LINK BLOCK SYSTEM (Admin / Owner Bypass)
+# ======================================================
+@bot.message_handler(func=lambda m: True, content_types=['text'])
+def check_links(message):
+
+    # 🟢 Owner / Admin bypass
+    if message.from_user.id == OWNER_ID or message.from_user.id in ADMIN_IDS:
+        return
+
+    text = message.text.lower()
+
+    # 🔗 Link detector
+    if "http://" in text or "https://" in text or "t.me/" in text:
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.reply_to(message, "⚠️ Link မပို့နိုင်ပါဘူး…")
+        except Exception as e:
+            print("Delete error:", e)
+            pass
+
 
 # ===============================
 # FORCE POST COMMAND ONLY
