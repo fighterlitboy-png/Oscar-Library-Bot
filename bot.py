@@ -688,21 +688,46 @@ def check_admin_status(message):
         bot.reply_to(message, f"❌ Error: {e}")
 
 # ======================================================
-# PRIVATE CHAT HANDLER
+# PRIVATE CHAT HANDLER - UPDATED
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
     if message.text and message.text.startswith('/'):
         return
     
-    # "စာအုပ်" keyword စစ်ပါ
-    if message.text and 'စာအုပ်' in message.text:
-        print(f"📚 Private chat 'စာအုပ်' keyword")
+    user_message = message.text or ""
+    
+    print(f"\n📱 PRIVATE MESSAGE")
+    print(f"👤 From: {message.from_user.first_name}")
+    print(f"💬 Text: {user_message}")
+    
+    # 1. စာရေးဆရာစစ်ဆေးခြင်း
+    author_info = detect_author(user_message)
+    
+    if author_info:
+        print(f"📚 Author detected in private: {author_info['name']}")
+        try:
+            reply_text = get_author_reply(author_info)
+            bot.send_message(
+                message.chat.id, 
+                reply_text, 
+                parse_mode="HTML",
+                disable_web_page_preview=False
+            )
+            print(f"✅ Sent author reply in private chat")
+            return
+        except Exception as e:
+            print(f"❌ Private author reply error: {e}")
+    
+    # 2. "စာအုပ်" keyword စစ်ဆေးခြင်း
+    if 'စာအုပ်' in user_message:
+        print(f"📚 'စာအုပ်' keyword detected in private")
         try:
             bot.send_message(message.chat.id, get_random_book_reply(), parse_mode="HTML")
+            print(f"✅ Sent book reply in private")
+            return
         except Exception as e:
-            print(f"❌ Reply error: {e}")
-        return
+            print(f"❌ Private book reply error: {e}")
 
 # ======================================================
 # FORCE POST COMMAND
