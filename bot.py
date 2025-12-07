@@ -54,7 +54,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 <b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
 
 <b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
-ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...🥰
+ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
@@ -65,8 +65,13 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 <b>🌼 Oscar's Library 🌼</b> 
-
 #oscaradminteam"""
+
+# ===============================
+# MANUAL CHANNEL ID CONFIGURATION
+# ===============================
+MANUAL_CHANNEL_IDS = [-1002150199369]
+print(f"📢 Target Channels: {MANUAL_CHANNEL_IDS}")
 
 # ===============================
 # SYSTEM VARIABLES
@@ -100,19 +105,15 @@ def track_active_group(chat_id):
             active_groups.pop()
 
 # ===============================
-# FIXED TIME CHECK SYSTEM
+# IMPROVED TIME CHECK SYSTEM
 # ===============================
 def should_send_birthday_post():
     try:
         myanmar_time = get_myanmar_time()
-        current_hour = myanmar_time.strftime("%H")
-        current_minute = myanmar_time.strftime("%M")
+        current_time = myanmar_time.strftime("%H:%M")
         current_date = myanmar_time.strftime("%Y-%m-%d")
-        
-        print(f"⏰ Time check: {current_hour}:{current_minute} (Myanmar Time) - Date: {current_date}")
-        
-        # Post at exactly 8:00 AM Myanmar Time
-        if current_hour == "08" and current_minute == "00":
+        print(f"⏰ Time check: {current_time} (Myanmar Time) - Date: {current_date}")
+        if current_time.startswith("08:"):
             global last_birthday_post
             if last_birthday_post != current_date:
                 last_birthday_post = current_date
@@ -124,137 +125,140 @@ def should_send_birthday_post():
         return False
 
 # ===============================
-# GROUP DISCOVERY AND POSTING (GROUPS ONLY - NO CHANNELS)
+# IMPROVED CHANNEL POSTING SYSTEM
+# ===============================
+def send_to_target_channels():
+    results = []
+    if not MANUAL_CHANNEL_IDS:
+        print("❌ No channels configured")
+        return results
+    myanmar_time = get_myanmar_time()
+    current_date = myanmar_time.strftime("%B %d")
+    caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
+    print(f"🎂 Sending to {len(MANUAL_CHANNEL_IDS)} channels...")
+    for channel_id in MANUAL_CHANNEL_IDS:
+        try:
+            print(f"📡 Attempting to send to channel: {channel_id}")
+            chat = bot.get_chat(channel_id)
+            print(f"📢 Channel info: {chat.title}")
+            chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
+            print(f"👑 Bot role in channel: {chat_member.status}")
+            if chat_member.status not in ['administrator', 'creator']:
+                error_msg = "Bot is not admin in channel"
+                print(f"❌ {error_msg}")
+                results.append((channel_id, False, error_msg))
+                continue
+            print(f"🖼️ Sending photo to channel {channel_id}...")
+            bot.send_photo(
+                channel_id,
+                BIRTHDAY_IMAGE_URL,
+                caption=caption,
+                parse_mode="HTML"
+            )
+            print(f"✅✅✅ Successfully posted to channel: {channel_id}")
+            results.append((channel_id, True, "Success"))
+        except Exception as e:
+            error_msg = str(e)
+            print(f"❌❌❌ Channel post failed for {channel_id}: {error_msg}")
+            results.append((channel_id, False, error_msg))
+    return results
+
+# ===============================
+# GROUP DISCOVERY AND POSTING
 # ===============================
 def discover_all_admin_chats():
-    """Find ALL chats (groups AND channels) where bot is admin"""
     admin_chats = set()
     try:
-        print("🕵️ Auto-discovering ALL admin chats (Groups + Channels)...")
+        print("🕵️ Auto-discovering admin chats...")
         for chat_id in list(active_groups):
             try:
-                # Get chat info
-                chat_info = bot.get_chat(chat_id)
-                chat_type = chat_info.type
-                chat_title = chat_info.title if hasattr(chat_info, 'title') else "Unknown"
-                
                 chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
                 if chat_member.status in ['administrator', 'creator']:
                     try:
                         bot.send_chat_action(chat_id, 'typing')
                         admin_chats.add(chat_id)
-                        print(f"✅✅✅ Admin {chat_type.upper()} found: {chat_id} - '{chat_title}'")
+                        print(f"✅ Admin chat found: {chat_id}")
                     except Exception as e:
-                        print(f"❌ No send permission in {chat_type} {chat_id}: {e}")
+                        print(f"❌ No send permission in {chat_id}: {e}")
                         active_groups.discard(chat_id)
             except Exception as e:
                 print(f"❌ Cannot access chat {chat_id}: {e}")
                 active_groups.discard(chat_id)
-        print(f"🎯 Total admin chats discovered: {len(admin_chats)}")
+        print(f"🎯 Total admin groups discovered: {len(admin_chats)}")
         return list(admin_chats)
     except Exception as e:
         print(f"❌ Admin discovery error: {e}")
         return list(active_groups)
 
-def send_to_all_chats(admin_chats):
-    """Send birthday post to ALL admin chats (groups AND channels)"""
+def send_to_groups(admin_groups):
     success_count = 0
-    failed_chats = []
+    failed_groups = []
     myanmar_time = get_myanmar_time()
     current_date = myanmar_time.strftime("%B %d")
     caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
-    
-    print(f"🎂 Starting posts to {len(admin_chats)} admin chats...")
-    
-    for i, chat_id in enumerate(admin_chats):
+    print(f"🎂 Starting group posts to {len(admin_groups)} groups...")
+    for i, chat_id in enumerate(admin_groups):
         try:
             if i > 0:
-                time.sleep(1)  # Rate limiting
-            
-            # Get chat info for logging
-            try:
-                chat_info = bot.get_chat(chat_id)
-                chat_title = chat_info.title if hasattr(chat_info, 'title') else "Unknown"
-                chat_type = chat_info.type
-            except:
-                chat_title = "Unknown"
-                chat_type = "chat"
-            
-            print(f"📤 [{i+1}/{len(admin_chats)}] Sending to {chat_type}: {chat_id} - '{chat_title}'")
-            
-            # Send photo to chat (works for both groups and channels)
+                time.sleep(1)
+            print(f"📤 Sending to group {i+1}/{len(admin_groups)}: {chat_id}")
             bot.send_photo(
                 chat_id,
                 BIRTHDAY_IMAGE_URL,
                 caption=caption,
                 parse_mode="HTML"
             )
-            
             success_count += 1
-            print(f"✅✅✅ [{i+1}/{len(admin_chats)}] Sent to {chat_type}: {chat_id}")
-            
+            print(f"✅✅✅ [{i+1}/{len(admin_groups)}] Sent to group: {chat_id}")
         except Exception as e:
             error_msg = str(e)
-            chat_title = "Unknown"
-            try:
-                chat_info = bot.get_chat(chat_id)
-                chat_title = chat_info.title if hasattr(chat_info, 'title') else "Unknown"
-                chat_type = chat_info.type
-            except:
-                pass
-                
-            print(f"❌❌❌ [{i+1}/{len(admin_chats)}] Failed for {chat_type} {chat_id} ('{chat_title}'): {error_msg}")
-            failed_chats.append((chat_id, error_msg))
-            
+            print(f"❌❌❌ [{i+1}/{len(admin_groups)}] Failed for group {chat_id}: {error_msg}")
+            failed_groups.append((chat_id, error_msg))
             if any(x in error_msg for x in ["Forbidden", "blocked", "no rights", "kicked"]):
                 active_groups.discard(chat_id)
-    
-    return success_count, failed_chats
+    return success_count, failed_groups
 
 def send_birthday_to_all_chats():
-    """Main function to send birthday posts to ALL admin chats"""
     global post_in_progress
     if post_in_progress:
         print("⚠️ Post already in progress, skipping...")
         return
-    
     post_in_progress = True
-    print(f"🔒 Lock acquired. Post in progress: {post_in_progress}")
-    
     try:
-        print("🎂🎂🎂 STARTING BIRTHDAY POSTS TO ALL ADMIN CHATS 🎂🎂🎂")
-        
-        # Discover ALL admin chats (groups + channels)
-        admin_chats = discover_all_admin_chats()
-        print(f"🎯 Found {len(admin_chats)} admin chats (groups + channels)")
-        
-        if admin_chats:
-            print(f"🚀 Posting to {len(admin_chats)} chats...")
-            success_count, failed_chats = send_to_all_chats(admin_chats)
-            
-            if failed_chats:
-                print(f"📊 Failed chats:")
-                for chat_id, error in failed_chats:
-                    print(f"   ❌ {chat_id}: {error}")
-            
-            print(f"✅ Successfully posted to: {success_count}/{len(admin_chats)} chats")
-            print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED 🎉🎉🎉")
+        print("🎂🎂🎂 STARTING BIRTHDAY POSTS 🎂🎂🎂")
+        total_success = 0
+        if MANUAL_CHANNEL_IDS:
+            print("📢 Posting to channels...")
+            channel_results = send_to_target_channels()
+            for channel_id, success, error in channel_results:
+                if success:
+                    total_success += 1
+                    print(f"✅ Channel {channel_id}: SUCCESS")
+                else:
+                    print(f"❌ Channel {channel_id}: FAILED - {error}")
+        admin_groups = discover_all_admin_chats()
+        print(f"👥 Found {len(admin_groups)} admin groups")
+        if admin_groups:
+            print(f"👥 Posting to {len(admin_groups)} groups...")
+            groups_success, groups_failed = send_to_groups(admin_groups)
+            total_success += groups_success
+            print(f"✅ Groups: {groups_success} successful, {len(groups_failed)} failed")
         else:
-            print("ℹ️ No admin chats found to post")
-        
+            print("ℹ️ No admin groups found to post")
+        total_targets = len(MANUAL_CHANNEL_IDS) + len(admin_groups)
+        print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED: {total_success}/{total_targets} chats 🎉🎉🎉")
     except Exception as e:
         print(f"💥💥💥 BIRTHDAY SYSTEM ERROR: {e}")
     finally:
         post_in_progress = False
-        print(f"🔓 Lock released. Post in progress: {post_in_progress}")
 
 # ===============================
 # SCHEDULER SYSTEM
 # ===============================
 def birthday_scheduler():
     print("🎂 BIRTHDAY SCHEDULER STARTED!")
-    print("⏰ Will post daily at exactly 8:00 AM (Myanmar Time)")
-    print("📢 Target: ALL admin chats (Groups + Channels) - One time only")
+    print("⏰ Will post daily throughout 8:00 AM hour (Myanmar Time)")
+    print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
     last_check = None
     while True:
         try:
@@ -301,6 +305,7 @@ def is_link(text):
             return True
     
     # 2. @username pattern စစ်ဆေးခြင်း
+    # @ နဲ့စပြီး စာလုံး၊ ဂဏန်း၊ underscore တွေပါတဲ့ username
     username_pattern = r'@[a-zA-Z0-9_]{4,}'
     if re.search(username_pattern, text):
         return True
@@ -379,7 +384,7 @@ def get_random_book_reply():
         "ကြိုက်နှစ်သက်ရာ <b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါ...စာအုပ်ရှာပေးပါရစေ...📖",
         "<b>စာရေးဆရာ</b>အမည်လေး ပြောပြပါလား စာအုပ်လေးတွေ ရှာပေးပါမယ်...🥰",
         "စာဖတ်ချစ်သူလေး ဘယ်လိုအကြိုက်စာအုပ်မျိုးဖတ်ချင်လဲ? <b>စာရေးဆရာ</b>အမည်လေးပြောပြပါ...🌸",
-        "စာအုပ်ရှာဖွေဖို့ <b>စာရေးဆရာ</b>အမည်လေးကို ပြောပြပေးပါ ကူညီ�ှာပေးပါ့မယ်...💕"
+        "စာအုပ်ရှာဖွေဖို့ <b>စာရေးဆရာ</b>အမည်လေးကို ပြောပြပေးပါ ကူညီရှာပေးပါ့မယ်...💕"
     ]
     return random.choice(replies)
 
@@ -838,29 +843,14 @@ try:
 except Exception as e:
     print(f"💥 WEBHOOK SETUP ERROR: {e}")
 
-print("\n" + "="*60)
-print("🎂 BIRTHDAY SYSTEM STATUS")
-print("="*60)
-print("✅ Time check: 08:00 AM exactly (Myanmar Time)")
-print("✅ All-chat mode: ACTIVE (Groups + Channels)")
-print("✅ Single post system: ACTIVE (No duplicate)")
-print("✅ Post lock: ACTIVE (prevents duplicate runs)")
-print("="*60)
-
-print("\n" + "="*60)
-print("📚 OTHER FEATURES")
-print("="*60)
-print("✅ 'စာအုပ်' Auto Reply: ENABLED")
-print("✅ Link Blocker: ADMIN STATUS CHECK ONLY")
-print("✅ Welcome System: ENABLED")
-print("✅ Admin Check: By STATUS (not ID)")
-print("="*60)
-
-print("\n🚀 Bot is now LIVE!")
+print("🎂 Birthday Scheduler: ACTIVE")
+print("⏰ Will post daily at 8:00 AM Myanmar Time")
+print("📚 'စာအုပ်' Auto Reply: ENABLED")
+print("🔗 Link Blocker: ADMIN STATUS CHECK ONLY")
+print("👑 Admin Check: By STATUS (not ID)")
+print("🚀 Bot is now LIVE!")
 print("💡 Commands: /start, /forcepost, /myid, /admincheck")
 print("🔒 Admin users can post links automatically")
-print("🎯 Bot will post to ALL admin chats (Groups + Channels) daily at 8:00 AM")
-print("⚠️ Note: Manual Channel ID system is REMOVED - uses auto-discovery only")
 
 # ===============================
 # RUN WITH FLASK
