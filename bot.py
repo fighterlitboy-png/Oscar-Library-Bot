@@ -373,6 +373,14 @@ def is_user_admin(message):
         return True  # Error ဖြစ်ရင် မဖျက်ဘူး
 
 # ======================================================
+# PRE-DEFINED AUTHORS WITH LINKS
+# ======================================================
+AUTHOR_LINKS = {
+    "ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)": "https://t.me/sharebykosoemoe/9650",
+    "ကံချွန်": "https://t.me/sharebykosoemoe/9891",
+}
+
+# ======================================================
 # RANDOM REPLIES FOR "စာအုပ်" KEYWORD
 # ======================================================
 def get_random_book_reply():
@@ -388,6 +396,46 @@ def get_random_book_reply():
         "စာအုပ်ရှာဖွေဖို့ <b>စာရေးဆရာ</b>အမည်လေးကို ပြောပြပေးပါ ကူညီရှာပေးပါ့မယ်...💕"
     ]
     return random.choice(replies)
+
+# ======================================================
+# AUTHOR DETECTION SYSTEM
+# ======================================================
+def detect_author(text):
+    """စာသားထဲက သတ်မှတ်ထားတဲ့ စာရေးဆရာကို ရှာဖွေခြင်း"""
+    if not text:
+        return None
+    
+    # သတ်မှတ်ထားတဲ့ စာရေးဆရာတွေကို စစ်ဆေး
+    for author_name in AUTHOR_LINKS.keys():
+        if author_name in text:
+            return {
+                "name": author_name,
+                "link": AUTHOR_LINKS[author_name]
+            }
+    
+    return None
+
+# ======================================================
+# AUTHOR REPLY TEMPLATE
+# ======================================================
+def get_author_reply(author_info):
+    """စာရေးဆရာအတွက် ပုံသေစာပြန်ခြင်း"""
+    
+    author_name = author_info["name"]
+    author_link = author_info["link"]
+    
+    reply = f"""
+📚 <b>{author_name} 📚</b>
+
+<code>စာရေးဆရာ {author_name}</code> ၏ စာအုပ်များဖတ်ရှုရန် ✨
+
+🔗 {author_link}
+
+🌸 စာဖတ်ချစ်သူလေးရေ... 
+ပျော်ရွှင်စရာ စာဖတ်ချိန်လေးဖြစ်ပါစေ... 🥰
+"""
+    
+    return reply
 
 # ======================================================
 # GROUP WELCOME SYSTEM
@@ -463,23 +511,42 @@ def handle_group_messages(message):
     print(f"💬 Chat: {message.chat.title if hasattr(message.chat, 'title') else 'Group'}")
     print(f"📝 Text: {message.text[:100] if message.text else 'Media'}")
     
-    # "စာအုပ်" keyword စစ်ပါ
-    if message.text and 'စာအုပ်' in message.text:
-        print(f"📚 'စာအုပ်' keyword - replying")
+    user_message = message.text or message.caption or ""
+    
+    # 1. စာရေးဆရာစစ်ဆေးခြင်း (သတ်မှတ်ထားတဲ့ စာရေးဆရာတွေအတွက်)
+    author_info = detect_author(user_message)
+    
+    if author_info:
+        print(f"📚 Author detected: {author_info['name']}")
+        try:
+            reply_text = get_author_reply(author_info)
+            bot.reply_to(
+                message, 
+                reply_text, 
+                parse_mode="HTML",
+                disable_web_page_preview=False
+            )
+            print(f"✅ Sent author-specific reply")
+            return  # Exit here
+        except Exception as e:
+            print(f"❌ Author reply error: {e}")
+    
+    # 2. "စာအုပ်" keyword စစ်ဆေးခြင်း (မူရင်း အတိုင်း)
+    if 'စာအုပ်' in user_message:
+        print(f"📚 'စာအုပ်' keyword detected")
         try:
             bot.reply_to(message, get_random_book_reply(), parse_mode="HTML")
+            print(f"✅ Replied with random book suggestion")
+            return  # Exit here
         except Exception as e:
             print(f"❌ Reply error: {e}")
-        return
     
-    # Admin check - STATUS နဲ့ပဲစစ်
+    # 3. Admin check - STATUS နဲ့ပဲစစ်
     if is_user_admin(message):
         print(f"✅ ADMIN USER - NO ACTION")
         return
     
-    # Non-admin user - check for links
-    text_to_check = message.text or message.caption or ""
-    
+    # 4. Non-admin user - check for links
     # ALLOWED LINKS (မဖျက်တဲ့ link တွေ)
     allowed_patterns = [
         r'tg://user\?id=\d+',  # User links
@@ -492,13 +559,13 @@ def handle_group_messages(message):
     # Check if it's an allowed link
     is_allowed = False
     for pattern in allowed_patterns:
-        if re.search(pattern, text_to_check, re.IGNORECASE):
+        if re.search(pattern, user_message, re.IGNORECASE):
             print(f"✅ Allowed link: {pattern}")
             is_allowed = True
             break
     
     # If not allowed, check for blocked links
-    if not is_allowed and is_link(text_to_check):
+    if not is_allowed and is_link(user_message):
         print(f"🚫 BLOCKED LINK DETECTED - DELETING")
         try:
             bot.delete_message(message.chat.id, message.message_id)
@@ -719,7 +786,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
 
-AUTHOR_LINKS = {
+AUTHOR_LINKS_MENU = {
     "က": "https://t.me/oscarhelpservices/5",
     "ခ": "https://t.me/oscarhelpservices/7",
     "ဂ": "https://t.me/oscarhelpservices/12",
@@ -752,7 +819,7 @@ AUTHOR_LINKS = {
 @bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
 def author_redirect(call):
     key = call.data.replace("author_", "")
-    url = AUTHOR_LINKS.get(key)
+    url = AUTHOR_LINKS_MENU.get(key)
     if url:
         bot.answer_callback_query(call.id)
         bot.send_message(
@@ -844,28 +911,33 @@ try:
 except Exception as e:
     print(f"💥 WEBHOOK SETUP ERROR: {e}")
 
-print("🎂 Birthday Scheduler: ACTIVE")
-print("⏰ Will post daily at 8:00 AM Myanmar Time")
+print("\n" + "="*60)
+print("🎂 BIRTHDAY SYSTEM")
+print("="*60)
+print("⏰ Daily posts at 8:00 AM Myanmar Time")
+print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
 print("📚 'စာအုပ်' Auto Reply: ENABLED")
-print("🔗 Link Blocker: ADMIN STATUS CHECK ONLY")
 print("👑 Admin Check: By STATUS (not ID)")
-print("🚀 Bot is now LIVE!")
-print("💡 Commands: /start, /forcepost, /myid, /admincheck")
-print("🔒 Admin users can post links automatically")
+print("🔗 Link Blocker: ENABLED for non-admins")
+print("\n📖 AUTHOR AUTO-REPLY SYSTEM")
+print("="*60)
+print("✅ 'စာအုပ်' keyword: Random book reply")
+print("✅ 'ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)': Link reply")
+print("✅ 'ကံချွန်': Link reply")
+print("\n💡 COMMANDS:")
+print("="*60)
+print("• /start - Start the bot")
+print("• /forcepost - Force birthday posts")
+print("• /myid - Check your ID")
+print("• /admincheck - Check admin status")
+print("\n🚀 Bot is now LIVE!")
+print("="*60)
 
 # ===============================
 # RUN WITH FLASK
 # ===============================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    
-    print("\n" + "="*60)
-    print("🚀 STARTING FLASK SERVER")
-    print("="*60)
-    print(f"📡 Port: {port}")
-    print(f"🌐 Webhook URL: {WEBHOOK_URL}")
-    print(f"🤖 Bot: @oscar_libray_bot")
-    print("="*60 + "\n")
     
     import sys
     sys.stdout.flush()
