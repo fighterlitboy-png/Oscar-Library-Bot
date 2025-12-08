@@ -23,7 +23,7 @@ print("Initializing Oscar Library Bot...")
 # ===============================
 # BOT TOKEN & URL
 # ===============================
-BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAGGHMIAJyGIHp7wZZv99hL0YoFma09bmh4')
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAHpvrXyBri5MMbVq4n73-HdCiqpXXvyJGQ')
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
 PING_URL = "https://oscar-library-bot.onrender.com"
 
@@ -42,13 +42,40 @@ except:
     pass
 
 # ===============================
+# BIRTHDAY IMAGES LIST (ROTATING)
+# ===============================
+BIRTHDAY_IMAGES = [
+    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_1.jpg",
+    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_2.jpg",
+    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_3.jpg",
+    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_4.jpg",
+    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_5.jpg",
+    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_6.jpg",
+    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_7.jpg"
+]
+
+# Track current image index
+current_image_index = 0
+
+def get_next_birthday_image():
+    """Get next birthday image in rotation"""
+    global current_image_index
+    
+    image_url = BIRTHDAY_IMAGES[current_image_index]
+    
+    # Move to next image for next time
+    current_image_index = (current_image_index + 1) % len(BIRTHDAY_IMAGES)
+    
+    print(f"🎂 Using birthday image {current_image_index + 1}/{len(BIRTHDAY_IMAGES)}")
+    return image_url
+
+# ===============================
 # BIRTHDAY SYSTEM CONFIGURATION
 # ===============================
 MYANMAR_TZ = pytz.timezone('Asia/Yangon')
 def get_myanmar_time():
     return datetime.now(MYANMAR_TZ)
 
-BIRTHDAY_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/Happy_Birthday_Photo.jpg"
 BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 <b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
 <b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
@@ -66,6 +93,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 <b>🌼 Oscar's Library 🌼</b>
 
+#oscarlibrary
 #oscaradminteam"""
 
 # ===============================
@@ -126,17 +154,24 @@ def should_send_birthday_post():
         return False
 
 # ===============================
-# IMPROVED CHANNEL POSTING SYSTEM
+# IMPROVED CHANNEL POSTING SYSTEM - UPDATED
 # ===============================
 def send_to_target_channels():
     results = []
     if not MANUAL_CHANNEL_IDS:
         print("❌ No channels configured")
         return results
+    
     myanmar_time = get_myanmar_time()
     current_date = myanmar_time.strftime("%B %d")
     caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
+    
+    # Get next image in rotation
+    birthday_image = get_next_birthday_image()
+    
     print(f"🎂 Sending to {len(MANUAL_CHANNEL_IDS)} channels...")
+    print(f"🖼️ Using image: {birthday_image}")
+    
     for channel_id in MANUAL_CHANNEL_IDS:
         try:
             print(f"📡 Attempting to send to channel: {channel_id}")
@@ -144,15 +179,17 @@ def send_to_target_channels():
             print(f"📢 Channel info: {chat.title}")
             chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
             print(f"👑 Bot role in channel: {chat_member.status}")
+            
             if chat_member.status not in ['administrator', 'creator']:
                 error_msg = "Bot is not admin in channel"
                 print(f"❌ {error_msg}")
                 results.append((channel_id, False, error_msg))
                 continue
+            
             print(f"🖼️ Sending photo to channel {channel_id}...")
             bot.send_photo(
                 channel_id,
-                BIRTHDAY_IMAGE_URL,
+                birthday_image,
                 caption=caption,
                 parse_mode="HTML"
             )
@@ -197,7 +234,13 @@ def send_to_groups(admin_groups):
     myanmar_time = get_myanmar_time()
     current_date = myanmar_time.strftime("%B %d")
     caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
+    
+    # Get next image in rotation
+    birthday_image = get_next_birthday_image()
+    
     print(f"🎂 Starting group posts to {len(admin_groups)} groups...")
+    print(f"🖼️ Using image: {birthday_image}")
+    
     for i, chat_id in enumerate(admin_groups):
         try:
             if i > 0:
@@ -205,7 +248,7 @@ def send_to_groups(admin_groups):
             print(f"📤 Sending to group {i+1}/{len(admin_groups)}: {chat_id}")
             bot.send_photo(
                 chat_id,
-                BIRTHDAY_IMAGE_URL,
+                birthday_image,
                 caption=caption,
                 parse_mode="HTML"
             )
@@ -432,7 +475,7 @@ def get_author_reply(author_info):
 🔗 {author_link}
 
 🌸 စာဖတ်ချစ်သူလေးရေ... 
-ပျော်ရွှင်စရာ စာဖတ်ချိန်လေးဖြစ်ပါစေ... 🥰
+ပျော်ရွှင်စရာဖတ်ရှုချိန်လေးဖြစ်ပါစေ... 🥰
 """
     
     return reply
@@ -575,9 +618,9 @@ def handle_group_messages(message):
             user_id = message.from_user.id if message.from_user else None
             
             if user_id:
-                warning_msg = f'⚠️ [{user_name}](tg://user?id={user_id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
+                warning_msg = f'⚠️ [{user_name}](tg://user?id={user_id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n✅ User link များကိုသာ သုံးပါ\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
             else:
-                warning_msg = f'⚠️ {user_name} 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
+                warning_msg = f'⚠️ {user_name} 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n✅ User link များကိုသာ သုံးပါ\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
             
             bot.send_message(message.chat.id, warning_msg, parse_mode="Markdown")
             print(f"✅ Message deleted + warning sent")
@@ -941,6 +984,7 @@ print("🎂 BIRTHDAY SYSTEM")
 print("="*60)
 print("⏰ Daily posts at 8:00 AM Myanmar Time")
 print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
+print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images (rotating)")
 print("📚 'စာအုပ်' Auto Reply: ENABLED")
 print("👑 Admin Check: By STATUS (not ID)")
 print("🔗 Link Blocker: ENABLED for non-admins")
