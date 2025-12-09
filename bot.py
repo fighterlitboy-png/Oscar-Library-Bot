@@ -14,17 +14,13 @@ import random
 import re
 
 # ===============================
-# DEBUG MODE - FORCE LOGGING
+# CONFIGURATION
 # ===============================
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-print("🚀🚀🚀 BOT STARTING UP 🚀🚀🚀")
-print("Initializing Oscar Library Bot...")
+print("🚀 BOT STARTING UP")
 
-# ===============================
-# BOT TOKEN & URL
-# ===============================
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAHpvrXyBri5MMbVq4n73-HdCiqpXXvyJGQ')
-WEBHOOK_URL = "https://oscar-library-bot.onrender.com/" + BOT_TOKEN
+WEBHOOK_URL = "https://oscar-library-bot.onrender.com/webhook"
 PING_URL = "https://oscar-library-bot.onrender.com"
 
 print(f"🤖 Bot Token: {BOT_TOKEN[:10]}...")
@@ -42,7 +38,7 @@ except:
     pass
 
 # ===============================
-# BIRTHDAY IMAGES LIST (ROTATING)
+# BIRTHDAY IMAGES DATABASE
 # ===============================
 BIRTHDAY_IMAGES = [
     "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_1.jpg",
@@ -54,25 +50,27 @@ BIRTHDAY_IMAGES = [
     "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_7.jpg"
 ]
 
-# Track current image index
-current_image_index = 0
+# နောက်မှထပ်တိုးမယ့် POSTS DATABASE (လောလောဆယ် အလွတ်)
+POSTS_DATABASE = {
+    # နောက်မှထပ်ထည့်မယ်
+}
+
+# Track current image index for birthday
+current_birthday_index = 0
 
 def get_next_birthday_image():
     """Get next birthday image in rotation"""
-    global current_image_index
-    
-    image_url = BIRTHDAY_IMAGES[current_image_index]
-    
-    # Move to next image for next time
-    current_image_index = (current_image_index + 1) % len(BIRTHDAY_IMAGES)
-    
-    print(f"🎂 Using birthday image {current_image_index + 1}/{len(BIRTHDAY_IMAGES)}")
+    global current_birthday_index
+    image_url = BIRTHDAY_IMAGES[current_birthday_index]
+    current_birthday_index = (current_birthday_index + 1) % len(BIRTHDAY_IMAGES)
+    print(f"🎂 Using birthday image {current_birthday_index}/{len(BIRTHDAY_IMAGES)}")
     return image_url
 
 # ===============================
 # BIRTHDAY SYSTEM CONFIGURATION
 # ===============================
 MYANMAR_TZ = pytz.timezone('Asia/Yangon')
+
 def get_myanmar_time():
     return datetime.now(MYANMAR_TZ)
 
@@ -106,7 +104,7 @@ print(f"📢 Target Channels: {MANUAL_CHANNEL_IDS}")
 # SYSTEM VARIABLES
 # ===============================
 active_groups = set()
-last_birthday_post = None
+last_birthday_post_date = None
 post_in_progress = False
 
 # ===============================
@@ -134,52 +132,53 @@ def track_active_group(chat_id):
             active_groups.pop()
 
 # ===============================
-# IMPROVED TIME CHECK SYSTEM
+# FIXED TIME CHECK SYSTEM
 # ===============================
 def should_send_birthday_post():
+    """Check if should send birthday post at exactly 8:00 AM"""
     try:
+        global last_birthday_post_date
+        
         myanmar_time = get_myanmar_time()
-        current_time = myanmar_time.strftime("%H:%M")
+        current_hour = myanmar_time.hour
+        current_minute = myanmar_time.minute
         current_date = myanmar_time.strftime("%Y-%m-%d")
-        print(f"⏰ Time check: {current_time} (Myanmar Time) - Date: {current_date}")
-        if current_time.startswith("08:"):
-            global last_birthday_post
-            if last_birthday_post != current_date:
-                last_birthday_post = current_date
+        current_time_str = myanmar_time.strftime("%H:%M")
+        
+        print(f"⏰ Time check: {current_time_str} (Myanmar Time) - Date: {current_date}")
+        
+        # Check for exactly 8:00 AM
+        if current_hour == 8 and current_minute == 0:
+            if last_birthday_post_date != current_date:
+                last_birthday_post_date = current_date
                 print("✅✅✅ BIRTHDAY POST TRIGGERED! ✅✅✅")
                 return True
+        
         return False
     except Exception as e:
         print(f"⏰ Time check error: {e}")
         return False
 
 # ===============================
-# IMPROVED CHANNEL POSTING SYSTEM - UPDATED
+# POST SENDING FUNCTIONS
 # ===============================
-def send_to_target_channels():
+def send_post_to_channels(image_url, caption):
+    """Send any post to target channels"""
     results = []
     if not MANUAL_CHANNEL_IDS:
         print("❌ No channels configured")
         return results
     
-    myanmar_time = get_myanmar_time()
-    current_date = myanmar_time.strftime("%B %d")
-    caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
-    
-    # Get next image in rotation
-    birthday_image = get_next_birthday_image()
-    
-    print(f"🎂 Sending to {len(MANUAL_CHANNEL_IDS)} channels...")
-    print(f"🖼️ Using image: {birthday_image}")
+    print(f"📤 Sending post to {len(MANUAL_CHANNEL_IDS)} channels...")
+    print(f"🖼️ Image: {image_url}")
+    print(f"📝 Caption length: {len(caption)} chars")
     
     for channel_id in MANUAL_CHANNEL_IDS:
         try:
             print(f"📡 Attempting to send to channel: {channel_id}")
-            chat = bot.get_chat(channel_id)
-            print(f"📢 Channel info: {chat.title}")
-            chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
-            print(f"👑 Bot role in channel: {chat_member.status}")
             
+            # Check if bot is admin
+            chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
             if chat_member.status not in ['administrator', 'creator']:
                 error_msg = "Bot is not admin in channel"
                 print(f"❌ {error_msg}")
@@ -189,7 +188,7 @@ def send_to_target_channels():
             print(f"🖼️ Sending photo to channel {channel_id}...")
             bot.send_photo(
                 channel_id,
-                birthday_image,
+                image_url,
                 caption=caption,
                 parse_mode="HTML"
             )
@@ -199,126 +198,118 @@ def send_to_target_channels():
             error_msg = str(e)
             print(f"❌❌❌ Channel post failed for {channel_id}: {error_msg}")
             results.append((channel_id, False, error_msg))
+    
     return results
 
 # ===============================
-# GROUP DISCOVERY AND POSTING
+# BIRTHDAY POSTING FUNCTION
 # ===============================
-def discover_all_admin_chats():
-    admin_chats = set()
-    try:
-        print("🕵️ Auto-discovering admin chats...")
-        for chat_id in list(active_groups):
-            try:
-                chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
-                if chat_member.status in ['administrator', 'creator']:
-                    try:
-                        bot.send_chat_action(chat_id, 'typing')
-                        admin_chats.add(chat_id)
-                        print(f"✅ Admin chat found: {chat_id}")
-                    except Exception as e:
-                        print(f"❌ No send permission in {chat_id}: {e}")
-                        active_groups.discard(chat_id)
-            except Exception as e:
-                print(f"❌ Cannot access chat {chat_id}: {e}")
-                active_groups.discard(chat_id)
-        print(f"🎯 Total admin groups discovered: {len(admin_chats)}")
-        return list(admin_chats)
-    except Exception as e:
-        print(f"❌ Admin discovery error: {e}")
-        return list(active_groups)
-
-def send_to_groups(admin_groups):
-    success_count = 0
-    failed_groups = []
-    myanmar_time = get_myanmar_time()
-    current_date = myanmar_time.strftime("%B %d")
-    caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
-    
-    # Get next image in rotation
-    birthday_image = get_next_birthday_image()
-    
-    print(f"🎂 Starting group posts to {len(admin_groups)} groups...")
-    print(f"🖼️ Using image: {birthday_image}")
-    
-    for i, chat_id in enumerate(admin_groups):
-        try:
-            if i > 0:
-                time.sleep(1)
-            print(f"📤 Sending to group {i+1}/{len(admin_groups)}: {chat_id}")
-            bot.send_photo(
-                chat_id,
-                birthday_image,
-                caption=caption,
-                parse_mode="HTML"
-            )
-            success_count += 1
-            print(f"✅✅✅ [{i+1}/{len(admin_groups)}] Sent to group: {chat_id}")
-        except Exception as e:
-            error_msg = str(e)
-            print(f"❌❌❌ [{i+1}/{len(admin_groups)}] Failed for group {chat_id}: {error_msg}")
-            failed_groups.append((chat_id, error_msg))
-            if any(x in error_msg for x in ["Forbidden", "blocked", "no rights", "kicked"]):
-                active_groups.discard(chat_id)
-    return success_count, failed_groups
-
 def send_birthday_to_all_chats():
     global post_in_progress
     if post_in_progress:
         print("⚠️ Post already in progress, skipping...")
         return
+    
     post_in_progress = True
     try:
         print("🎂🎂🎂 STARTING BIRTHDAY POSTS 🎂🎂🎂")
+        
+        myanmar_time = get_myanmar_time()
+        current_time = myanmar_time.strftime("%H:%M:%S")
+        current_date = myanmar_time.strftime("%B %d")
+        print(f"🕐 Posting time: {current_time}")
+        
+        # Prepare birthday post
+        caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
+        birthday_image = get_next_birthday_image()
+        
         total_success = 0
+        
+        # Send to channels
         if MANUAL_CHANNEL_IDS:
             print("📢 Posting to channels...")
-            channel_results = send_to_target_channels()
+            channel_results = send_post_to_channels(birthday_image, caption)
             for channel_id, success, error in channel_results:
                 if success:
                     total_success += 1
                     print(f"✅ Channel {channel_id}: SUCCESS")
                 else:
                     print(f"❌ Channel {channel_id}: FAILED - {error}")
-        admin_groups = discover_all_admin_chats()
-        print(f"👥 Found {len(admin_groups)} admin groups")
-        if admin_groups:
-            print(f"👥 Posting to {len(admin_groups)} groups...")
-            groups_success, groups_failed = send_to_groups(admin_groups)
-            total_success += groups_success
-            print(f"✅ Groups: {groups_success} successful, {len(groups_failed)} failed")
-        else:
-            print("ℹ️ No admin groups found to post")
-        total_targets = len(MANUAL_CHANNEL_IDS) + len(admin_groups)
-        print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED: {total_success}/{total_targets} chats 🎉🎉🎉")
+        
+        print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED: {total_success}/{len(MANUAL_CHANNEL_IDS)} channels 🎉🎉🎉")
+        
     except Exception as e:
         print(f"💥💥💥 BIRTHDAY SYSTEM ERROR: {e}")
     finally:
         post_in_progress = False
 
 # ===============================
-# SCHEDULER SYSTEM
+# SHOW POSTS COMMAND FUNCTION
+# ===============================
+def list_available_posts():
+    """List all available posts that will be sent"""
+    posts_list = "📋 **တင်မယ့် POST များ**\n\n"
+    
+    # Birthday Post
+    posts_list += "1. 🎂 **မွေးနေ့ဆုတောင်း Post**\n"
+    posts_list += "   - အချိန်: နေ့စဉ် 8:00 AM (မြန်မာစံတော်ချိန်)\n"
+    posts_list += f"   - ပုံအရေအတွက်: {len(BIRTHDAY_IMAGES)} ပုံ (လှည့်ပြီးတင်)\n"
+    posts_list += "   - ထည့်သွင်းထားပြီးသား ✅\n\n"
+    
+    # Database မှာ ရှိနေတဲ့ post တွေ
+    if POSTS_DATABASE:
+        posts_list += "2. 📝 **Custom Posts**\n"
+        for i, post_name in enumerate(POSTS_DATABASE.keys(), 1):
+            posts_list += f"   {i}. {post_name}\n"
+        posts_list += f"   - စုစုပေါင်း: {len(POSTS_DATABASE)} posts\n\n"
+    else:
+        posts_list += "2. 📝 **Custom Posts**\n"
+        posts_list += "   - လောလောဆယ် မရှိသေးပါ\n"
+        posts_list += "   - နောက်မှထပ်ထည့်နိုင်ပါတယ်\n\n"
+    
+    posts_list += "📊 **စာရင်းအင်း**\n"
+    posts_list += f"• Birthday Images: {len(BIRTHDAY_IMAGES)}\n"
+    posts_list += f"• Custom Posts: {len(POSTS_DATABASE)}\n"
+    posts_list += f"• Target Channels: {len(MANUAL_CHANNEL_IDS)}\n\n"
+    
+    posts_list += "⚙️ **အသုံးပြုနည်း**\n"
+    posts_list += "• Birthday post က အလိုအလျောက်တင်ပေးပါမယ်\n"
+    posts_list += "• Custom posts ထပ်ထည့်ချင်ရင် နောက်မှပြင်ဆင်ပါမယ်\n"
+    
+    return posts_list
+
+# ===============================
+# FIXED SCHEDULER SYSTEM
 # ===============================
 def birthday_scheduler():
     print("🎂 BIRTHDAY SCHEDULER STARTED!")
-    print("⏰ Will post daily throughout 8:00 AM hour (Myanmar Time)")
+    print("⏰ Will post daily at 8:00 AM (Myanmar Time)")
     print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
-    last_check = None
+    
+    last_minute = None
+    
     while True:
         try:
             current_time = get_myanmar_time()
             current_minute = current_time.strftime("%H:%M")
-            if last_check != current_minute:
-                last_check = current_minute
+            
+            # Only check once per minute
+            if last_minute != current_minute:
+                last_minute = current_minute
+                print(f"⏰ Scheduler checking: {current_minute}")
+                
                 if should_send_birthday_post():
                     print(f"🚀🚀🚀 TRIGGERING BIRTHDAY POSTS AT {current_time.strftime('%H:%M:%S')} 🚀🚀🚀")
                     send_birthday_to_all_chats()
-                else:
-                    print(f"⏰ Waiting... Current time: {current_minute}")
+            
+            # Sleep for 30 seconds
+            time.sleep(30)
+            
         except Exception as e:
             print(f"🎂 Scheduler error: {e}")
-        time.sleep(30)
+            time.sleep(30)
 
+# Start the scheduler thread
 print("🔄 Starting birthday scheduler thread...")
 birthday_thread = threading.Thread(target=birthday_scheduler, daemon=True)
 birthday_thread.start()
@@ -334,7 +325,6 @@ def is_link(text):
     
     text_lower = text.lower()
     
-    # 1. Basic URL patterns စစ်ဆေးခြင်း
     url_patterns = [
         "http://", "https://", "www.", ".com", ".org", ".net", 
         ".io", ".me", ".tk", ".ml", ".ga", ".cf", ".gq",
@@ -348,16 +338,13 @@ def is_link(text):
         if pattern in text_lower:
             return True
     
-    # 2. @username pattern စစ်ဆေးခြင်း
-    # @ နဲ့စပြီး စာလုံး၊ ဂဏန်း၊ underscore တွေပါတဲ့ username
     username_pattern = r'@[a-zA-Z0-9_]{4,}'
     if re.search(username_pattern, text):
         return True
     
-    # 3. Telegram invite links စစ်ဆေးခြင်း
     telegram_patterns = [
-        r't\.me/\+[\w-]+',  # t.me/+invitecode
-        r't\.me/joinchat/[\w-]+',  # t.me/joinchat/invitecode
+        r't\.me/\+[\w-]+',
+        r't\.me/joinchat/[\w-]+',
     ]
     
     for pattern in telegram_patterns:
@@ -367,7 +354,7 @@ def is_link(text):
     return False
 
 # ======================================================
-# ADMIN STATUS CHECK (NO ID CHECKING)
+# ADMIN STATUS CHECK
 # ======================================================
 def is_user_admin(message):
     """User က admin ဟုတ်မဟုတ် status နဲ့ပဲစစ်ခြင်း"""
@@ -375,11 +362,9 @@ def is_user_admin(message):
     chat_id = message.chat.id
     chat_type = message.chat.type
     
-    # Private chat ဆိုရင် စစ်စရာမလိုဘူး
     if chat_type == "private":
         return True
     
-    # User ID ရှာပါ
     user_id = None
     if message.forward_from:
         user_id = message.forward_from.id
@@ -390,14 +375,12 @@ def is_user_admin(message):
     
     if not user_id:
         print(f"⚠️ No user ID found")
-        return True  # မသိရင် မဖျက်ဘူး (safety)
+        return True
     
-    # Anonymous admin bot check
     if user_id == 1087968824:
         print(f"✅ Anonymous admin bot detected - treating as admin")
         return True
     
-    # Check admin status in group
     try:
         chat_member = bot.get_chat_member(chat_id, user_id)
         status = chat_member.status
@@ -413,7 +396,7 @@ def is_user_admin(message):
             
     except Exception as e:
         print(f"⚠️ Error checking admin status: {e}")
-        return True  # Error ဖြစ်ရင် မဖျက်ဘူး
+        return True
 
 # ======================================================
 # PRE-DEFINED AUTHORS WITH LINKS
@@ -448,7 +431,6 @@ def detect_author(text):
     if not text:
         return None
     
-    # သတ်မှတ်ထားတဲ့ စာရေးဆရာတွေကို စစ်ဆေး
     for author_name in AUTHOR_LINKS.keys():
         if author_name in text:
             return {
@@ -540,7 +522,6 @@ def welcome_new_member(message):
 def handle_group_messages(message):
     """Group messages handler"""
     
-    # Skip commands and new members
     if message.text and message.text.startswith('/'):
         return
     if message.new_chat_members:
@@ -556,7 +537,6 @@ def handle_group_messages(message):
     
     user_message = message.text or message.caption or ""
     
-    # 1. စာရေးဆရာစစ်ဆေးခြင်း (သတ်မှတ်ထားတဲ့ စာရေးဆရာတွေအတွက်)
     author_info = detect_author(user_message)
     
     if author_info:
@@ -570,36 +550,31 @@ def handle_group_messages(message):
                 disable_web_page_preview=False
             )
             print(f"✅ Sent author-specific reply")
-            return  # Exit here
+            return
         except Exception as e:
             print(f"❌ Author reply error: {e}")
     
-    # 2. "စာအုပ်" keyword စစ်ဆေးခြင်း (မူရင်း အတိုင်း)
     if 'စာအုပ်' in user_message:
         print(f"📚 'စာအုပ်' keyword detected")
         try:
             bot.reply_to(message, get_random_book_reply(), parse_mode="HTML")
             print(f"✅ Replied with random book suggestion")
-            return  # Exit here
+            return
         except Exception as e:
             print(f"❌ Reply error: {e}")
     
-    # 3. Admin check - STATUS နဲ့ပဲစစ်
     if is_user_admin(message):
         print(f"✅ ADMIN USER - NO ACTION")
         return
     
-    # 4. Non-admin user - check for links
-    # ALLOWED LINKS (မဖျက်တဲ့ link တွေ)
     allowed_patterns = [
-        r'tg://user\?id=\d+',  # User links
-        r't\.me/\d+',  # t.me user links
-        r'telegram\.me/\d+',  # telegram.me user links
-        r'@oscar_libray_bot',  # Bot username
-        r'@oscarhelpservices',  # Channel username
+        r'tg://user\?id=\d+',
+        r't\.me/\d+',
+        r'telegram\.me/\d+',
+        r'@oscar_libray_bot',
+        r'@oscarhelpservices',
     ]
     
-    # Check if it's an allowed link
     is_allowed = False
     for pattern in allowed_patterns:
         if re.search(pattern, user_message, re.IGNORECASE):
@@ -607,13 +582,11 @@ def handle_group_messages(message):
             is_allowed = True
             break
     
-    # If not allowed, check for blocked links
     if not is_allowed and is_link(user_message):
         print(f"🚫 BLOCKED LINK DETECTED - DELETING")
         try:
             bot.delete_message(message.chat.id, message.message_id)
             
-            # Send warning
             user_name = message.from_user.first_name if message.from_user else "User"
             user_id = message.from_user.id if message.from_user else None
             
@@ -731,7 +704,7 @@ def check_admin_status(message):
         bot.reply_to(message, f"❌ Error: {e}")
 
 # ======================================================
-# PRIVATE CHAT HANDLER - UPDATED
+# PRIVATE CHAT HANDLER
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
 def handle_private_messages(message):
@@ -744,7 +717,6 @@ def handle_private_messages(message):
     print(f"👤 From: {message.from_user.first_name}")
     print(f"💬 Text: {user_message}")
     
-    # 1. စာရေးဆရာစစ်ဆေးခြင်း
     author_info = detect_author(user_message)
     
     if author_info:
@@ -762,7 +734,6 @@ def handle_private_messages(message):
         except Exception as e:
             print(f"❌ Private author reply error: {e}")
     
-    # 2. "စာအုပ်" keyword စစ်ဆေးခြင်း
     if 'စာအုပ်' in user_message:
         print(f"📚 'စာအုပ်' keyword detected in private")
         try:
@@ -777,13 +748,33 @@ def handle_private_messages(message):
 # ======================================================
 @bot.message_handler(commands=['forcepost'])
 def force_birthday_post(message):
+    """Manual trigger for birthday posts"""
     try:
         print(f"🔧 Forcepost command from: {message.from_user.id}")
-        bot.reply_to(message, "🚀 Force sending birthday posts...")
+        bot.reply_to(message, "🚀 မွေးနေ့ post တွေ အားလုံးကို ချက်ချင်းတင်နေပါတယ်...")
         send_birthday_to_all_chats()
-        bot.reply_to(message, "✅ Force post completed!")
+        bot.reply_to(message, "✅ မွေးနေ့ post တွေ အောင်မြင်စွာတင်ပြီးပါပြီ!")
     except Exception as e:
         error_msg = f"❌ Force post error: {e}"
+        print(error_msg)
+        bot.reply_to(message, error_msg)
+
+# ===============================
+# SHOW POSTS COMMAND - NEW
+# ===============================
+@bot.message_handler(commands=['showposts'])
+def show_posts_command(message):
+    """Show all posts that will be sent"""
+    try:
+        print(f"📋 Showposts command from: {message.from_user.id}")
+        
+        posts_info = list_available_posts()
+        bot.reply_to(message, posts_info, parse_mode="Markdown")
+        
+        print(f"✅ Posts list shown to user")
+        
+    except Exception as e:
+        error_msg = f"❌ Show posts error: {e}"
         print(error_msg)
         bot.reply_to(message, error_msg)
 
@@ -899,44 +890,31 @@ def author_redirect(call):
 # ===============================
 # WEBHOOK HANDLERS
 # ===============================
-@app.route(f"/{BOT_TOKEN}", methods=['POST'])
+@app.route("/webhook", methods=['POST'])
 def webhook():
     print(f"📨 WEBHOOK RECEIVED - {datetime.now()}")
     
     try:
         if request.method == 'POST':
-            raw_data = request.get_data(as_text=True)
-            
-            if raw_data:
-                try:
-                    json_data = json.loads(raw_data)
-                    print(f"✅ JSON PARSED")
-                    
-                    update = telebot.types.Update.de_json(json_data)
-                    
-                    def process_update():
-                        try:
-                            bot.process_new_updates([update])
-                            print(f"✅ UPDATE PROCESSED")
-                        except Exception as e:
-                            print(f"❌ Error in bot.process_new_updates: {e}")
-                    
-                    import threading
-                    thread = threading.Thread(target=process_update)
-                    thread.daemon = True
-                    thread.start()
-                    
-                except json.JSONDecodeError as e:
-                    print(f"❌ JSON DECODE ERROR: {e}")
-                except Exception as e:
-                    print(f"❌ GENERAL ERROR: {e}")
-        else:
-            print(f"⚠️ Not a POST request")
-            
+            json_data = request.get_json()
+            if json_data:
+                update = telebot.types.Update.de_json(json_data)
+                
+                def process_update():
+                    try:
+                        bot.process_new_updates([update])
+                        print(f"✅ UPDATE PROCESSED")
+                    except Exception as e:
+                        print(f"❌ Error in bot.process_new_updates: {e}")
+                
+                thread = threading.Thread(target=process_update)
+                thread.daemon = True
+                thread.start()
+                
         return "OK", 200
         
     except Exception as e:
-        print(f"💥 CRITICAL ERROR: {e}")
+        print(f"💥 WEBHOOK ERROR: {e}")
         return "OK", 200
 
 @app.route("/", methods=['GET', 'POST'])  
@@ -947,59 +925,73 @@ def index():
 # ===============================
 # WEBHOOK SETUP
 # ===============================
-print("🔄 SETTING UP WEBHOOK...")
+print("\n🔄 SETTING UP WEBHOOK...")
 try:
     print("🗑️ Removing existing webhook...")
     bot.remove_webhook()
     time.sleep(2)
     
     print(f"🔧 Setting webhook to: {WEBHOOK_URL}")
-    success = bot.set_webhook(
+    bot.set_webhook(
         url=WEBHOOK_URL,
         certificate=None,
         max_connections=100,
-        allowed_updates=["message", "callback_query", "chat_member"],
+        allowed_updates=["message", "callback_query", "chat_member", "my_chat_member"],
         timeout=60
     )
     
-    if success:
-        print(f"✅✅✅ WEBHOOK SET SUCCESSFULLY")
-        
-        time.sleep(1)
-        try:
-            webhook_info = bot.get_webhook_info()
-            print(f"🎯 Webhook URL: {webhook_info.url}")
-            print(f"🎯 Pending updates: {webhook_info.pending_update_count}")
-        except Exception as e:
-            print(f"🎯⚠️ Cannot verify webhook: {e}")
-            
-    else:
-        print("❌❌❌ WEBHOOK SET FAILED")
+    time.sleep(1)
+    webhook_info = bot.get_webhook_info()
+    print(f"✅ WEBHOOK SET SUCCESSFULLY")
+    print(f"🎯 Webhook URL: {webhook_info.url}")
+    print(f"🎯 Pending updates: {webhook_info.pending_update_count}")
         
 except Exception as e:
     print(f"💥 WEBHOOK SETUP ERROR: {e}")
 
+# ===============================
+# BOT STATUS
+# ===============================
 print("\n" + "="*60)
-print("🎂 BIRTHDAY SYSTEM")
+print("🎂 BOT STATUS SUMMARY")
 print("="*60)
-print("⏰ Daily posts at 8:00 AM Myanmar Time")
+myanmar_time = get_myanmar_time()
+print(f"⏰ Current Myanmar Time: {myanmar_time.strftime('%H:%M:%S')}")
+print(f"📅 Current Date: {myanmar_time.strftime('%Y-%m-%d')}")
 print(f"📢 Target Channels: {len(MANUAL_CHANNEL_IDS)}")
-print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images (rotating)")
-print("📚 'စာအုပ်' Auto Reply: ENABLED")
-print("👑 Admin Check: By STATUS (not ID)")
-print("🔗 Link Blocker: ENABLED for non-admins")
+print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images")
+print(f"📚 'စာအုပ်' Auto Reply: ENABLED")
+print(f"👑 Admin Check: By STATUS (not ID)")
+print(f"🔗 Link Blocker: ENABLED for non-admins")
+
 print("\n📖 AUTHOR AUTO-REPLY SYSTEM")
 print("="*60)
 print("✅ 'စာအုပ်' keyword: Random book reply")
 print("✅ 'ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)': Link reply")
 print("✅ 'ကံချွန်': Link reply")
-print("\n💡 COMMANDS:")
+
+print("\n🎂 BIRTHDAY POST SYSTEM")
+print("="*60)
+print("✅ Daily at 8:00 AM (Myanmar Time)")
+print(f"✅ {len(BIRTHDAY_IMAGES)} rotating images")
+print("✅ Auto-scheduled")
+
+print("\n💡 AVAILABLE COMMANDS:")
 print("="*60)
 print("• /start - Start the bot")
-print("• /forcepost - Force birthday posts")
-print("• /myid - Check your ID")
-print("• /admincheck - Check admin status")
-print("\n🚀 Bot is now LIVE!")
+print("• /showposts - တင်မယ့် post တွေကြည့်ရန်")
+print("• /forcepost - မွေးနေ့ post ချက်ချင်းတင်ရန်")
+print("• /myid - ID ကြည့်ရန်")
+print("• /admincheck - Admin status စစ်ရန်")
+
+print("\n📊 CURRENT SETUP:")
+print("="*60)
+print("1. Birthday post တစ်ခုတည်း")
+print("2. နေ့စဉ် 8:00 AM အလိုအလျောက်တင်")
+print("3. ပုံ ၇ပုံလှည့်ပြီးတင်")
+print("4. နောက်မှ custom posts ထပ်ထည့်နိုင်")
+
+print("\n🚀 Bot is now LIVE and READY!")
 print("="*60)
 
 # ===============================
@@ -1007,8 +999,9 @@ print("="*60)
 # ===============================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
+    print(f"🌐 Starting Flask server on port {port}")
     
     import sys
     sys.stdout.flush()
     
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)
