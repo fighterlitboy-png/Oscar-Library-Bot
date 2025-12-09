@@ -97,7 +97,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 # ===============================
 # MANUAL CHANNEL ID CONFIGURATION
 # ===============================
-MANUAL_CHANNEL_IDS = [-1002150199369111]
+MANUAL_CHANNEL_IDS = [-1002150199369, -1002913448959, -1002953592333, -1002970833199]
 print(f"📢 Target Channels: {MANUAL_CHANNEL_IDS}")
 
 # ===============================
