@@ -50,11 +50,6 @@ BIRTHDAY_IMAGES = [
     "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_7.jpg"
 ]
 
-# နောက်မှထပ်တိုးမယ့် POSTS DATABASE (လောလောဆယ် အလွတ်)
-POSTS_DATABASE = {
-    # နောက်မှထပ်ထည့်မယ်
-}
-
 # Track current image index for birthday
 current_birthday_index = 0
 
@@ -95,10 +90,11 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 #oscaradminteam"""
 
 # ===============================
-# MANUAL CHANNEL ID CONFIGURATION
+# MANUAL CHANNEL ID CONFIGURATION - FIXED
 # ===============================
 MANUAL_CHANNEL_IDS = [-1002150199369, -1002913448959, -1002953592333, -1002970833199]
 print(f"📢 Target Channels: {MANUAL_CHANNEL_IDS}")
+print(f"📊 Total Channels: {len(MANUAL_CHANNEL_IDS)}")
 
 # ===============================
 # SYSTEM VARIABLES
@@ -242,41 +238,6 @@ def send_birthday_to_all_chats():
         print(f"💥💥💥 BIRTHDAY SYSTEM ERROR: {e}")
     finally:
         post_in_progress = False
-
-# ===============================
-# SHOW POSTS COMMAND FUNCTION
-# ===============================
-def list_available_posts():
-    """List all available posts that will be sent"""
-    posts_list = "📋 **တင်မယ့် POST များ**\n\n"
-    
-    # Birthday Post
-    posts_list += "1. 🎂 **မွေးနေ့ဆုတောင်း Post**\n"
-    posts_list += "   - အချိန်: နေ့စဉ် 8:00 AM (မြန်မာစံတော်ချိန်)\n"
-    posts_list += f"   - ပုံအရေအတွက်: {len(BIRTHDAY_IMAGES)} ပုံ (လှည့်ပြီးတင်)\n"
-    posts_list += "   - ထည့်သွင်းထားပြီးသား ✅\n\n"
-    
-    # Database မှာ ရှိနေတဲ့ post တွေ
-    if POSTS_DATABASE:
-        posts_list += "2. 📝 **Custom Posts**\n"
-        for i, post_name in enumerate(POSTS_DATABASE.keys(), 1):
-            posts_list += f"   {i}. {post_name}\n"
-        posts_list += f"   - စုစုပေါင်း: {len(POSTS_DATABASE)} posts\n\n"
-    else:
-        posts_list += "2. 📝 **Custom Posts**\n"
-        posts_list += "   - လောလောဆယ် မရှိသေးပါ\n"
-        posts_list += "   - နောက်မှထပ်ထည့်နိုင်ပါတယ်\n\n"
-    
-    posts_list += "📊 **စာရင်းအင်း**\n"
-    posts_list += f"• Birthday Images: {len(BIRTHDAY_IMAGES)}\n"
-    posts_list += f"• Custom Posts: {len(POSTS_DATABASE)}\n"
-    posts_list += f"• Target Channels: {len(MANUAL_CHANNEL_IDS)}\n\n"
-    
-    posts_list += "⚙️ **အသုံးပြုနည်း**\n"
-    posts_list += "• Birthday post က အလိုအလျောက်တင်ပေးပါမယ်\n"
-    posts_list += "• Custom posts ထပ်ထည့်ချင်ရင် နောက်မှပြင်ဆင်ပါမယ်\n"
-    
-    return posts_list
 
 # ===============================
 # FIXED SCHEDULER SYSTEM
@@ -743,41 +704,6 @@ def handle_private_messages(message):
         except Exception as e:
             print(f"❌ Private book reply error: {e}")
 
-# ======================================================
-# FORCE POST COMMAND
-# ======================================================
-@bot.message_handler(commands=['forcepost'])
-def force_birthday_post(message):
-    """Manual trigger for birthday posts"""
-    try:
-        print(f"🔧 Forcepost command from: {message.from_user.id}")
-        bot.reply_to(message, "🚀 မွေးနေ့ post တွေ အားလုံးကို ချက်ချင်းတင်နေပါတယ်...")
-        send_birthday_to_all_chats()
-        bot.reply_to(message, "✅ မွေးနေ့ post တွေ အောင်မြင်စွာတင်ပြီးပါပြီ!")
-    except Exception as e:
-        error_msg = f"❌ Force post error: {e}"
-        print(error_msg)
-        bot.reply_to(message, error_msg)
-
-# ===============================
-# SHOW POSTS COMMAND - NEW
-# ===============================
-@bot.message_handler(commands=['showposts'])
-def show_posts_command(message):
-    """Show all posts that will be sent"""
-    try:
-        print(f"📋 Showposts command from: {message.from_user.id}")
-        
-        posts_info = list_available_posts()
-        bot.reply_to(message, posts_info, parse_mode="Markdown")
-        
-        print(f"✅ Posts list shown to user")
-        
-    except Exception as e:
-        error_msg = f"❌ Show posts error: {e}"
-        print(error_msg)
-        bot.reply_to(message, error_msg)
-
 # ===============================
 # CALLBACK HANDLERS
 # ===============================
@@ -974,13 +900,12 @@ print("\n🎂 BIRTHDAY POST SYSTEM")
 print("="*60)
 print("✅ Daily at 8:00 AM (Myanmar Time)")
 print(f"✅ {len(BIRTHDAY_IMAGES)} rotating images")
+print(f"✅ Sending to {len(MANUAL_CHANNEL_IDS)} channels")
 print("✅ Auto-scheduled")
 
 print("\n💡 AVAILABLE COMMANDS:")
 print("="*60)
 print("• /start - Start the bot")
-print("• /showposts - တင်မယ့် post တွေကြည့်ရန်")
-print("• /forcepost - မွေးနေ့ post ချက်ချင်းတင်ရန်")
 print("• /myid - ID ကြည့်ရန်")
 print("• /admincheck - Admin status စစ်ရန်")
 
@@ -989,7 +914,8 @@ print("="*60)
 print("1. Birthday post တစ်ခုတည်း")
 print("2. နေ့စဉ် 8:00 AM အလိုအလျောက်တင်")
 print("3. ပုံ ၇ပုံလှည့်ပြီးတင်")
-print("4. နောက်မှ custom posts ထပ်ထည့်နိုင်")
+print(f"4. Channel {len(MANUAL_CHANNEL_IDS)} ခုကို တင်မယ်")
+print("5. Extra commands မပါ (အလုပ်လုပ်စေရုံပဲ)")
 
 print("\n🚀 Bot is now LIVE and READY!")
 print("="*60)
