@@ -97,12 +97,6 @@ MANUAL_CHANNEL_IDS = [-1002150199369, -1002913448959, -1002953592333, -100297083
 print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
 
 # ===============================
-# ADD MANUAL GROUP IDs HERE
-# ===============================
-MANUAL_GROUP_IDS = []  # Add your group IDs here: [-100xxxx, -100yyyy]
-ALL_TARGET_IDS = MANUAL_CHANNEL_IDS + MANUAL_GROUP_IDS
-
-# ===============================
 # SYSTEM VARIABLES
 # ===============================
 active_groups = set()
@@ -167,104 +161,108 @@ def should_send_birthday_post():
 # POST SENDING FUNCTIONS
 # ===============================
 def send_post_to_channels(image_url, caption):
-    """Send post to fixed channels AND groups"""
+    """Send post to fixed channels"""
     results = []
-    if not ALL_TARGET_IDS:
-        print("❌ No channels/groups configured")
+    if not MANUAL_CHANNEL_IDS:
+        print("❌ No channels configured")
         return results
     
-    print(f"📤 Sending post to {len(ALL_TARGET_IDS)} targets (channels + groups)...")
+    print(f"📤 Sending post to {len(MANUAL_CHANNEL_IDS)} fixed channels...")
     print(f"🖼️ Image: {image_url}")
     
-    for target_id in ALL_TARGET_IDS:
+    for channel_id in MANUAL_CHANNEL_IDS:
         try:
-            # Get chat info first
-            chat_info = bot.get_chat(target_id)
-            chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {target_id}"
-            chat_type = chat_info.type
+            print(f"📡 Attempting to send to channel: {channel_id}")
             
-            print(f"📡 Attempting to send to: {chat_title} (Type: {chat_type}, ID: {target_id})")
+            # Check if bot is admin
+            chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
+            if chat_member.status not in ['administrator', 'creator']:
+                error_msg = "Bot is not admin in channel"
+                print(f"❌ {error_msg}")
+                results.append((channel_id, False, error_msg))
+                continue
             
-            # Check if bot is admin (for channels and supergroups)
-            if chat_type in ['channel', 'supergroup', 'group']:
-                try:
-                    chat_member = bot.get_chat_member(target_id, bot.get_me().id)
-                    if chat_member.status not in ['administrator', 'creator']:
-                        error_msg = f"Bot is not admin in {chat_type}"
-                        print(f"❌ {error_msg}")
-                        results.append((target_id, False, error_msg))
-                        continue
-                except Exception as admin_err:
-                    print(f"⚠️ Admin check error for {target_id}: {admin_err}")
-            
-            # Send the photo
-            print(f"🖼️ Sending photo to {chat_title}...")
+            print(f"🖼️ Sending photo to channel {channel_id}...")
             bot.send_photo(
-                target_id,
+                channel_id,
                 image_url,
                 caption=caption,
                 parse_mode="HTML"
             )
-            print(f"✅✅✅ Successfully posted to: {chat_title} ({chat_type})")
-            results.append((target_id, True, "Success"))
-            
+            print(f"✅✅✅ Successfully posted to channel: {channel_id}")
+            results.append((channel_id, True, "Success"))
         except Exception as e:
             error_msg = str(e)
-            print(f"❌❌❌ Post failed for {target_id}: {error_msg}")
-            results.append((target_id, False, error_msg))
+            print(f"❌❌❌ Channel post failed for {channel_id}: {error_msg}")
+            results.append((channel_id, False, error_msg))
     
     return results
 
 # ===============================
-# DISCOVER AND SEND TO ALL ADMIN GROUPS
+# AUTO DISCOVER AND SEND TO ALL ADMIN GROUPS
 # ===============================
 def discover_all_admin_groups():
-    """Find all groups where bot is admin - IMPROVED FOR SUPERGROUPS"""
+    """Find ALL groups where bot is admin - AUTO DISCOVERY"""
     admin_groups = []
-    print("🔍 Discovering admin groups...")
+    print("🔍 AUTO DISCOVERY: Finding all admin groups...")
     
-    # Check active groups first
+    total_checked = 0
+    total_admin = 0
+    
+    # Check all active groups
     for chat_id in list(active_groups):
         try:
+            total_checked += 1
+            
             # Get chat info first
             chat_info = bot.get_chat(chat_id)
             chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
             chat_type = chat_info.type
             
-            print(f"🔍 Checking: {chat_title} (Type: {chat_type}, ID: {chat_id})")
+            # Only check groups and supergroups
+            if chat_type not in ['group', 'supergroup']:
+                print(f"⚠️ Skipping {chat_title} - Not a group/supergroup (Type: {chat_type})")
+                continue
+            
+            print(f"🔍 Checking: {chat_title} (Type: {chat_type})")
             
             # Check if bot is admin
             chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
             if chat_member.status in ['administrator', 'creator']:
-                # Try to send a test action to check permissions
+                # Test if bot can send messages
                 try:
                     bot.send_chat_action(chat_id, 'typing')
                     admin_groups.append(chat_id)
-                    print(f"✅ Admin group found: {chat_title}")
+                    total_admin += 1
+                    print(f"✅ ADMIN FOUND: {chat_title} (Type: {chat_type})")
                 except Exception as perm_err:
-                    print(f"❌ No permission in group {chat_title}: {perm_err}")
-                    active_groups.discard(chat_id)
+                    print(f"❌ Admin but no permission in {chat_title}: {perm_err}")
             else:
-                print(f"❌ Bot is NOT admin in: {chat_title}")
+                print(f"❌ NOT ADMIN: {chat_title}")
+                # Remove from active groups if not admin
                 active_groups.discard(chat_id)
                 
         except Exception as e:
             print(f"❌ Cannot access chat {chat_id}: {e}")
             active_groups.discard(chat_id)
     
-    print(f"👥 Found {len(admin_groups)} admin groups")
+    print(f"👥 AUTO DISCOVERY COMPLETE:")
+    print(f"   Total checked: {total_checked}")
+    print(f"   Admin groups found: {total_admin}")
+    print(f"   Total admin groups to post: {len(admin_groups)}")
+    
     return admin_groups
 
-def send_to_admin_groups(admin_groups, image_url, caption):
-    """Send post to all admin groups"""
+def send_to_all_admin_groups(admin_groups, image_url, caption):
+    """Send post to ALL admin groups"""
     success_count = 0
     failed_groups = []
     
     if not admin_groups:
-        print("ℹ️ No admin groups found")
+        print("ℹ️ No admin groups found via auto discovery")
         return 0, []
     
-    print(f"👥 Sending to {len(admin_groups)} admin groups...")
+    print(f"👥 SENDING TO {len(admin_groups)} AUTO-DISCOVERED ADMIN GROUPS...")
     
     for i, chat_id in enumerate(admin_groups):
         try:
@@ -275,8 +273,9 @@ def send_to_admin_groups(admin_groups, image_url, caption):
             # Get chat info for logging
             chat_info = bot.get_chat(chat_id)
             chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
+            chat_type = chat_info.type
             
-            print(f"📤 [{i+1}/{len(admin_groups)}] Sending to: {chat_title} (ID: {chat_id})")
+            print(f"📤 [{i+1}/{len(admin_groups)}] Sending to: {chat_title} (Type: {chat_type})")
             
             bot.send_photo(
                 chat_id,
@@ -286,11 +285,11 @@ def send_to_admin_groups(admin_groups, image_url, caption):
             )
             
             success_count += 1
-            print(f"✅ [{i+1}/{len(admin_groups)}] Sent to: {chat_title}")
+            print(f"✅ [{i+1}/{len(admin_groups)}] SUCCESS: {chat_title}")
             
         except Exception as e:
             error_msg = str(e)
-            print(f"❌ [{i+1}/{len(admin_groups)}] Failed for {chat_id}: {error_msg}")
+            print(f"❌ [{i+1}/{len(admin_groups)}] FAILED for {chat_id}: {error_msg}")
             failed_groups.append((chat_id, error_msg))
             
             # Remove from active groups if blocked/kicked
@@ -323,30 +322,38 @@ def send_birthday_to_all_chats():
         
         total_success = 0
         
-        # 1. Send to fixed channels AND manual groups
-        if ALL_TARGET_IDS:
-            print(f"📢 Posting to {len(ALL_TARGET_IDS)} fixed targets (channels + manual groups)...")
+        # 1. Send to fixed channels
+        if MANUAL_CHANNEL_IDS:
+            print("📢 Posting to fixed channels...")
             channel_results = send_post_to_channels(birthday_image, caption)
-            for target_id, success, error in channel_results:
+            for channel_id, success, error in channel_results:
                 if success:
                     total_success += 1
-                    print(f"✅ Target {target_id}: SUCCESS")
+                    print(f"✅ Channel {channel_id}: SUCCESS")
                 else:
-                    print(f"❌ Target {target_id}: FAILED - {error}")
+                    print(f"❌ Channel {channel_id}: FAILED - {error}")
         
-        # 2. Send to all discovered admin groups
-        print("👥 Discovering admin groups...")
+        # 2. AUTO DISCOVERY: Send to ALL admin groups
+        print("👥 AUTO DISCOVERY: Finding all admin groups...")
         admin_groups = discover_all_admin_groups()
         
         if admin_groups:
-            print(f"👥 Posting to {len(admin_groups)} discovered admin groups...")
-            groups_success, groups_failed = send_to_admin_groups(admin_groups, birthday_image, caption)
+            print(f"👥 Posting to {len(admin_groups)} auto-discovered admin groups...")
+            groups_success, groups_failed = send_to_all_admin_groups(admin_groups, birthday_image, caption)
             total_success += groups_success
-            print(f"👥 Groups: {groups_success} successful, {len(groups_failed)} failed")
+            print(f"👥 Auto-discovery results: {groups_success} successful, {len(groups_failed)} failed")
+            
+            # Log failed groups
+            for group_id, error in groups_failed:
+                try:
+                    chat = bot.get_chat(group_id)
+                    print(f"   ❌ Failed: {chat.title if hasattr(chat, 'title') else group_id} - {error}")
+                except:
+                    print(f"   ❌ Failed: {group_id} - {error}")
         else:
-            print("ℹ️ No admin groups found")
+            print("ℹ️ No admin groups found via auto discovery")
         
-        total_targets = len(ALL_TARGET_IDS) + len(admin_groups)
+        total_targets = len(MANUAL_CHANNEL_IDS) + len(admin_groups)
         print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED: {total_success}/{total_targets} chats 🎉🎉🎉")
         
     except Exception as e:
@@ -360,8 +367,8 @@ def send_birthday_to_all_chats():
 def birthday_scheduler():
     print("🎂 BIRTHDAY SCHEDULER STARTED!")
     print("⏰ Will post daily at 8:00 AM (Myanmar Time)")
-    print(f"📢 Fixed Targets: {len(ALL_TARGET_IDS)} (channels + manual groups)")
-    print("👥 Will also post to ALL discovered admin groups")
+    print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)}")
+    print("👥 AUTO DISCOVERY: Will send to ALL admin groups/supergroups")
     
     last_minute = None
     
@@ -431,10 +438,10 @@ def is_link(text):
     return False
 
 # ======================================================
-# ADMIN STATUS CHECK
+# ADMIN STATUS CHECK (FOR LINK BLOCKING ONLY)
 # ======================================================
 def is_user_admin(message):
-    """User က admin ဟုတ်မဟုတ် status နဲ့ပဲစစ်ခြင်း"""
+    """User က admin ဟုတ်မဟုတ် status နဲ့ပဲစစ်ခြင်း (Link blocking အတွက်ပဲ)"""
     
     chat_id = message.chat.id
     chat_type = message.chat.type
@@ -769,29 +776,45 @@ def show_post_preview(message):
         caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
         birthday_image = get_next_birthday_image()
         
+        # Get active groups info
+        active_group_titles = []
+        for group_id in list(active_groups)[:10]:  # Show first 10 only
+            try:
+                chat = bot.get_chat(group_id)
+                if chat.type in ['group', 'supergroup']:
+                    title = chat.title if hasattr(chat, 'title') else f"Chat {group_id}"
+                    active_group_titles.append(f"• {title}")
+            except:
+                pass
+        
         # Show stats
         stats_text = f"""
 📊 <b>BIRTHDAY POST PREVIEW</b>
 📅 Date: {current_date}
 🕐 Time: {myanmar_time.strftime("%H:%M:%S")} (Myanmar Time)
 
-📢 <b>Target Channels/Groups:</b> {len(ALL_TARGET_IDS)}
+📢 <b>Fixed Channels:</b> {len(MANUAL_CHANNEL_IDS)}
 👥 <b>Active Groups:</b> {len(active_groups)}
 🖼️ <b>Images in Rotation:</b> {len(BIRTHDAY_IMAGES)} images
 🖼️ <b>Next Image:</b> {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
 
+<b>AUTO DISCOVERY SYSTEM:</b>
+✅ Will find ALL groups where bot is admin
+✅ Includes groups AND supergroups
+✅ No manual adding needed
+
 <b>Will post to:</b>
-1️⃣ Fixed Targets ({len(ALL_TARGET_IDS)} channels/groups)
-2️⃣ All Admin Groups ({len(active_groups)} groups found)
+1️⃣ Fixed Channels ({len(MANUAL_CHANNEL_IDS)} channels)
+2️⃣ ALL Admin Groups (auto-discovered)
 
 <b>Auto-post schedule:</b>
 ✅ Daily at 8:00 AM Myanmar Time
 ✅ Image Rotation: {len(BIRTHDAY_IMAGES)} images
 ✅ Next post: Tomorrow 8:00 AM
-
-<b>Caption Preview:</b>
-{caption[:200]}...
         """
+        
+        if active_group_titles:
+            stats_text += f"\n<b>📝 Sample Active Groups ({min(10, len(active_group_titles))} of {len(active_groups)}):</b>\n" + "\n".join(active_group_titles)
         
         # Send preview to user
         bot.send_message(message.chat.id, stats_text, parse_mode="HTML")
@@ -817,26 +840,26 @@ def show_post_preview(message):
 # ======================================================
 @bot.message_handler(commands=['testpost'])
 def test_birthday_command(message):
-    """Manual test for birthday post - Sends to groups too"""
+    """Manual test for birthday post - Sends to ALL channels and auto-discovered groups"""
     print(f"🧪 /testpost command from user: {message.from_user.id}")
     
     try:
         print("🧪 MANUAL BIRTHDAY TEST TRIGGERED!")
         
         # Send test message
-        test_msg = bot.reply_to(message, "🧪 Testing birthday post system...")
+        test_msg = bot.reply_to(message, "🧪 Testing birthday post system...\n\nAUTO DISCOVERY: Finding all admin groups...")
         
-        # Trigger the birthday post - This will send to ALL channels and admin groups
+        # Trigger the birthday post - This will send to ALL channels and auto-discovered admin groups
         send_birthday_to_all_chats()
         
         # Update message
         bot.edit_message_text(
-            "✅ Birthday post test completed!\nCheck channels and ALL admin groups for posts.",
+            "✅ Birthday post test completed!\n\n📢 Fixed channels: Checked\n👥 Auto-discovered admin groups: ALL checked\n\nBot will post to ALL groups where it's admin.",
             message.chat.id,
             test_msg.message_id
         )
         
-        print("✅ Manual birthday test completed - Posts sent to channels and groups")
+        print("✅ Manual birthday test completed - Posts sent to channels and ALL auto-discovered groups")
         
     except Exception as e:
         error_msg = f"❌ Test failed: {e}"
@@ -844,77 +867,99 @@ def test_birthday_command(message):
         bot.reply_to(message, error_msg)
 
 # ======================================================
-# NEW: /ADDGROUP COMMAND
-# ======================================================
-@bot.message_handler(commands=['addgroup'])
-def add_group_command(message):
-    """Add a group manually to target list"""
-    chat_id = message.chat.id
-    
-    # Only allow in groups/supergroups
-    if message.chat.type not in ['group', 'supergroup']:
-        bot.reply_to(message, "❌ This command can only be used in groups/supergroups.")
-        return
-    
-    if chat_id not in MANUAL_GROUP_IDS:
-        MANUAL_GROUP_IDS.append(chat_id)
-        # Update ALL_TARGET_IDS
-        global ALL_TARGET_IDS
-        ALL_TARGET_IDS = MANUAL_CHANNEL_IDS + MANUAL_GROUP_IDS
-        
-        # Get chat info
-        try:
-            chat_info = bot.get_chat(chat_id)
-            chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
-        except:
-            chat_title = f"Chat {chat_id}"
-        
-        response = f"""
-✅ <b>GROUP ADDED SUCCESSFULLY!</b>
-
-<b>Group Name:</b> {chat_title}
-<b>Group ID:</b> <code>{chat_id}</code>
-<b>Type:</b> {message.chat.type}
-
-<b>Now Bot will post to:</b>
-📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)}
-👥 Manual Groups: {len(MANUAL_GROUP_IDS)}
-🎯 Total Targets: {len(ALL_TARGET_IDS)}
-
-<b>Note:</b> Bot must be admin in this group to post successfully!
-        """
-        
-        bot.reply_to(message, response, parse_mode="HTML")
-        print(f"✅ Group added: {chat_id} - Total manual groups: {len(MANUAL_GROUP_IDS)}")
-    else:
-        bot.reply_to(message, "⚠️ This group is already in the target list.")
-
-# ======================================================
-# NEW: /LISTGROUPS COMMAND
+# /LISTGROUPS COMMAND
 # ======================================================
 @bot.message_handler(commands=['listgroups'])
 def list_groups_command(message):
-    """List all target groups"""
-    response = f"""
-📋 <b>TARGET GROUPS LIST</b>
-
-<b>Fixed Channels:</b> {len(MANUAL_CHANNEL_IDS)}
-<b>Manual Groups:</b> {len(MANUAL_GROUP_IDS)}
-<b>Active Groups:</b> {len(active_groups)}
-<b>Total Targets:</b> {len(ALL_TARGET_IDS)}
-
-<b>Manual Groups (ID):</b>
-"""
+    """List all target groups and check admin status"""
+    print(f"📋 /listgroups command from user: {message.from_user.id}")
     
-    for i, group_id in enumerate(MANUAL_GROUP_IDS):
+    try:
+        response_msg = bot.reply_to(message, "📋 Scanning groups and checking admin status...")
+        
+        # Check bot's status in current chat
+        current_chat_status = "❓ Unknown"
         try:
-            chat = bot.get_chat(group_id)
-            title = chat.title if hasattr(chat, 'title') else "Unknown"
-            response += f"{i+1}. {title} (<code>{group_id}</code>)\n"
+            chat_member = bot.get_chat_member(message.chat.id, bot.get_me().id)
+            current_chat_status = "✅ Admin" if chat_member.status in ['administrator', 'creator'] else "❌ Not Admin"
         except:
-            response += f"{i+1}. Unknown Group (<code>{group_id}</code>)\n"
-    
-    bot.reply_to(message, response, parse_mode="HTML")
+            current_chat_status = "⚠️ Cannot check"
+        
+        admin_groups_info = []
+        non_admin_groups_info = []
+        total_checked = 0
+        total_admin = 0
+        
+        # Check all active groups
+        for chat_id in list(active_groups):
+            try:
+                total_checked += 1
+                
+                chat_info = bot.get_chat(chat_id)
+                if chat_info.type not in ['group', 'supergroup']:
+                    continue
+                
+                chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
+                title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
+                
+                if chat_member.status in ['administrator', 'creator']:
+                    total_admin += 1
+                    admin_groups_info.append(f"✅ {title} (Type: {chat_info.type})")
+                else:
+                    non_admin_groups_info.append(f"❌ {title} (Type: {chat_info.type})")
+            except:
+                continue
+        
+        response = f"""
+📋 <b>GROUPS LIST & ADMIN STATUS</b>
+
+<b>Current Chat Status:</b> {current_chat_status}
+<b>Total Groups Checked:</b> {total_checked}
+<b>Admin Groups Found:</b> {total_admin}
+<b>Non-Admin Groups:</b> {len(non_admin_groups_info)}
+<b>Active Groups Total:</b> {len(active_groups)}
+
+<b>📢 Fixed Channels:</b> {len(MANUAL_CHANNEL_IDS)}
+
+<b>✅ ADMIN GROUPS (Will receive birthday posts):</b>
+"""
+        
+        if admin_groups_info:
+            response += "\n" + "\n".join(admin_groups_info[:10])  # Show first 10 only
+            if len(admin_groups_info) > 10:
+                response += f"\n... and {len(admin_groups_info) - 10} more admin groups"
+        else:
+            response += "\n❌ No admin groups found"
+        
+        if non_admin_groups_info:
+            response += f"\n\n<b>❌ NON-ADMIN GROUPS (Won't receive posts):</b>"
+            response += f"\n{len(non_admin_groups_info)} groups where bot is not admin"
+            if len(non_admin_groups_info) <= 5:
+                response += "\n" + "\n".join(non_admin_groups_info)
+        
+        response += f"""
+
+<b>🎂 Next Birthday Post:</b> Will send to:
+• {len(MANUAL_CHANNEL_IDS)} fixed channels
+• {total_admin} auto-discovered admin groups
+<b>Total:</b> {len(MANUAL_CHANNEL_IDS) + total_admin} targets
+
+<b>💡 Note:</b> Make bot admin in groups to receive birthday posts automatically!
+"""
+        
+        bot.edit_message_text(
+            response,
+            message.chat.id,
+            response_msg.message_id,
+            parse_mode="HTML"
+        )
+        
+        print(f"📋 Listgroups completed: {total_admin} admin groups, {len(non_admin_groups_info)} non-admin groups")
+        
+    except Exception as e:
+        error_msg = f"❌ Error listing groups: {e}"
+        print(error_msg)
+        bot.reply_to(message, error_msg)
 
 # ======================================================
 # DEBUG COMMANDS
@@ -946,55 +991,13 @@ def show_my_id(message):
             response += f"<b>Chat Type (detailed):</b> {chat_info.type}\n"
     
     response += """
-<b>Bot will check your ADMIN STATUS, not your ID.</b>
+<b>For link posting:</b>
 ✅ Admin users can post links
 ❌ Non-admin users cannot post links
 """
     
     bot.reply_to(message, response, parse_mode="HTML")
     print(f"📊 User {user_id} checked their ID in chat {message.chat.id}")
-
-@bot.message_handler(commands=['admincheck'])
-def check_admin_status(message):
-    """Check admin status"""
-    user_id = message.from_user.id if message.from_user else None
-    
-    if not user_id:
-        bot.reply_to(message, "❌ Cannot get user ID")
-        return
-    
-    # Check bot admin status too
-    bot_is_admin = False
-    try:
-        chat_member = bot.get_chat_member(message.chat.id, bot.get_me().id)
-        bot_is_admin = chat_member.status in ['administrator', 'creator']
-    except:
-        pass
-    
-    try:
-        chat_member = bot.get_chat_member(message.chat.id, user_id)
-        status = chat_member.status
-        
-        response = f"""
-<b>🔍 ADMIN STATUS CHECK:</b>
-
-<b>User ID:</b> <code>{user_id}</code>
-<b>User Status:</b> <b>{status}</b>
-<b>Bot Admin:</b> {'✅ Yes' if bot_is_admin else '❌ No'}
-
-<b>Result:</b>
-"""
-        
-        if status in ['administrator', 'creator']:
-            response += "✅ <b>YOU ARE ADMIN - Can post links</b>"
-        else:
-            response += "❌ <b>YOU ARE NOT ADMIN - Cannot post links</b>"
-        
-        bot.reply_to(message, response, parse_mode="HTML")
-        print(f"🔍 Admin check for {user_id}: {status}, Bot admin: {bot_is_admin}")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error: {e}")
 
 # ======================================================
 # /STATUS COMMAND
@@ -1008,15 +1011,17 @@ def bot_status(message):
         current_time = myanmar_time.strftime("%H:%M:%S")
         current_date = myanmar_time.strftime("%Y-%m-%d")
         
-        # Get active groups info
-        active_groups_info = []
-        for group_id in list(active_groups)[:5]:  # Show first 5 only
+        # Count admin groups
+        admin_groups_count = 0
+        for group_id in list(active_groups):
             try:
-                chat = bot.get_chat(group_id)
-                title = chat.title if hasattr(chat, 'title') else f"Chat {group_id}"
-                active_groups_info.append(f"• {title}")
+                chat_info = bot.get_chat(group_id)
+                if chat_info.type in ['group', 'supergroup']:
+                    chat_member = bot.get_chat_member(group_id, bot.get_me().id)
+                    if chat_member.status in ['administrator', 'creator']:
+                        admin_groups_count += 1
             except:
-                active_groups_info.append(f"• Unknown ({group_id})")
+                continue
         
         status_text = f"""
 <b>🤖 BOT STATUS REPORT</b>
@@ -1033,22 +1038,23 @@ def bot_status(message):
 
 <b>📊 STATISTICS:</b>
 <b>Fixed Channels:</b> {len(MANUAL_CHANNEL_IDS)}
-<b>Manual Groups:</b> {len(MANUAL_GROUP_IDS)}
 <b>Active Groups:</b> {len(active_groups)}
-<b>Total Targets:</b> {len(ALL_TARGET_IDS)}
+<b>Admin Groups (Auto-discovered):</b> {admin_groups_count}
+<b>Total Auto-Post Targets:</b> {len(MANUAL_CHANNEL_IDS) + admin_groups_count}
 
 <b>🔧 COMMANDS:</b>
 • /showpost - Preview birthday post
 • /testpost - Test post immediately
-• /addgroup - Add this group to target list
-• /listgroups - List all target groups
+• /listgroups - List all groups & admin status
 • /status - This status report
 • /myid - Show your Telegram ID
-• /admincheck - Check admin status
+
+<b>🌟 AUTO DISCOVERY SYSTEM:</b>
+✅ No manual adding needed
+✅ Automatically finds ALL admin groups
+✅ Includes groups AND supergroups
+✅ Just make bot admin in any group
 """
-        
-        if active_groups_info:
-            status_text += "\n<b>📝 Active Groups:</b>\n" + "\n".join(active_groups_info)
         
         bot.reply_to(message, status_text, parse_mode="HTML")
         print(f"📊 Status report sent to {message.from_user.id}")
@@ -1214,9 +1220,12 @@ def webhook():
     
     try:
         if request.method == 'POST':
-            json_data = request.get_json()
+            json_data = request.get_data(as_text=True)
+            print(f"📦 Webhook data received: {json_data[:500]}...")
+            
             if json_data:
-                update = telebot.types.Update.de_json(json_data)
+                update_dict = json.loads(json_data)
+                update = telebot.types.Update.de_json(update_dict)
                 
                 def process_update():
                     try:
@@ -1277,10 +1286,9 @@ myanmar_time = get_myanmar_time()
 print(f"⏰ Current Myanmar Time: {myanmar_time.strftime('%H:%M:%S')}")
 print(f"📅 Current Date: {myanmar_time.strftime('%Y-%m-%d')}")
 print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
-print(f"👥 Manual Groups: {len(MANUAL_GROUP_IDS)} groups (ADD WITH /addgroup)")
 print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images (ROTATION ENABLED)")
 print(f"📚 'စာအုပ်' Auto Reply: ENABLED")
-print(f"👑 Admin Check: By STATUS (not ID)")
+print(f"👑 Admin Check: By STATUS (not ID) - For link blocking only")
 print(f"🔗 Link Blocker: ENABLED for non-admins")
 
 print("\n📖 AUTHOR AUTO-REPLY SYSTEM")
@@ -1294,19 +1302,17 @@ print("="*60)
 print("✅ Daily at 8:00 AM (Myanmar Time)")
 print(f"✅ {len(BIRTHDAY_IMAGES)} rotating images")
 print("✅ Image rotation: ENABLED (6 images)")
-print(f"✅ Sending to {len(ALL_TARGET_IDS)} fixed targets (channels + manual groups)")
-print("✅ AUTO DISCOVERY: Will send to ALL admin groups")
-print("✅ MANUAL ADD: Use /addgroup in any group to add it")
+print(f"✅ Sending to {len(MANUAL_CHANNEL_IDS)} fixed channels")
+print("✅ AUTO DISCOVERY: Will send to ALL admin groups/supergroups")
+print("✅ NO MANUAL ADDING NEEDED - Fully automatic")
 
 print("\n🔧 COMMANDS:")
 print("="*60)
 print("✅ /showpost - Birthday post preview")
-print("✅ /testpost - Test post immediately (sends to ALL targets)")
-print("✅ /addgroup - Add current group to target list")
-print("✅ /listgroups - List all target groups")
+print("✅ /testpost - Test post immediately (sends to ALL auto-discovered groups)")
+print("✅ /listgroups - List all groups & admin status (replaces admincheck)")
 print("✅ /status - Bot status report")
 print("✅ /myid - Show your Telegram ID")
-print("✅ /admincheck - Check admin status")
 
 print("\n🚀 Bot is now LIVE and READY!")
 print("="*60)
