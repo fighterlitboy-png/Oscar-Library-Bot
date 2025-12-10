@@ -749,12 +749,12 @@ def show_post_preview(message):
         bot.reply_to(message, error_msg)
 
 # ======================================================
-# /TESTBIRTHDAY COMMAND - FOR TESTING
+# /TESTPOST COMMAND - FOR TESTING
 # ======================================================
-@bot.message_handler(commands=['testbirthday'])
+@bot.message_handler(commands=['testpost'])
 def test_birthday_command(message):
-    """Manual test for birthday post"""
-    print(f"🧪 /testbirthday command from user: {message.from_user.id}")
+    """Manual test for birthday post - Sends to groups too"""
+    print(f"🧪 /testpost command from user: {message.from_user.id}")
     
     try:
         print("🧪 MANUAL BIRTHDAY TEST TRIGGERED!")
@@ -762,17 +762,17 @@ def test_birthday_command(message):
         # Send test message
         test_msg = bot.reply_to(message, "🧪 Testing birthday post system...")
         
-        # Trigger the birthday post
+        # Trigger the birthday post - This will send to ALL channels and admin groups
         send_birthday_to_all_chats()
         
         # Update message
         bot.edit_message_text(
-            "✅ Birthday post test completed!\nCheck channels and groups for posts.",
+            "✅ Birthday post test completed!\nCheck channels and ALL admin groups for posts.",
             message.chat.id,
             test_msg.message_id
         )
         
-        print("✅ Manual birthday test completed")
+        print("✅ Manual birthday test completed - Posts sent to channels and groups")
         
     except Exception as e:
         error_msg = f"❌ Test failed: {e}"
@@ -866,7 +866,7 @@ def bot_status(message):
 
 <b>🔧 COMMANDS:</b>
 • /showpost - Preview birthday post
-• /testbirthday - Test post immediately
+• /testpost - Test post immediately
 • /status - This status report
 • /myid - Show your Telegram ID
 """
@@ -957,7 +957,7 @@ def back_to_main(call):
 <b>စာအုပ်ရှာဖို့ နှစ်ပေါင်းခွဲထားတယ်</b>
 <b>📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
 
-Fic၊ ကာတွန်း၊ သည�ထိပ်ရင်ဖို 
+Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
 <b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
@@ -1120,7 +1120,7 @@ print("✅ AUTO DISCOVERY: Will send to ALL admin groups")
 print("\n🔧 COMMANDS:")
 print("="*60)
 print("✅ /showpost - Birthday post preview")
-print("✅ /testbirthday - Test post immediately")
+print("✅ /testpost - Test post immediately (sends to channels AND groups)")
 print("✅ /status - Bot status report")
 print("✅ /myid - Show your Telegram ID")
 print("✅ /admincheck - Check admin status")
