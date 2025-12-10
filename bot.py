@@ -7,7 +7,7 @@ import threading
 import time
 import requests
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import logging
 import random
@@ -38,26 +38,28 @@ except:
     pass
 
 # ===============================
-# BIRTHDAY IMAGES DATABASE
+# BIRTHDAY IMAGES DATABASE (6 IMAGES ONLY)
 # ===============================
 BIRTHDAY_IMAGES = [
-    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_2.jpg",  # ပုံ ၁
-    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_3.jpg",  # ပုံ ၂
-    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_4.jpg",  # ပုံ ၃
-    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_5.jpg",  # ပုံ ၄
-    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_6.jpg",  # ပုံ ၅
-    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_7.jpg"   # ပုံ ၆
+    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_2.jpg",
+    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_3.jpg",
+    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_4.jpg",
+    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_5.jpg",
+    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_6.jpg",
+    "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/HBD_7.jpg"
 ]
 
 # Track current image index for birthday
 current_birthday_index = 0
 
 def get_next_birthday_image():
-    """Get next birthday image in rotation"""
+    """Get next birthday image in rotation (6 images only)"""
     global current_birthday_index
     image_url = BIRTHDAY_IMAGES[current_birthday_index]
+    print(f"🖼️ Using birthday image {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}")
+    
+    # Move to next image for next post
     current_birthday_index = (current_birthday_index + 1) % len(BIRTHDAY_IMAGES)
-    print(f"🎂 Using birthday image {current_birthday_index}/{len(BIRTHDAY_IMAGES)}")
     return image_url
 
 # ===============================
@@ -685,7 +687,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ======================================================
-# /SHOWPOST COMMAND - NEW
+# /SHOWPOST COMMAND
 # ======================================================
 @bot.message_handler(commands=['showpost'])
 def show_post_preview(message):
@@ -711,14 +713,16 @@ def show_post_preview(message):
 
 📢 <b>Target Channels:</b> {len(MANUAL_CHANNEL_IDS)}
 👥 <b>Active Groups:</b> {len(active_groups)}
-🖼️ <b>Image:</b> {current_birthday_index}/{len(BIRTHDAY_IMAGES)}
+🖼️ <b>Images in Rotation:</b> {len(BIRTHDAY_IMAGES)} images
+🖼️ <b>Next Image:</b> {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
 
 <b>Will post to:</b>
-1️⃣ Fixed Channels (4 channels)
+1️⃣ Fixed Channels ({len(MANUAL_CHANNEL_IDS)} channels)
 2️⃣ All Admin Groups ({len(active_groups)} groups found)
 
 <b>Auto-post schedule:</b>
 ✅ Daily at 8:00 AM Myanmar Time
+✅ Image Rotation: {len(BIRTHDAY_IMAGES)} images
 ✅ Next post: Tomorrow 8:00 AM
 
 <b>Caption Preview:</b>
@@ -832,7 +836,7 @@ def check_admin_status(message):
         bot.reply_to(message, f"❌ Error: {e}")
 
 # ======================================================
-# /STATUS COMMAND - NEW
+# /STATUS COMMAND
 # ======================================================
 @bot.message_handler(commands=['status'])
 def bot_status(message):
@@ -842,17 +846,6 @@ def bot_status(message):
         myanmar_time = get_myanmar_time()
         current_time = myanmar_time.strftime("%H:%M:%S")
         current_date = myanmar_time.strftime("%Y-%m-%d")
-        
-        # Calculate next post time
-        now = myanmar_time
-        target_time = now.replace(hour=8, minute=0, second=0, microsecond=0)
-        
-        if now > target_time:
-            target_time += timedelta(days=1)
-        
-        time_until = target_time - now
-        hours = int(time_until.total_seconds() // 3600)
-        minutes = int((time_until.total_seconds() % 3600) // 60)
         
         status_text = f"""
 <b>🤖 BOT STATUS REPORT</b>
@@ -864,13 +857,12 @@ def bot_status(message):
 <b>🎂 BIRTHDAY POST SYSTEM:</b>
 <b>Last Post Date:</b> {last_birthday_post_date or "Never"}
 <b>Next Post:</b> Tomorrow at 8:00 AM
-<b>Time Until Next Post:</b> {hours}h {minutes}m
+<b>Images in Rotation:</b> {len(BIRTHDAY_IMAGES)} images
+<b>Current Image Index:</b> {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
 
 <b>📊 STATISTICS:</b>
 <b>Fixed Channels:</b> {len(MANUAL_CHANNEL_IDS)}
 <b>Active Groups:</b> {len(active_groups)}
-<b>Birthday Images:</b> {len(BIRTHDAY_IMAGES)}
-<b>Current Image Index:</b> {current_birthday_index}
 
 <b>🔧 COMMANDS:</b>
 • /showpost - Preview birthday post
@@ -1106,7 +1098,7 @@ myanmar_time = get_myanmar_time()
 print(f"⏰ Current Myanmar Time: {myanmar_time.strftime('%H:%M:%S')}")
 print(f"📅 Current Date: {myanmar_time.strftime('%Y-%m-%d')}")
 print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
-print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images")
+print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images (ROTATION ENABLED)")
 print(f"📚 'စာအုပ်' Auto Reply: ENABLED")
 print(f"👑 Admin Check: By STATUS (not ID)")
 print(f"🔗 Link Blocker: ENABLED for non-admins")
@@ -1121,26 +1113,17 @@ print("\n🎂 BIRTHDAY POST SYSTEM")
 print("="*60)
 print("✅ Daily at 8:00 AM (Myanmar Time)")
 print(f"✅ {len(BIRTHDAY_IMAGES)} rotating images")
+print("✅ Image rotation: ENABLED (6 images)")
 print(f"✅ Sending to {len(MANUAL_CHANNEL_IDS)} fixed channels")
 print("✅ AUTO DISCOVERY: Will send to ALL admin groups")
-print("✅ Active groups tracking: Yes")
-print("✅ Admin check before posting: Yes")
 
-print("\n🔧 NEW COMMANDS ADDED:")
+print("\n🔧 COMMANDS:")
 print("="*60)
 print("✅ /showpost - Birthday post preview")
 print("✅ /testbirthday - Test post immediately")
 print("✅ /status - Bot status report")
 print("✅ /myid - Show your Telegram ID")
 print("✅ /admincheck - Check admin status")
-
-print("\n📊 BIRTHDAY POST STRATEGY:")
-print("="*60)
-print("1. Fixed Channels 4ခုကို တင်မယ်")
-print("2. Bot admin ဖြစ်တဲ့ group/supergroup အားလုံးကို တင်မယ်")
-print("3. Auto-discover လုပ်ပြီး တင်မယ်")
-print("4. Bot ရောက်တဲ့နေရာတိုင်း track လုပ်မယ်")
-print("5. Admin မဟုတ်ရင် group မှာ link တွေ block လုပ်မယ်")
 
 print("\n🚀 Bot is now LIVE and READY!")
 print("="*60)
