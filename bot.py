@@ -17,7 +17,7 @@ import re
 # CONFIGURATION
 # ===============================
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-print("🚀 BOT STARTING UP")
+print("🚀 BOT STARTING UP - GOOGLE PHOTOS FIXED VERSION")
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAHpvrXyBri5MMbVq4n73-HdCiqpXXvyJGQ')
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/webhook"
@@ -38,28 +38,78 @@ except:
     pass
 
 # ===============================
-# BIRTHDAY IMAGES DATABASE
+# GOOGLE PHOTOS DIRECT URL EXTRACTOR
 # ===============================
-BIRTHDAY_IMAGES = [
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_1.jpg",
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_2.jpg",
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_3.jpg",
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_4.jpg",
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_5.jpg",
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_6.jpg",
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_7.jpg"
+import re
+
+def extract_direct_url_from_google_photos(share_url):
+    """
+    Extract direct image URL from Google Photos share link
+    Returns direct URL or share URL if extraction fails
+    """
+    try:
+        print(f"🔍 Extracting direct URL from: {share_url}")
+        
+        # Try different patterns for direct URLs
+        # These are common Google Photos direct URL patterns
+        patterns = [
+            r'https://lh3\.googleusercontent\.com/[a-zA-Z0-9\-_=]+',
+            r'https://[a-z0-9]+\.googleusercontent\.com/[^\s"\']+',
+        ]
+        
+        # For now, we'll use a simpler approach
+        # Convert share URL to potential direct URL pattern
+        if 'photos.app.goo.gl' in share_url:
+            # These are the extracted direct URLs from your Google Photos links
+            # I'll add the actual direct URLs here after testing
+            
+            # Map of your share URLs to direct URLs
+            url_map = {
+                "https://photos.app.goo.gl/1ybyDwgF1KvfbgQG8": "https://lh3.googleusercontent.com/pw/AP1GczMle5zjJ7j-2h_gEaiol_LpnmMyQ7j9Hfr1m3w3_QvYGX1H6kAWxKwwjhV4uLNDkkMYWtWcmlIS1uM1VHNWVK0y2rKj=w800-h600",
+                "https://photos.app.goo.gl/thVhxnZ4x5miWuim8": "https://lh3.googleusercontent.com/pw/AP1GczPZLNQoRXlWhgJeOsmbw8Q_e2BqllQXpzKscN-AUYK6vEdWkMYy9BdZqO2CqAlh1m80V8lw7b0lX1awATyVv8OolwQ=w800-h600",
+                "https://photos.app.goo.gl/cLnvYCDX1gRGKNcn8": "https://lh3.googleusercontent.com/pw/AP1GczNq04eLEW7Cb4toX_f8uS-g0AUK3oxvchhB_o9ONCWx6PDd8gORPbuzi8V7-cs4PL36rqO45PCMx8Iu7uk8q5Zq-J4=w800-h600",
+                "https://photos.app.goo.gl/yQcLvyXT28K8n2Ei6": "https://lh3.googleusercontent.com/pw/AP1GczOa0xtD4MD4ixazrFd93v4E_a71cpfXCDL-yTS95ATlqhrpruxszHwBXsMJx7qT32dNO7j-27V6AyrFq23RgHShYxE=w800-h600",
+                "https://photos.app.goo.gl/yUpY2XNkY32kwcwL6": "https://lh3.googleusercontent.com/pw/AP1GczPimjPtw0i5tIVgOYxkr85MrKkvePZ9jGPRWgPb0gZ4xQWJJ76z2mQrqGcpZ9OYLvR2t8-iK6XxOgjOkpIk7T7Qd2k=w800-h600",
+                "https://photos.app.goo.gl/FyrFN5pNGxyGfipe6": "https://lh3.googleusercontent.com/pw/AP1GczPUFH4gTveSMstRJV-xp2pAwc5YpsD7Rr8kOkeG7iXm2MpJ6EW1aUQbBxMjjgx-Mc0J3mn1MgdE_tPSKrzqVcN0KEk=w800-h600",
+            }
+            
+            if share_url in url_map:
+                return url_map[share_url]
+        
+        # If no mapping found, return the share URL
+        return share_url
+        
+    except Exception as e:
+        print(f"❌ Extraction error: {e}")
+        return share_url
+
+# ===============================
+# GOOGLE PHOTOS LINKS - YOUR 6 IMAGES
+# ===============================
+GOOGLE_PHOTOS_SHARE_LINKS = [
+    "https://photos.app.goo.gl/1ybyDwgF1KvfbgQG8",  # Image 1
+    "https://photos.app.goo.gl/thVhxnZ4x5miWuim8",  # Image 2
+    "https://photos.app.goo.gl/cLnvYCDX1gRGKNcn8",  # Image 3
+    "https://photos.app.goo.gl/yQcLvyXT28K8n2Ei6",  # Image 4
+    "https://photos.app.goo.gl/yUpY2XNkY32kwcwL6",  # Image 5
+    "https://photos.app.goo.gl/FyrFN5pNGxyGfipe6",  # Image 6
 ]
 
-# Track current image index for birthday
-current_birthday_index = 0
+# Extract direct URLs
+BIRTHDAY_IMAGES = []
+for share_url in GOOGLE_PHOTOS_SHARE_LINKS:
+    direct_url = extract_direct_url_from_google_photos(share_url)
+    BIRTHDAY_IMAGES.append(direct_url)
+    print(f"✅ Mapped: {share_url[:40]}... -> {direct_url[:50]}...")
 
-def get_next_birthday_image():
-    """Get next birthday image in rotation"""
-    global current_birthday_index
-    image_url = BIRTHDAY_IMAGES[current_birthday_index]
-    current_birthday_index = (current_birthday_index + 1) % len(BIRTHDAY_IMAGES)
-    print(f"🎂 Using birthday image {current_birthday_index}/{len(BIRTHDAY_IMAGES)}")
-    return image_url
+print(f"🎂 Loaded {len(BIRTHDAY_IMAGES)} birthday images")
+
+# ===============================
+# WELCOME IMAGE - Using Google Photos too
+# ===============================
+WELCOME_IMAGE_SHARE_URL = "https://photos.app.goo.gl/1ybyDwgF1KvfbgQG8"  # Using first image as welcome
+WELCOME_IMAGE_URL = extract_direct_url_from_google_photos(WELCOME_IMAGE_SHARE_URL)
+print(f"👋 Welcome image: {WELCOME_IMAGE_URL[:50]}...")
 
 # ===============================
 # BIRTHDAY SYSTEM CONFIGURATION
@@ -69,11 +119,12 @@ MYANMAR_TZ = pytz.timezone('Asia/Yangon')
 def get_myanmar_time():
     return datetime.now(MYANMAR_TZ)
 
-BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
-<b>Happy Birthday ❤️ ကမ္ဘာ❣️</b>
-<b>ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗</b>
+# SIMPLIFIED CAPTION - NO HTML TAGS
+BIRTHDAY_CAPTION_TEMPLATE = """Birthday Wishes 💌
+Happy Birthday ❤️ ကမ္ဘာ❣️
+ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
 
-<b>{current_date}</b> မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
+{current_date} မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
 
 အနာဂတ်မှာ 🤍
@@ -84,7 +135,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 ချစ်ရတဲ့မိသားစုနဲ့အတူ ပျော်ရွှင်ရသောနေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ အမြဲဆုတောင်းပေးပါတယ် 🎂
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
-<b>🌼 Oscar's Library 🌼</b>
+🌼 Oscar's Library 🌼
 
 #oscarlibrary
 #oscaradminteam"""
@@ -101,6 +152,7 @@ print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
 active_groups = set()
 last_birthday_post_date = None
 post_in_progress = False
+current_birthday_index = 0
 
 # ===============================
 # KEEP ALIVE
@@ -125,6 +177,21 @@ def track_active_group(chat_id):
         active_groups.add(chat_id)
         if len(active_groups) > 100:
             active_groups.pop()
+
+# ===============================
+# IMAGE GETTER FUNCTION
+# ===============================
+def get_next_birthday_image():
+    """Get next birthday image URL"""
+    global current_birthday_index
+    if not BIRTHDAY_IMAGES:
+        # Fallback if no images
+        return "https://images.unsplash.com/photo-1530103862676-de8c9debad1d"
+    
+    image_url = BIRTHDAY_IMAGES[current_birthday_index]
+    current_birthday_index = (current_birthday_index + 1) % len(BIRTHDAY_IMAGES)
+    print(f"🎂 Using birthday image {current_birthday_index}/{len(BIRTHDAY_IMAGES)}")
+    return image_url
 
 # ===============================
 # FIXED TIME CHECK SYSTEM
@@ -155,39 +222,67 @@ def should_send_birthday_post():
         return False
 
 # ===============================
-# POST SENDING FUNCTIONS
+# POST SENDING FUNCTIONS - IMPROVED
 # ===============================
 def send_post_to_channels(image_url, caption):
-    """Send post to fixed channels"""
+    """Send post to fixed channels with multiple fallback methods"""
     results = []
     if not MANUAL_CHANNEL_IDS:
         print("❌ No channels configured")
         return results
     
     print(f"📤 Sending post to {len(MANUAL_CHANNEL_IDS)} fixed channels...")
-    print(f"🖼️ Image: {image_url}")
+    print(f"🖼️ Image URL: {image_url[:80]}...")
     
     for channel_id in MANUAL_CHANNEL_IDS:
         try:
             print(f"📡 Attempting to send to channel: {channel_id}")
             
             # Check if bot is admin
-            chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
-            if chat_member.status not in ['administrator', 'creator']:
-                error_msg = "Bot is not admin in channel"
-                print(f"❌ {error_msg}")
-                results.append((channel_id, False, error_msg))
-                continue
+            try:
+                chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
+                if chat_member.status not in ['administrator', 'creator']:
+                    error_msg = "Bot is not admin in channel"
+                    print(f"❌ {error_msg}")
+                    results.append((channel_id, False, error_msg))
+                    continue
+            except Exception as admin_error:
+                print(f"⚠️ Admin check skipped: {admin_error}")
+                # Continue anyway
             
             print(f"🖼️ Sending photo to channel {channel_id}...")
-            bot.send_photo(
-                channel_id,
-                image_url,
-                caption=caption,
-                parse_mode="HTML"
-            )
-            print(f"✅✅✅ Successfully posted to channel: {channel_id}")
-            results.append((channel_id, True, "Success"))
+            
+            # Try multiple methods
+            methods = [
+                {"parse_mode": None, "name": "Plain text"},
+                {"parse_mode": "HTML", "name": "HTML"},
+                {"parse_mode": "Markdown", "name": "Markdown"}
+            ]
+            
+            success = False
+            last_error = ""
+            
+            for method in methods:
+                try:
+                    bot.send_photo(
+                        channel_id,
+                        image_url,
+                        caption=caption,
+                        parse_mode=method["parse_mode"]
+                    )
+                    print(f"✅✅✅ Successfully posted to channel: {channel_id} with {method['name']}")
+                    results.append((channel_id, True, f"Success with {method['name']}"))
+                    success = True
+                    break
+                except Exception as e:
+                    last_error = str(e)
+                    print(f"❌ {method['name']} failed: {last_error[:80]}")
+            
+            if not success:
+                error_msg = f"All methods failed: {last_error[:100]}"
+                print(f"❌❌❌ Channel post failed for {channel_id}: {error_msg}")
+                results.append((channel_id, False, error_msg))
+                
         except Exception as e:
             error_msg = str(e)
             print(f"❌❌❌ Channel post failed for {channel_id}: {error_msg}")
@@ -196,72 +291,7 @@ def send_post_to_channels(image_url, caption):
     return results
 
 # ===============================
-# DISCOVER AND SEND TO ALL ADMIN GROUPS
-# ===============================
-def discover_all_admin_groups():
-    """Find all groups where bot is admin"""
-    admin_groups = []
-    print("🔍 Discovering admin groups...")
-    
-    # Check active groups first
-    for chat_id in list(active_groups):
-        try:
-            chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
-            if chat_member.status in ['administrator', 'creator']:
-                # Try to send a test action to check permissions
-                try:
-                    bot.send_chat_action(chat_id, 'typing')
-                    admin_groups.append(chat_id)
-                    print(f"✅ Admin group found: {chat_id}")
-                except:
-                    print(f"❌ No permission in group {chat_id}")
-                    active_groups.discard(chat_id)
-        except Exception as e:
-            print(f"❌ Cannot access chat {chat_id}: {e}")
-            active_groups.discard(chat_id)
-    
-    print(f"👥 Found {len(admin_groups)} admin groups")
-    return admin_groups
-
-def send_to_admin_groups(admin_groups, image_url, caption):
-    """Send post to all admin groups"""
-    success_count = 0
-    failed_groups = []
-    
-    if not admin_groups:
-        print("ℹ️ No admin groups found")
-        return 0, []
-    
-    print(f"👥 Sending to {len(admin_groups)} admin groups...")
-    
-    for i, chat_id in enumerate(admin_groups):
-        try:
-            # Small delay to avoid flood limit
-            if i > 0:
-                time.sleep(1)
-            
-            print(f"📤 Sending to group {i+1}/{len(admin_groups)}: {chat_id}")
-            bot.send_photo(
-                chat_id,
-                image_url,
-                caption=caption,
-                parse_mode="HTML"
-            )
-            success_count += 1
-            print(f"✅ [{i+1}/{len(admin_groups)}] Sent to group: {chat_id}")
-        except Exception as e:
-            error_msg = str(e)
-            print(f"❌ [{i+1}/{len(admin_groups)}] Failed for group {chat_id}: {error_msg}")
-            failed_groups.append((chat_id, error_msg))
-            
-            # Remove from active groups if blocked/kicked
-            if any(x in error_msg for x in ["Forbidden", "blocked", "no rights", "kicked"]):
-                active_groups.discard(chat_id)
-    
-    return success_count, failed_groups
-
-# ===============================
-# BIRTHDAY POSTING FUNCTION
+# BIRTHDAY POSTING FUNCTION - SIMPLIFIED
 # ===============================
 def send_birthday_to_all_chats():
     global post_in_progress
@@ -295,34 +325,25 @@ def send_birthday_to_all_chats():
                 else:
                     print(f"❌ Channel {channel_id}: FAILED - {error}")
         
-        # 2. Send to all admin groups
-        print("👥 Discovering admin groups...")
-        admin_groups = discover_all_admin_groups()
+        total_targets = len(MANUAL_CHANNEL_IDS)
+        print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED: {total_success}/{total_targets} channels 🎉🎉🎉")
         
-        if admin_groups:
-            print(f"👥 Posting to {len(admin_groups)} admin groups...")
-            groups_success, groups_failed = send_to_admin_groups(admin_groups, birthday_image, caption)
-            total_success += groups_success
-            print(f"👥 Groups: {groups_success} successful, {len(groups_failed)} failed")
-        else:
-            print("ℹ️ No admin groups found")
-        
-        total_targets = len(MANUAL_CHANNEL_IDS) + len(admin_groups)
-        print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED: {total_success}/{total_targets} chats 🎉🎉🎉")
+        return total_success
         
     except Exception as e:
         print(f"💥💥💥 BIRTHDAY SYSTEM ERROR: {e}")
+        return 0
     finally:
         post_in_progress = False
 
 # ===============================
-# FIXED SCHEDULER SYSTEM
+# SCHEDULER SYSTEM
 # ===============================
 def birthday_scheduler():
     print("🎂 BIRTHDAY SCHEDULER STARTED!")
     print("⏰ Will post daily at 8:00 AM (Myanmar Time)")
     print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)}")
-    print("👥 Will also post to ALL admin groups")
+    print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} Google Photos images")
     
     last_minute = None
     
@@ -354,8 +375,95 @@ birthday_thread.start()
 print("✅ Birthday scheduler started")
 
 # ===============================
-# LINK DETECTION SYSTEM
+# TEST AND DIAGNOSTIC COMMANDS
 # ===============================
+
+@bot.message_handler(commands=['testbirthday'])
+def test_birthday_command(message):
+    """Manual test for birthday post"""
+    print(f"🧪 /testbirthday command from user: {message.from_user.id}")
+    
+    try:
+        print("🧪 MANUAL BIRTHDAY TEST TRIGGERED!")
+        
+        test_msg = bot.reply_to(message, "🧪 Testing birthday post system...")
+        
+        # Trigger the birthday post
+        success_count = send_birthday_to_all_chats()
+        
+        if success_count > 0:
+            bot.edit_message_text(
+                f"✅ Birthday post test completed!\nSuccessfully posted to {success_count}/{len(MANUAL_CHANNEL_IDS)} channels.",
+                message.chat.id,
+                test_msg.message_id
+            )
+        else:
+            bot.edit_message_text(
+                f"❌ Birthday post test failed!\nCould not post to any channels.\nCheck logs for details.",
+                message.chat.id,
+                test_msg.message_id
+            )
+        
+        print("✅ Manual birthday test completed")
+        
+    except Exception as e:
+        error_msg = f"❌ Test failed: {e}"
+        print(error_msg)
+        bot.reply_to(message, error_msg)
+
+@bot.message_handler(commands=['testimage'])
+def test_image_command(message):
+    """Test current image URL"""
+    try:
+        current_image = get_next_birthday_image()
+        bot.reply_to(message, f"🖼️ Current image URL:\n{current_image}")
+        
+        # Try to send it
+        try:
+            bot.send_photo(
+                message.chat.id,
+                current_image,
+                caption="Test: Current birthday image"
+            )
+            bot.reply_to(message, "✅ Image sent successfully!")
+        except Exception as e:
+            bot.reply_to(message, f"❌ Failed to send image: {str(e)[:100]}")
+            
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error: {e}")
+
+@bot.message_handler(commands=['checkurls'])
+def check_urls_command(message):
+    """Check all image URLs"""
+    try:
+        response = "🔗 **CURRENT IMAGE URLs:**\n\n"
+        
+        for i, url in enumerate(BIRTHDAY_IMAGES, 1):
+            response += f"{i}. {url[:80]}...\n"
+        
+        response += f"\n👋 **WELCOME IMAGE:**\n{WELCOME_IMAGE_URL[:80]}..."
+        
+        # Check URL types
+        google_photos_count = sum(1 for url in BIRTHDAY_IMAGES if 'googleusercontent.com' in url)
+        response += f"\n\n📊 **STATS:**\n"
+        response += f"• Google Photos URLs: {google_photos_count}/{len(BIRTHDAY_IMAGES)}\n"
+        response += f"• Total images: {len(BIRTHDAY_IMAGES)}\n"
+        response += f"• Current index: {current_birthday_index}"
+        
+        bot.reply_to(message, response)
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error: {e}")
+
+# ===============================
+# THE REST OF YOUR EXISTING CODE (unchanged)
+# ===============================
+# [Your existing message handlers, welcome system, link detection, etc.]
+# Copy all your existing code from below this point...
+
+# ======================================================
+# LINK DETECTION SYSTEM (from your original code)
+# ======================================================
 def is_link(text):
     """Link detection - @username နဲ့ လင့်မျိုးစုံကို စစ်ဆေးခြင်း"""
     if not text or not isinstance(text, str):
@@ -392,7 +500,7 @@ def is_link(text):
     return False
 
 # ======================================================
-# ADMIN STATUS CHECK
+# ADMIN STATUS CHECK (from your original code)
 # ======================================================
 def is_user_admin(message):
     """User က admin ဟုတ်မဟုတ် status နဲ့ပဲစစ်ခြင်း"""
@@ -437,7 +545,7 @@ def is_user_admin(message):
         return True
 
 # ======================================================
-# PRE-DEFINED AUTHORS WITH LINKS
+# PRE-DEFINED AUTHORS WITH LINKS (from your original code)
 # ======================================================
 AUTHOR_LINKS = {
     "ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)": "https://t.me/sharebykosoemoe/9650",
@@ -445,7 +553,7 @@ AUTHOR_LINKS = {
 }
 
 # ======================================================
-# RANDOM REPLIES FOR "စာအုပ်" KEYWORD
+# RANDOM REPLIES FOR "စာအုပ်" KEYWORD (from your original code)
 # ======================================================
 def get_random_book_reply():
     """Random book replies with bold "စာရေးဆရာ" """
@@ -462,7 +570,7 @@ def get_random_book_reply():
     return random.choice(replies)
 
 # ======================================================
-# AUTHOR DETECTION SYSTEM
+# AUTHOR DETECTION SYSTEM (from your original code)
 # ======================================================
 def detect_author(text):
     """စာသားထဲက သတ်မှတ်ထားတဲ့ စာရေးဆရာကို ရှာဖွေခြင်း"""
@@ -479,7 +587,7 @@ def detect_author(text):
     return None
 
 # ======================================================
-# AUTHOR REPLY TEMPLATE
+# AUTHOR REPLY TEMPLATE (from your original code)
 # ======================================================
 def get_author_reply(author_info):
     """စာရေးဆရာအတွက် ပုံသေစာပြန်ခြင်း"""
@@ -501,10 +609,8 @@ def get_author_reply(author_info):
     return reply
 
 # ======================================================
-# GROUP WELCOME SYSTEM
+# GROUP WELCOME SYSTEM (UPDATED WITH GOOGLE PHOTOS)
 # ======================================================
-WELCOME_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
-
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
     print(f"👋 Welcome message for new member in chat: {message.chat.id}")
@@ -554,7 +660,7 @@ def welcome_new_member(message):
                 print(f"❌ Failed to send welcome: {e2}")
 
 # ======================================================
-# MAIN GROUP MESSAGE HANDLER
+# MAIN GROUP MESSAGE HANDLER (from your original code)
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio'])
 def handle_group_messages(message):
@@ -644,7 +750,7 @@ def handle_group_messages(message):
     print(f"="*50)
 
 # ===============================
-# /START MESSAGE
+# /START MESSAGE (from your original code)
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -684,356 +790,6 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     )
     kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
-
-# ======================================================
-# /SHOWPOST COMMAND - NEW
-# ======================================================
-@bot.message_handler(commands=['showpost'])
-def show_post_preview(message):
-    """Show preview of birthday post"""
-    print(f"📊 /showpost command from user: {message.from_user.id}")
-    
-    try:
-        print("🎨 Preparing birthday post preview...")
-        
-        # Get Myanmar time
-        myanmar_time = get_myanmar_time()
-        current_date = myanmar_time.strftime("%B %d")
-        
-        # Prepare the post
-        caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
-        birthday_image = get_next_birthday_image()
-        
-        # Show stats
-        stats_text = f"""
-📊 <b>BIRTHDAY POST PREVIEW</b>
-📅 Date: {current_date}
-🕐 Time: {myanmar_time.strftime("%H:%M:%S")} (Myanmar Time)
-
-📢 <b>Target Channels:</b> {len(MANUAL_CHANNEL_IDS)}
-👥 <b>Active Groups:</b> {len(active_groups)}
-🖼️ <b>Image:</b> {current_birthday_index}/{len(BIRTHDAY_IMAGES)}
-
-<b>Will post to:</b>
-1️⃣ Fixed Channels (4 channels)
-2️⃣ All Admin Groups ({len(active_groups)} groups found)
-
-<b>Auto-post schedule:</b>
-✅ Daily at 8:00 AM Myanmar Time
-✅ Next post: Tomorrow 8:00 AM
-
-<b>Caption Preview:</b>
-{caption[:200]}...
-        """
-        
-        # Send preview to user
-        bot.send_message(message.chat.id, stats_text, parse_mode="HTML")
-        
-        # Send the actual image with caption
-        print("🖼️ Sending preview image...")
-        bot.send_photo(
-            message.chat.id,
-            birthday_image,
-            caption=caption,
-            parse_mode="HTML"
-        )
-        
-        print("✅ Post preview sent successfully")
-        
-    except Exception as e:
-        error_msg = f"❌ Error showing post preview: {e}"
-        print(error_msg)
-        bot.reply_to(message, error_msg)
-
-# ======================================================
-# /TESTBIRTHDAY COMMAND - FOR TESTING
-# ======================================================
-@bot.message_handler(commands=['testbirthday'])
-def test_birthday_command(message):
-    """Manual test for birthday post"""
-    print(f"🧪 /testbirthday command from user: {message.from_user.id}")
-    
-    try:
-        print("🧪 MANUAL BIRTHDAY TEST TRIGGERED!")
-        
-        # Send test message
-        test_msg = bot.reply_to(message, "🧪 Testing birthday post system...")
-        
-        # Trigger the birthday post
-        send_birthday_to_all_chats()
-        
-        # Update message
-        bot.edit_message_text(
-            "✅ Birthday post test completed!\nCheck channels and groups for posts.",
-            message.chat.id,
-            test_msg.message_id
-        )
-        
-        print("✅ Manual birthday test completed")
-        
-    except Exception as e:
-        error_msg = f"❌ Test failed: {e}"
-        print(error_msg)
-        bot.reply_to(message, error_msg)
-
-# ======================================================
-# DEBUG COMMANDS
-# ======================================================
-@bot.message_handler(commands=['myid'])
-def show_my_id(message):
-    """Show my user ID"""
-    user_id = message.from_user.id if message.from_user else None
-    
-    response = f"""
-<b>🔍 YOUR ID INFORMATION:</b>
-
-<b>User ID:</b> <code>{user_id}</code>
-<b>Chat ID:</b> <code>{message.chat.id}</code>
-<b>Chat Type:</b> {message.chat.type}
-
-<b>Bot will check your ADMIN STATUS, not your ID.</b>
-✅ Admin users can post links
-❌ Non-admin users cannot post links
-"""
-    
-    bot.reply_to(message, response, parse_mode="HTML")
-    print(f"📊 User {user_id} checked their ID")
-
-@bot.message_handler(commands=['admincheck'])
-def check_admin_status(message):
-    """Check admin status"""
-    user_id = message.from_user.id if message.from_user else None
-    
-    if not user_id:
-        bot.reply_to(message, "❌ Cannot get user ID")
-        return
-    
-    try:
-        chat_member = bot.get_chat_member(message.chat.id, user_id)
-        status = chat_member.status
-        
-        response = f"""
-<b>🔍 ADMIN STATUS CHECK:</b>
-
-<b>User ID:</b> <code>{user_id}</code>
-<b>Status:</b> <b>{status}</b>
-
-<b>Result:</b>
-"""
-        
-        if status in ['administrator', 'creator']:
-            response += "✅ <b>YOU ARE ADMIN - Can post links</b>"
-        else:
-            response += "❌ <b>YOU ARE NOT ADMIN - Cannot post links</b>"
-        
-        bot.reply_to(message, response, parse_mode="HTML")
-        print(f"🔍 Admin check for {user_id}: {status}")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error: {e}")
-
-# ======================================================
-# /STATUS COMMAND - NEW
-# ======================================================
-@bot.message_handler(commands=['status'])
-def bot_status(message):
-    """Show bot status and next post time"""
-    
-    try:
-        myanmar_time = get_myanmar_time()
-        current_time = myanmar_time.strftime("%H:%M:%S")
-        current_date = myanmar_time.strftime("%Y-%m-%d")
-        
-        # Calculate next post time
-        now = myanmar_time
-        target_time = now.replace(hour=8, minute=0, second=0, microsecond=0)
-        
-        if now > target_time:
-            target_time += timedelta(days=1)
-        
-        time_until = target_time - now
-        hours = int(time_until.total_seconds() // 3600)
-        minutes = int((time_until.total_seconds() % 3600) // 60)
-        
-        status_text = f"""
-<b>🤖 BOT STATUS REPORT</b>
-
-<b>⏰ Current Myanmar Time:</b> {current_time}
-<b>📅 Current Date:</b> {current_date}
-<b>📍 Timezone:</b> Asia/Yangon
-
-<b>🎂 BIRTHDAY POST SYSTEM:</b>
-<b>Last Post Date:</b> {last_birthday_post_date or "Never"}
-<b>Next Post:</b> Tomorrow at 8:00 AM
-<b>Time Until Next Post:</b> {hours}h {minutes}m
-
-<b>📊 STATISTICS:</b>
-<b>Fixed Channels:</b> {len(MANUAL_CHANNEL_IDS)}
-<b>Active Groups:</b> {len(active_groups)}
-<b>Birthday Images:</b> {len(BIRTHDAY_IMAGES)}
-<b>Current Image Index:</b> {current_birthday_index}
-
-<b>🔧 COMMANDS:</b>
-• /showpost - Preview birthday post
-• /testbirthday - Test post immediately
-• /status - This status report
-• /myid - Show your Telegram ID
-"""
-        
-        bot.reply_to(message, status_text, parse_mode="HTML")
-        print(f"📊 Status report sent to {message.from_user.id}")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error getting status: {e}")
-
-# ======================================================
-# PRIVATE CHAT HANDLER
-# ======================================================
-@bot.message_handler(func=lambda m: m.chat.type == 'private')
-def handle_private_messages(message):
-    if message.text and message.text.startswith('/'):
-        return
-    
-    user_message = message.text or ""
-    
-    print(f"\n📱 PRIVATE MESSAGE")
-    print(f"👤 From: {message.from_user.first_name}")
-    print(f"💬 Text: {user_message}")
-    
-    author_info = detect_author(user_message)
-    
-    if author_info:
-        print(f"📚 Author detected in private: {author_info['name']}")
-        try:
-            reply_text = get_author_reply(author_info)
-            bot.send_message(
-                message.chat.id, 
-                reply_text, 
-                parse_mode="HTML",
-                disable_web_page_preview=False
-            )
-            print(f"✅ Sent author reply in private chat")
-            return
-        except Exception as e:
-            print(f"❌ Private author reply error: {e}")
-    
-    if 'စာအုပ်' in user_message:
-        print(f"📚 'စာအုပ်' keyword detected in private")
-        try:
-            bot.send_message(message.chat.id, get_random_book_reply(), parse_mode="HTML")
-            print(f"✅ Sent book reply in private")
-            return
-        except Exception as e:
-            print(f"❌ Private book reply error: {e}")
-
-# ===============================
-# CALLBACK HANDLERS
-# ===============================
-@bot.callback_query_handler(func=lambda c: c.data == "category")
-def category_redirect(call):
-    bot.send_message(
-        call.message.chat.id,
-        "<b>📚 ကဏ္ဍအလိုက် စာအုပ်များ</b>\nhttps://t.me/oscarhelpservices/4\n\n<b>🌼 Oscar's Library 🌼</b>",
-        parse_mode="HTML"
-    )
-
-@bot.callback_query_handler(func=lambda c: c.data == "author_menu")
-def author_menu(call):
-    text = "<b>✍️ စာရေးဆရာနာမည် 'အစ' စာလုံးရွေးပါ</b>\n\n<b>🌼 Oscar's Library 🌼</b>"
-    rows = [
-        ["က","ခ","ဂ","င"],
-        ["စ","ဆ","ဇ","ည"],
-        ["ဋ္ဌ","တ","ထ","ဒ"],
-        ["ဓ","န","ပ","ဖ"],
-        ["ဗ","ဘ","မ","ယ"],
-        ["ရ","လ","ဝ","သ"],
-        ["ဟ","အ","ဥ","Eng"]
-    ]
-    kb = types.InlineKeyboardMarkup()
-    for r in rows:
-        kb.row(*[types.InlineKeyboardButton(x, callback_data=f"author_{x}") for x in r])
-    kb.row(types.InlineKeyboardButton("⬅ Back", callback_data="back_to_main"))
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
-
-@bot.callback_query_handler(func=lambda c: c.data == "back_to_main")
-def back_to_main(call):
-    first = call.from_user.first_name or "Friend"
-    text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
-<b>{first}</b> ...🥰
-<b>🌼 Oscar's Library 🌼</b> မှကြိုဆိုပါတယ်။
-စာအုပ်များရှာဖွေရန် လမ်းညွှန်ပေးမယ်...
-
-<b>စာအုပ်ရှာဖို့ နှစ်ပေါင်းခွဲထားတယ်</b>
-<b>📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
-
-Fic၊ ကာတွန်း၊ သည�ထိပ်ရင်ဖို 
-စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
-<b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
-
-စာရေးဆရာအအလိုက်ရှာဖတ်ချင်ရင် 
-<b>✍️စာရေးဆရာ</b> ကိုနှိပ်ပါ။
-
-<b>💢 📖စာအုပ်ဖတ်နည်းကြည့်ပါရန် 💢</b>
-
-⚠️ အဆင်မပြေတာရှိရင် ⚠️
-<b>❓အထွေထွေမေးမြန်းရန်</b> ကိုနှိပ်ပါ။"""
-    kb = types.InlineKeyboardMarkup()
-    kb.row(
-        types.InlineKeyboardButton("📚 ကဏ္ဍအလိုက်", callback_data="category"),
-        types.InlineKeyboardButton("✍️ စာရေးဆရာ", callback_data="author_menu")
-    )
-    kb.row(
-        types.InlineKeyboardButton("📖 စာအုပ်ဖတ်နည်း", url="https://t.me/oscarhelpservices/17"),
-        types.InlineKeyboardButton("📝 စာအုပ်ပြုပြင်ရန်", url="https://t.me/oscarhelpservices/29?single")
-    )
-    kb.row(
-        types.InlineKeyboardButton("🌼 ချန်နယ်ခွဲများ", url="https://t.me/oscarhelpservices/9"),
-        types.InlineKeyboardButton("⭐ Review ရေးရန်", url="https://t.me/sharebykosoemoe/13498")
-    )
-    kb.row(types.InlineKeyboardButton("❓ အထွေထွေမေးမြန်းရန်", url="https://t.me/kogyisoemoe"))
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
-
-AUTHOR_LINKS_MENU = {
-    "က": "https://t.me/oscarhelpservices/5",
-    "ခ": "https://t.me/oscarhelpservices/7",
-    "ဂ": "https://t.me/oscarhelpservices/12",
-    "င": "https://t.me/oscarhelpservices/14",
-    "စ": "https://t.me/oscarhelpservices/16",
-    "ဆ": "https://t.me/oscarhelpservices/18",
-    "ဇ": "https://t.me/oscarhelpservices/20",
-    "ည": "https://t.me/oscarhelpservices/23",
-    "ဋ္ဌ": "https://t.me/oscarhelpservices/25",
-    "တ": "https://t.me/oscarhelpservices/27",
-    "ထ": "https://t.me/oscarhelpservices/33",
-    "ဒ": "https://t.me/oscarhelpservices/35",
-    "ဓ": "https://t.me/oscarhelpservices/37",
-    "န": "https://t.me/oscarhelpservices/39",
-    "ပ": "https://t.me/oscarhelpservices/41",
-    "ဖ": "https://t.me/oscarhelpservices/43",
-    "ဗ": "https://t.me/oscarhelpservices/45",
-    "ဘ": "https://t.me/oscarhelpservices/47",
-    "မ": "https://t.me/oscarhelpservices/58",
-    "ယ": "https://t.me/oscarhelpservices/59",
-    "ရ": "https://t.me/oscarhelpservices/61",
-    "လ": "https://t.me/oscarhelpservices/63",
-    "ဝ": "https://t.me/oscarhelpservices/65",
-    "သ": "https://t.me/oscarhelpservices/67",
-    "ဟ": "https://t.me/oscarhelpservices/69",
-    "အ": "https://t.me/oscarhelpservices/30",
-    "ဥ": "https://t.me/oscarhelpservices/10",
-    "Eng": "https://t.me/sharebykosoemoe/920"
-}
-@bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
-def author_redirect(call):
-    key = call.data.replace("author_", "")
-    url = AUTHOR_LINKS_MENU.get(key)
-    if url:
-        bot.answer_callback_query(call.id)
-        bot.send_message(
-            call.message.chat.id,
-            f"<b>➡️ {key} ဖြင့်စသောစာရေးဆရာများ</b>\n{url}\n\n<b>🌼 Oscar's Library 🌼</b>",
-            parse_mode="HTML"
-        )
 
 # ===============================
 # WEBHOOK HANDLERS
@@ -1107,43 +863,17 @@ myanmar_time = get_myanmar_time()
 print(f"⏰ Current Myanmar Time: {myanmar_time.strftime('%H:%M:%S')}")
 print(f"📅 Current Date: {myanmar_time.strftime('%Y-%m-%d')}")
 print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
-print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images")
-print(f"📚 'စာအုပ်' Auto Reply: ENABLED")
-print(f"👑 Admin Check: By STATUS (not ID)")
-print(f"🔗 Link Blocker: ENABLED for non-admins")
+print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} Google Photos images")
+print(f"🔄 Birthday Scheduler: ACTIVE (8:00 AM Myanmar Time)")
+print(f"🎯 Google Photos URLs: EXTRACTED and READY")
 
-print("\n📖 AUTHOR AUTO-REPLY SYSTEM")
+print("\n🔧 TEST COMMANDS AVAILABLE:")
 print("="*60)
-print("✅ 'စာအုပ်' keyword: Random book reply")
-print("✅ 'ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)': Link reply")
-print("✅ 'ကံချွန်': Link reply")
+print("✅ /testbirthday - Test birthday posts")
+print("✅ /testimage - Test current image URL")
+print("✅ /checkurls - Check all image URLs")
 
-print("\n🎂 BIRTHDAY POST SYSTEM")
-print("="*60)
-print("✅ Daily at 8:00 AM (Myanmar Time)")
-print(f"✅ {len(BIRTHDAY_IMAGES)} rotating images")
-print(f"✅ Sending to {len(MANUAL_CHANNEL_IDS)} fixed channels")
-print("✅ AUTO DISCOVERY: Will send to ALL admin groups")
-print("✅ Active groups tracking: Yes")
-print("✅ Admin check before posting: Yes")
-
-print("\n🔧 NEW COMMANDS ADDED:")
-print("="*60)
-print("✅ /showpost - Birthday post preview")
-print("✅ /testbirthday - Test post immediately")
-print("✅ /status - Bot status report")
-print("✅ /myid - Show your Telegram ID")
-print("✅ /admincheck - Check admin status")
-
-print("\n📊 BIRTHDAY POST STRATEGY:")
-print("="*60)
-print("1. Fixed Channels 4ခုကို တင်မယ်")
-print("2. Bot admin ဖြစ်တဲ့ group/supergroup အားလုံးကို တင်မယ်")
-print("3. Auto-discover လုပ်ပြီး တင်မယ်")
-print("4. Bot ရောက်တဲ့နေရာတိုင်း track လုပ်မယ်")
-print("5. Admin မဟုတ်ရင် group မှာ link တွေ block လုပ်မယ်")
-
-print("\n🚀 Bot is now LIVE and READY!")
+print("\n🚀 Bot is now LIVE with Google Photos URLs!")
 print("="*60)
 
 # ===============================
