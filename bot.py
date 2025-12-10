@@ -17,7 +17,7 @@ import re
 # CONFIGURATION
 # ===============================
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-print("🚀 BOT STARTING UP - 6 IMAGES VERSION (HBD_2 to HBD_7)")
+print("🚀 BOT STARTING UP - SINGLE IMAGE VERSION (HBD_2 Only)")
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '7867668478:AAHpvrXyBri5MMbVq4n73-HdCiqpXXvyJGQ')
 WEBHOOK_URL = "https://oscar-library-bot.onrender.com/webhook"
@@ -38,53 +38,13 @@ except:
     pass
 
 # ===============================
-# 6 BIRTHDAY IMAGES ONLY (HBD_2 to HBD_7)
+# SINGLE BIRTHDAY IMAGE - HBD_2 ONLY
 # ===============================
-GITHUB_BIRTHDAY_IMAGES = [
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_2.jpg",  # Image 1
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_3.jpg",  # Image 2
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_4.jpg",  # Image 3
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_5.jpg",  # Image 4
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_6.jpg",  # Image 5
-    "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_7.jpg",  # Image 6
-]
+SINGLE_BIRTHDAY_IMAGE = "https://github.com/fighterlitboy-png/Oscar-Library-Bot/raw/main/HBD_2.jpg"
+print(f"🎂 Using SINGLE image: HBD_2.jpg")
 
-print(f"🎂 Using {len(GITHUB_BIRTHDAY_IMAGES)} birthday images (HBD_2 to HBD_7)")
-
-GITHUB_WELCOME_IMAGE = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
-
-# ===============================
-# SMART IMAGE SELECTION SYSTEM
-# ===============================
-current_image_index = 0
-failed_images_count = {}
-last_successful_image = None
-
-def get_next_birthday_image():
-    """Smart image selector with GitHub URL handling"""
-    global current_image_index, last_successful_image
-    
-    # Try to use the image that worked last time (80% chance)
-    if last_successful_image and random.random() < 0.8:
-        print(f"🎯 Reusing last successful image")
-        return last_successful_image
-    
-    # Select next image
-    selected_index = current_image_index
-    selected_url = GITHUB_BIRTHDAY_IMAGES[selected_index]
-    
-    print(f"🎂 Using image {selected_index+1}/6: HBD_{selected_index+2}.jpg")
-    
-    # Update index for next time
-    current_image_index = (current_image_index + 1) % len(GITHUB_BIRTHDAY_IMAGES)
-    
-    return selected_url
-
-def mark_image_success(image_url):
-    """Mark an image as successful"""
-    global last_successful_image
-    last_successful_image = image_url
-    print(f"✅ Marked image as successful")
+# Welcome image
+WELCOME_IMAGE_URL = "https://raw.githubusercontent.com/fighterlitboy-png/Oscar-Library-Bot/main/welcome_photo.jpg"
 
 # ===============================
 # BIRTHDAY SYSTEM CONFIGURATION
@@ -95,19 +55,12 @@ def get_myanmar_time():
     return datetime.now(MYANMAR_TZ)
 
 # SIMPLE CAPTION
-BIRTHDAY_CAPTION_TEMPLATE = """Birthday Wishes 💌
+BIRTHDAY_CAPTION = """Birthday Wishes 💌
 Happy Birthday ❤️ ကမ္ဘာ❣️
 ပျော်ရွှင်စရာမွေးနေ့လေးဖြစ်ပါစေ..🎂💗
 
-{current_date} မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
+မွေးနေ့လေးမှစ နောင်နှစ်ပေါင်းများစွာတိုင်အောင်... 
 ကိုယ်၏ကျန်းမာခြင်း စိတ်၏ချမ်းသာခြင်းများနဲ့ပြည့်စုံပြီး လိုအပ်ချက်လိုအင်ဆန္ဒများ လည်းပြည့်ဝပါစေ...
-
-အနာဂတ်မှာ 🤍
-နားလည်မှု များစွာနဲ့ 🍒
-အရင်ကထက်ပိုပိုပြီး 💕
-ချစ်နိုင်ကြပါစေ 💞
-
-ချစ်ရတဲ့မိသားစုနဲ့အတူ ပျော်ရွှင်ရသောနေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ အမြဲဆုတောင်းပေးပါတယ် 🎂
 
 😊ရွှင်လန်းချမ်းမြေ့ပါစေ😊
 🌼 Oscar's Library 🌼
@@ -181,65 +134,42 @@ def should_send_birthday_post():
         return False
 
 # ===============================
-# POST SENDING FUNCTIONS - OPTIMIZED
+# POST SENDING FUNCTION - SIMPLE
 # ===============================
-def send_post_to_channels(image_url, caption):
-    """Send post to fixed channels with optimization"""
-    results = []
+def send_post_to_channels():
+    """Send birthday post to all channels"""
     success_count = 0
     
     if not MANUAL_CHANNEL_IDS:
         print("❌ No channels configured")
-        return results, 0
+        return 0
     
     print(f"📤 Sending to {len(MANUAL_CHANNEL_IDS)} channels...")
-    print(f"🖼️ Image: HBD_{GITHUB_BIRTHDAY_IMAGES.index(image_url)+2 if image_url in GITHUB_BIRTHDAY_IMAGES else 'Unknown'}.jpg")
+    print(f"🖼️ Image: HBD_2.jpg (SINGLE IMAGE)")
     
     for i, channel_id in enumerate(MANUAL_CHANNEL_IDS):
         try:
             print(f"📡 Channel {i+1}/{len(MANUAL_CHANNEL_IDS)}: {channel_id}")
             
-            # Add delay to avoid rate limiting
+            # Add delay between channels
             if i > 0:
-                time.sleep(3)  # 3 seconds between channels
+                time.sleep(2)
             
-            # Send with NO parse_mode first (most reliable)
+            # Send with NO parse_mode (most reliable)
             bot.send_photo(
                 channel_id,
-                image_url,
-                caption=caption
+                SINGLE_BIRTHDAY_IMAGE,
+                caption=BIRTHDAY_CAPTION
             )
             
             print(f"✅✅✅ Channel {i+1} SUCCESS!")
-            results.append((channel_id, True, "Success"))
             success_count += 1
-            
-            # Mark image as successful
-            mark_image_success(image_url)
             
         except Exception as e:
             error_msg = str(e)
             print(f"❌ Channel {i+1} FAILED: {error_msg[:80]}")
-            
-            # Check for rate limit
-            if any(keyword in error_msg.lower() for keyword in ["too many", "flood", "rate limit", "429"]):
-                print("🚨 RATE LIMIT - Waiting 5 seconds...")
-                time.sleep(5)
-                
-                # Try with simpler caption
-                try:
-                    simple_caption = "Birthday Wishes 💌\nHappy Birthday! 🎂\n🌼 Oscar's Library 🌼"
-                    bot.send_photo(channel_id, image_url, caption=simple_caption)
-                    print(f"✅✅✅ Channel {i+1} SUCCESS on retry!")
-                    results.append((channel_id, True, "Success on retry"))
-                    success_count += 1
-                    mark_image_success(image_url)
-                except:
-                    results.append((channel_id, False, f"Rate limit: {error_msg[:80]}"))
-            else:
-                results.append((channel_id, False, error_msg[:80]))
     
-    return results, success_count
+    return success_count
 
 # ===============================
 # BIRTHDAY POSTING FUNCTION
@@ -252,28 +182,19 @@ def send_birthday_to_all_chats():
     
     post_in_progress = True
     try:
-        print("🎂🎂🎂 STARTING BIRTHDAY POSTS 🎂🎂🎂")
+        print("🎂🎂🎂 STARTING BIRTHDAY POST 🎂🎂🎂")
+        print("🖼️ Using SINGLE IMAGE: HBD_2.jpg")
         
         myanmar_time = get_myanmar_time()
         current_time = myanmar_time.strftime("%H:%M:%S")
-        current_date = myanmar_time.strftime("%B %d")
         print(f"🕐 Posting time: {current_time}")
         
-        # Prepare birthday post
-        caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
-        birthday_image = get_next_birthday_image()
+        # Send to all channels
+        success_count = send_post_to_channels()
         
-        # Send to fixed channels
-        if MANUAL_CHANNEL_IDS:
-            print("📢 Posting to fixed channels...")
-            channel_results, success_count = send_post_to_channels(birthday_image, caption)
-            
-            print(f"🎉🎉🎉 BIRTHDAY POSTS COMPLETED: {success_count}/{len(MANUAL_CHANNEL_IDS)} channels 🎉🎉🎉")
-            
-            return success_count
-        else:
-            print("❌ No channels to post to")
-            return 0
+        print(f"🎉🎉🎉 BIRTHDAY POST COMPLETED: {success_count}/{len(MANUAL_CHANNEL_IDS)} channels 🎉🎉🎉")
+        
+        return success_count
         
     except Exception as e:
         print(f"💥💥💥 BIRTHDAY SYSTEM ERROR: {e}")
@@ -288,7 +209,7 @@ def birthday_scheduler():
     print("🎂 BIRTHDAY SCHEDULER STARTED!")
     print("⏰ Will post daily at 8:00 AM (Myanmar Time)")
     print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)}")
-    print(f"🖼️ Birthday Images: {len(GITHUB_BIRTHDAY_IMAGES)} images (HBD_2 to HBD_7)")
+    print(f"🖼️ Using SINGLE IMAGE: HBD_2.jpg")
     
     last_minute = None
     
@@ -303,7 +224,7 @@ def birthday_scheduler():
                 print(f"⏰ Scheduler checking: {current_minute}")
                 
                 if should_send_birthday_post():
-                    print(f"🚀🚀🚀 TRIGGERING BIRTHDAY POSTS AT {current_time.strftime('%H:%M:%S')} 🚀🚀🚀")
+                    print(f"🚀🚀🚀 TRIGGERING BIRTHDAY POST AT {current_time.strftime('%H:%M:%S')} 🚀🚀🚀")
                     send_birthday_to_all_chats()
             
             # Sleep for 30 seconds
@@ -320,7 +241,7 @@ birthday_thread.start()
 print("✅ Birthday scheduler started")
 
 # ===============================
-# TEST AND DIAGNOSTIC COMMANDS
+# TEST COMMAND
 # ===============================
 
 @bot.message_handler(commands=['testbirthday'])
@@ -331,20 +252,20 @@ def test_birthday_command(message):
     try:
         print("🧪 MANUAL BIRTHDAY TEST TRIGGERED!")
         
-        test_msg = bot.reply_to(message, "🧪 Testing birthday post system with 6 images...")
+        test_msg = bot.reply_to(message, "🧪 Testing birthday post with SINGLE IMAGE (HBD_2)...")
         
         # Trigger the birthday post
         success_count = send_birthday_to_all_chats()
         
         if success_count > 0:
             bot.edit_message_text(
-                f"✅ Birthday post test completed!\nSuccessfully posted to {success_count}/{len(MANUAL_CHANNEL_IDS)} channels.\nUsing 6 images: HBD_2 to HBD_7",
+                f"✅ Birthday post test completed!\nSuccessfully posted to {success_count}/{len(MANUAL_CHANNEL_IDS)} channels.\nUsing SINGLE IMAGE: HBD_2.jpg",
                 message.chat.id,
                 test_msg.message_id
             )
         else:
             bot.edit_message_text(
-                f"❌ Birthday post test failed!\nCould not post to any channels.\nCheck logs for details.",
+                f"❌ Birthday post test failed!\nCould not post to any channels.",
                 message.chat.id,
                 test_msg.message_id
             )
@@ -356,66 +277,32 @@ def test_birthday_command(message):
         print(error_msg)
         bot.reply_to(message, error_msg)
 
-@bot.message_handler(commands=['testimages'])
-def test_images_command(message):
-    """Test all 6 images"""
+@bot.message_handler(commands=['testimage'])
+def test_image_command(message):
+    """Test the single image"""
     try:
-        bot.reply_to(message, "🖼️ TESTING ALL 6 IMAGES...")
+        bot.reply_to(message, "🖼️ Testing HBD_2.jpg image...")
         
-        for i in range(len(GITHUB_BIRTHDAY_IMAGES)):
-            image_url = GITHUB_BIRTHDAY_IMAGES[i]
-            image_name = f"HBD_{i+2}.jpg"
+        # Test in private chat
+        try:
+            bot.send_photo(
+                message.chat.id,
+                SINGLE_BIRTHDAY_IMAGE,
+                caption="Test: HBD_2.jpg"
+            )
+            bot.reply_to(message, "✅ HBD_2.jpg works in private chat!")
+        except Exception as e:
+            bot.reply_to(message, f"❌ HBD_2.jpg failed: {str(e)[:100]}")
             
-            try:
-                bot.send_photo(
-                    message.chat.id,
-                    image_url,
-                    caption=f"Test {i+1}: {image_name}"
-                )
-                bot.reply_to(message, f"✅ {image_name}: WORKS")
-                time.sleep(1)  # Delay between tests
-            except Exception as e:
-                bot.reply_to(message, f"❌ {image_name}: FAILED - {str(e)[:60]}")
-        
-        bot.reply_to(message, "📊 All 6 images tested. If any work, birthday posts should work!")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error: {e}")
-
-@bot.message_handler(commands=['currentimage'])
-def current_image_command(message):
-    """Show current image info"""
-    try:
-        current_index = current_image_index
-        current_url = GITHUB_BIRTHDAY_IMAGES[current_index]
-        
-        info = f"""
-📊 **CURRENT IMAGE INFO:**
-
-🖼️ **Next Image:** HBD_{current_index+2}.jpg
-🔗 **URL:** {current_url[:80]}...
-📅 **Total Images:** {len(GITHUB_BIRTHDAY_IMAGES)} (HBD_2 to HBD_7)
-🎯 **Strategy:** Smart rotation with reuse
-
-📋 **ALL IMAGES:**
-"""
-        
-        for i, url in enumerate(GITHUB_BIRTHDAY_IMAGES):
-            status = "✅" if i == current_index else "  "
-            info += f"{status} {i+1}. HBD_{i+2}.jpg\n"
-        
-        bot.reply_to(message, info)
-        
     except Exception as e:
         bot.reply_to(message, f"❌ Error: {e}")
 
 # ===============================
-# THE REST OF YOUR EXISTING CODE
+# THE REST OF YOUR ORIGINAL CODE - UNCHANGED
 # ===============================
-# [Copy all your existing handlers, welcome system, link detection, etc. below...]
 
 # ======================================================
-# LINK DETECTION SYSTEM
+# LINK DETECTION SYSTEM - ORIGINAL
 # ======================================================
 def is_link(text):
     """Link detection - @username နဲ့ လင့်မျိုးစုံကို စစ်ဆေးခြင်း"""
@@ -453,7 +340,7 @@ def is_link(text):
     return False
 
 # ======================================================
-# ADMIN STATUS CHECK
+# ADMIN STATUS CHECK - ORIGINAL
 # ======================================================
 def is_user_admin(message):
     """User က admin ဟုတ်မဟုတ် status နဲ့ပဲစစ်ခြင်း"""
@@ -498,7 +385,7 @@ def is_user_admin(message):
         return True
 
 # ======================================================
-# PRE-DEFINED AUTHORS WITH LINKS
+# PRE-DEFINED AUTHORS WITH LINKS - ORIGINAL
 # ======================================================
 AUTHOR_LINKS = {
     "ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)": "https://t.me/sharebykosoemoe/9650",
@@ -506,7 +393,7 @@ AUTHOR_LINKS = {
 }
 
 # ======================================================
-# RANDOM REPLIES FOR "စာအုပ်" KEYWORD
+# RANDOM REPLIES FOR "စာအုပ်" KEYWORD - ORIGINAL
 # ======================================================
 def get_random_book_reply():
     """Random book replies with bold "စာရေးဆရာ" """
@@ -523,7 +410,7 @@ def get_random_book_reply():
     return random.choice(replies)
 
 # ======================================================
-# AUTHOR DETECTION SYSTEM
+# AUTHOR DETECTION SYSTEM - ORIGINAL
 # ======================================================
 def detect_author(text):
     """စာသားထဲက သတ်မှတ်ထားတဲ့ စာရေးဆရာကို ရှာဖွေခြင်း"""
@@ -540,7 +427,7 @@ def detect_author(text):
     return None
 
 # ======================================================
-# AUTHOR REPLY TEMPLATE
+# AUTHOR REPLY TEMPLATE - ORIGINAL
 # ======================================================
 def get_author_reply(author_info):
     """စာရေးဆရာအတွက် ပုံသေစာပြန်ခြင်း"""
@@ -562,7 +449,7 @@ def get_author_reply(author_info):
     return reply
 
 # ======================================================
-# GROUP WELCOME SYSTEM
+# GROUP WELCOME SYSTEM - ORIGINAL
 # ======================================================
 @bot.message_handler(content_types=['new_chat_members'])
 def welcome_new_member(message):
@@ -593,7 +480,7 @@ def welcome_new_member(message):
             print(f"🖼️ Sending welcome image...")
             bot.send_photo(
                 message.chat.id, 
-                GITHUB_WELCOME_IMAGE, 
+                WELCOME_IMAGE_URL, 
                 caption=caption,
                 reply_markup=welcome_kb,
                 parse_mode="HTML"
@@ -613,7 +500,7 @@ def welcome_new_member(message):
                 print(f"❌ Failed to send welcome: {e2}")
 
 # ======================================================
-# MAIN GROUP MESSAGE HANDLER
+# MAIN GROUP MESSAGE HANDLER - ORIGINAL
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type in ["group", "supergroup"], content_types=['text', 'photo', 'video', 'document', 'audio'])
 def handle_group_messages(message):
@@ -703,7 +590,7 @@ def handle_group_messages(message):
     print(f"="*50)
 
 # ===============================
-# /START MESSAGE
+# /START MESSAGE - ORIGINAL
 # ===============================
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -745,7 +632,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ===============================
-# CALLBACK HANDLERS
+# CALLBACK HANDLERS - ORIGINAL
 # ===============================
 @bot.callback_query_handler(func=lambda c: c.data == "category")
 def category_redirect(call):
@@ -925,17 +812,17 @@ myanmar_time = get_myanmar_time()
 print(f"⏰ Current Myanmar Time: {myanmar_time.strftime('%H:%M:%S')}")
 print(f"📅 Current Date: {myanmar_time.strftime('%Y-%m-%d')}")
 print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
-print(f"🖼️ Birthday Images: {len(GITHUB_BIRTHDAY_IMAGES)} images (HBD_2 to HBD_7)")
-print(f"🔄 Smart Rotation: ACTIVE (reuses successful images)")
-print(f"⏰ Auto-post: 8:00 AM Myanmar Time daily")
+print(f"🖼️ Birthday Image: SINGLE IMAGE - HBD_2.jpg")
+print(f"🔄 Birthday Scheduler: ACTIVE (8:00 AM Myanmar Time)")
+print(f"📚 Author Auto-reply: ACTIVE (ကလျာ, ကံချွန်)")
+print(f"🔗 Link Blocker: ACTIVE for non-admins")
 
 print("\n🔧 TEST COMMANDS:")
 print("="*60)
-print("✅ /testbirthday - Test birthday posts")
-print("✅ /testimages - Test all 6 images")
-print("✅ /currentimage - Show current image info")
+print("✅ /testbirthday - Test birthday post")
+print("✅ /testimage - Test HBD_2.jpg image")
 
-print("\n🚀 Bot is READY with 6 birthday images!")
+print("\n🚀 Bot is READY with SINGLE IMAGE system!")
 print("="*60)
 
 # ===============================
