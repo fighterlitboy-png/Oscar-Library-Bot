@@ -7,7 +7,7 @@ import threading
 import time
 import requests
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import logging
 import random
@@ -92,7 +92,6 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 # ===============================
 # MANUAL CHANNEL ID CONFIGURATION
 # ===============================
-# မူလ channel 4ခု (မသိချင်တာကြောင့် အရင်အတိုင်းထားတယ်)
 MANUAL_CHANNEL_IDS = [-1002150199369, -1002913448959, -1002953592333, -1002970833199]
 print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
 
@@ -262,7 +261,7 @@ def send_to_admin_groups(admin_groups, image_url, caption):
     return success_count, failed_groups
 
 # ===============================
-# BIRTHDAY POSTING FUNCTION - UPDATED
+# BIRTHDAY POSTING FUNCTION
 # ===============================
 def send_birthday_to_all_chats():
     global post_in_progress
@@ -687,6 +686,97 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ======================================================
+# /SHOWPOST COMMAND - NEW
+# ======================================================
+@bot.message_handler(commands=['showpost'])
+def show_post_preview(message):
+    """Show preview of birthday post"""
+    print(f"📊 /showpost command from user: {message.from_user.id}")
+    
+    try:
+        print("🎨 Preparing birthday post preview...")
+        
+        # Get Myanmar time
+        myanmar_time = get_myanmar_time()
+        current_date = myanmar_time.strftime("%B %d")
+        
+        # Prepare the post
+        caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
+        birthday_image = get_next_birthday_image()
+        
+        # Show stats
+        stats_text = f"""
+📊 <b>BIRTHDAY POST PREVIEW</b>
+📅 Date: {current_date}
+🕐 Time: {myanmar_time.strftime("%H:%M:%S")} (Myanmar Time)
+
+📢 <b>Target Channels:</b> {len(MANUAL_CHANNEL_IDS)}
+👥 <b>Active Groups:</b> {len(active_groups)}
+🖼️ <b>Image:</b> {current_birthday_index}/{len(BIRTHDAY_IMAGES)}
+
+<b>Will post to:</b>
+1️⃣ Fixed Channels (4 channels)
+2️⃣ All Admin Groups ({len(active_groups)} groups found)
+
+<b>Auto-post schedule:</b>
+✅ Daily at 8:00 AM Myanmar Time
+✅ Next post: Tomorrow 8:00 AM
+
+<b>Caption Preview:</b>
+{caption[:200]}...
+        """
+        
+        # Send preview to user
+        bot.send_message(message.chat.id, stats_text, parse_mode="HTML")
+        
+        # Send the actual image with caption
+        print("🖼️ Sending preview image...")
+        bot.send_photo(
+            message.chat.id,
+            birthday_image,
+            caption=caption,
+            parse_mode="HTML"
+        )
+        
+        print("✅ Post preview sent successfully")
+        
+    except Exception as e:
+        error_msg = f"❌ Error showing post preview: {e}"
+        print(error_msg)
+        bot.reply_to(message, error_msg)
+
+# ======================================================
+# /TESTBIRTHDAY COMMAND - FOR TESTING
+# ======================================================
+@bot.message_handler(commands=['testbirthday'])
+def test_birthday_command(message):
+    """Manual test for birthday post"""
+    print(f"🧪 /testbirthday command from user: {message.from_user.id}")
+    
+    try:
+        print("🧪 MANUAL BIRTHDAY TEST TRIGGERED!")
+        
+        # Send test message
+        test_msg = bot.reply_to(message, "🧪 Testing birthday post system...")
+        
+        # Trigger the birthday post
+        send_birthday_to_all_chats()
+        
+        # Update message
+        bot.edit_message_text(
+            "✅ Birthday post test completed!\nCheck channels and groups for posts.",
+            message.chat.id,
+            test_msg.message_id
+        )
+        
+        print("✅ Manual birthday test completed")
+        
+    except Exception as e:
+        error_msg = f"❌ Test failed: {e}"
+        print(error_msg)
+        bot.reply_to(message, error_msg)
+
+# ======================================================
 # DEBUG COMMANDS
 # ======================================================
 @bot.message_handler(commands=['myid'])
@@ -741,6 +831,60 @@ def check_admin_status(message):
         
     except Exception as e:
         bot.reply_to(message, f"❌ Error: {e}")
+
+# ======================================================
+# /STATUS COMMAND - NEW
+# ======================================================
+@bot.message_handler(commands=['status'])
+def bot_status(message):
+    """Show bot status and next post time"""
+    
+    try:
+        myanmar_time = get_myanmar_time()
+        current_time = myanmar_time.strftime("%H:%M:%S")
+        current_date = myanmar_time.strftime("%Y-%m-%d")
+        
+        # Calculate next post time
+        now = myanmar_time
+        target_time = now.replace(hour=8, minute=0, second=0, microsecond=0)
+        
+        if now > target_time:
+            target_time += timedelta(days=1)
+        
+        time_until = target_time - now
+        hours = int(time_until.total_seconds() // 3600)
+        minutes = int((time_until.total_seconds() % 3600) // 60)
+        
+        status_text = f"""
+<b>🤖 BOT STATUS REPORT</b>
+
+<b>⏰ Current Myanmar Time:</b> {current_time}
+<b>📅 Current Date:</b> {current_date}
+<b>📍 Timezone:</b> Asia/Yangon
+
+<b>🎂 BIRTHDAY POST SYSTEM:</b>
+<b>Last Post Date:</b> {last_birthday_post_date or "Never"}
+<b>Next Post:</b> Tomorrow at 8:00 AM
+<b>Time Until Next Post:</b> {hours}h {minutes}m
+
+<b>📊 STATISTICS:</b>
+<b>Fixed Channels:</b> {len(MANUAL_CHANNEL_IDS)}
+<b>Active Groups:</b> {len(active_groups)}
+<b>Birthday Images:</b> {len(BIRTHDAY_IMAGES)}
+<b>Current Image Index:</b> {current_birthday_index}
+
+<b>🔧 COMMANDS:</b>
+• /showpost - Preview birthday post
+• /testbirthday - Test post immediately
+• /status - This status report
+• /myid - Show your Telegram ID
+"""
+        
+        bot.reply_to(message, status_text, parse_mode="HTML")
+        print(f"📊 Status report sent to {message.from_user.id}")
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error getting status: {e}")
 
 # ======================================================
 # PRIVATE CHAT HANDLER
@@ -822,7 +966,7 @@ def back_to_main(call):
 <b>စာအုပ်ရှာဖို့ နှစ်ပေါင်းခွဲထားတယ်</b>
 <b>📚ကဏ္ဍအလိုက် 💠 ✍️စာရေးဆရာ</b>
 
-Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို 
+Fic၊ ကာတွန်း၊ သည�ထိပ်ရင်ဖို 
 စသည့်ကဏ္ဍများရှာဖတ်ချင်ရင် 
 <b>📚ကဏ္ဍအလိုက်</b> ကိုနှိပ်ပါ။
 
@@ -974,7 +1118,7 @@ print("✅ 'စာအုပ်' keyword: Random book reply")
 print("✅ 'ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)': Link reply")
 print("✅ 'ကံချွန်': Link reply")
 
-print("\n🎂 BIRTHDAY POST SYSTEM - UPDATED")
+print("\n🎂 BIRTHDAY POST SYSTEM")
 print("="*60)
 print("✅ Daily at 8:00 AM (Myanmar Time)")
 print(f"✅ {len(BIRTHDAY_IMAGES)} rotating images")
@@ -983,11 +1127,13 @@ print("✅ AUTO DISCOVERY: Will send to ALL admin groups")
 print("✅ Active groups tracking: Yes")
 print("✅ Admin check before posting: Yes")
 
-print("\n💡 AVAILABLE COMMANDS:")
+print("\n🔧 NEW COMMANDS ADDED:")
 print("="*60)
-print("• /start - Start the bot")
-print("• /myid - ID ကြည့်ရန်")
-print("• /admincheck - Admin status စစ်ရန်")
+print("✅ /showpost - Birthday post preview")
+print("✅ /testbirthday - Test post immediately")
+print("✅ /status - Bot status report")
+print("✅ /myid - Show your Telegram ID")
+print("✅ /admincheck - Check admin status")
 
 print("\n📊 BIRTHDAY POST STRATEGY:")
 print("="*60)
