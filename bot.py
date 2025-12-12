@@ -12,7 +12,6 @@ import pytz
 import logging
 import random
 import re
-from myanmar.converter import convert
 
 # ===============================
 # CONFIGURATION
