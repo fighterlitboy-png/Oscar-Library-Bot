@@ -13,7 +13,9 @@ import pytz
 import logging
 import random
 import re
-from myanmartools import converter
+# ========== 1. ဒီစာကြောင်းကို ထည့်ပါ ==========
+from myanmartools import convert
+# ==============================================
 
 # ===============================
 # CONFIGURATION
@@ -30,15 +32,9 @@ print(f"🌐 Webhook URL: {WEBHOOK_URL}")
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
-converter_obj = converter
-
-# ===============================
-# RENDER FONT FIX
-# ===============================
-try:
-    sys.stdout.reconfigure(encoding='utf-8')
-except:
-    pass
+# ========== 2. ဒီစာကြောင်းကို ဖျက်ပါ (ဘာမှမရေးပါနဲ့) ==========
+# converter = ZawgyiToUnicode() ဆိုတာ မရှိပါ
+# ====================================================
 
 # ===============================
 # BIRTHDAY IMAGES DATABASE (6 IMAGES ONLY)
@@ -83,7 +79,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
-ချစ်ခင်နိုင်ကြပါစေ 💞
+ချစ်နိုင်ကြပါစေ 💞
 
 ချစ်ရတဲ့မိသားစုနဲ့အတူ ပျော်ရွှင်ရသောနေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ အမြဲဆုတောင်းပေးပါတယ် 🎂
 
@@ -623,7 +619,7 @@ AUTHOR_LINKS = {
     "ဦးထွန်းလှ": "https://t.me/sharebykosoemoe/13793",
     "ဦးဝမ်ထိန်": "https://t.me/sharebykosoemoe/13785",
     "ဦးစိုးရှိန်": "https://t.me/sharebykosoemoe/13836",
-    "ဦးတင်ဦး(မြောင်)": "https://t.me/sharebykosoemoe/13829",
+    "ဦးတင်ဦး(‌မြောင်)": "https://t.me/sharebykosoemoe/13829",
     "ဦးဦးသာထွန်း": "https://t.me/sharebykosoemoe/13821",
     "ဦးကုလား": "https://t.me/sharebykosoemoe/13929",
     "ဦးသော်ဇင်": "https://t.me/sharebykosoemoe/13935",
@@ -783,7 +779,7 @@ AUTHOR_LINKS = {
     "ဇေယျမင်းသျှင်": "https://t.me/sharebykosoemoe/17785",
     "ဇေယျာမောင်": "https://t.me/sharebykosoemoe/17952",
     "ဇင်ယော်(မာန်)": "https://t.me/sharebykosoemoe/17964",
-    "ဇင်မင်း(သမိန်ထော)": "https://t.me/sharebykosoemoe/17969",
+    "ဇင်မင်း (သမိန်ထော)": "https://t.me/sharebykosoemoe/17969",
     "ဇော်မျိုးဟန်": "https://t.me/sharebykosoemoe/17981",
     "ဇူးဇူး": "https://t.me/sharebykosoemoe/17987",
     "ညောင်ကန်အေးဆရာတော်ဘဒ္ဒန္တဣန္ဒက": "https://t.me/sharebykosoemoe/18057",
@@ -868,7 +864,7 @@ AUTHOR_LINKS = {
     "အရှင်ဓမ္မဿာမီဘိဝံသ": "https://t.me/sharebykosoemoe/21750",
     "အရှင်ဣန္ဒကာဘိဝံသ": "https://t.me/sharebykosoemoe/21741",
     "အရှင်ကေလာသ": "https://t.me/sharebykosoemoe/21862",
-    "အောင်ဆန်းဆရာတော်ဘဒ္ဒန္တသဒ္ဓမ္မကိတ္တိသာရ": "https://t.me/sharebykosoemoe/21864",
+    "အောင်ဆန်းဆရာတော် ဘဒ္ဒန္တသဒ္ဓမ္မ ကိတ္တိသာရ": "https://t.me/sharebykosoemoe/21864",
     "အရှင်ကုမာရ": "https://t.me/sharebykosoemoe/21866",
     "အရှင်သုန္ဒရ": "https://t.me/sharebykosoemoe/21868",
     "အရှင်ဇေယျပဏ္ဍိတ": "https://t.me/sharebykosoemoe/21870",
@@ -960,7 +956,7 @@ AUTHOR_LINKS = {
     "နွေအိမ်မောင်ဝင်း": "https://t.me/sharebykosoemoe/9123",
     "နွယ်ဂျာသိုင်း": "https://t.me/sharebykosoemoe/9069",
     "နေဗလ်": "https://t.me/sharebykosoemoe/1130",
-    "နိုင်ဦး119": "https://t.me/sharebykosoemoe/8344",
+    "နိုင်ဦး 119": "https://t.me/sharebykosoemoe/8344",
     "နတ်သမီး": "https://t.me/sharebykosoemoe/1657",
     "ပုညခင်": "https://t.me/sharebykosoemoe/577",
     "ပါပီယွန်": "https://t.me/sharebykosoemoe/2495",
@@ -1077,8 +1073,19 @@ def detect_author(text):
     if not text:
         return None
     
+    user_input = text.strip()
+    
+    # 1. စကားလုံးအပြည့် တိုက်ရိုက်စစ်ဆေးပါ
+    if user_input in AUTHOR_LINKS:
+        return {
+            "name": user_input,
+            "link": AUTHOR_LINKS[user_input]
+        }
+    
+    # 2. စကားလုံးအပြည့် မတွေ့ရင်၊ စာသားထဲမှာ ပါဝင်နေသလား စစ်ဆေးပါ
     for author_name in AUTHOR_LINKS.keys():
-        if author_name in text:
+        # "တာတေ" ကို "တာတောင်" ထဲမှာ မတွေ့စေရန် exact word matching လုပ်ပါ
+        if f" {author_name} " in f" {user_input} " or user_input == author_name:
             return {
                 "name": author_name,
                 "link": AUTHOR_LINKS[author_name]
@@ -1103,7 +1110,7 @@ def get_author_reply(author_info):
 🔗 {author_link}
 
 🌸 စာဖတ်ချစ်သူလေးရေ... 
-ပျော်ရွှင်စရာ စာဖတ်ချိန်လေးဖြစ်ပါစေ... 🥰
+ပျော်ရွှင်စရာစာဖတ်ချိန်လေးဖြစ်ပါစေ... 🥰
 """
     
     return reply
@@ -1183,8 +1190,10 @@ def handle_group_messages(message):
     
     track_active_group(message.chat.id)
     
+    # ========== 3. ဒီစာကြောင်း (၃) ကြောင်းကို ထပ်ထည့်ပါ ==========
     raw_message = message.text or message.caption or ""
-    clean_text = convert(raw_text)  
+    clean_text = convert(raw_message)  # Zawgyi/Unicode ကွဲပြားမှုကို ဖြေရှင်း
+    # ====================================================
     
     # Get chat info
     try:
