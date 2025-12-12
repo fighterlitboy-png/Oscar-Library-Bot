@@ -13,7 +13,7 @@ import pytz
 import logging
 import random
 import re
-from myanmartools import ZawgyiToUnicode
+from myanmartools import converter
 
 # ===============================
 # CONFIGURATION
@@ -30,7 +30,7 @@ print(f"🌐 Webhook URL: {WEBHOOK_URL}")
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
-converter = ZawgyiToUnicode()
+converter_obj = converter
 
 # ===============================
 # RENDER FONT FIX
@@ -1183,10 +1183,8 @@ def handle_group_messages(message):
     
     track_active_group(message.chat.id)
     
-    # ========== 3. ဒီစာကြောင်း (၃) ကြောင်းကို ထပ်ထည့်ပါ ==========
     raw_message = message.text or message.caption or ""
-    clean_text = converter.convert(raw_message)  # Zawgyi/Unicode ကွဲပြားမှုကို ဖြေရှင်း
-    # ====================================================
+    clean_text = convert(raw_text)  
     
     # Get chat info
     try:
@@ -1675,7 +1673,7 @@ def handle_private_messages(message):
         return
     
     raw_message = message.text or ""
-    clean_text = converter.convert(raw_message)  # Zawgyi/Unicode ကွဲပြားမှုကို ဖြေရှင်း
+    clean_text = convert(raw_text)  # Zawgyi/Unicode ကွဲပြားမှုကို ဖြေရှင်း
     
     print(f"\n📱 PRIVATE MESSAGE")
     print(f"👤 From: {message.from_user.first_name}")
