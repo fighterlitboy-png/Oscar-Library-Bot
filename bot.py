@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import json
 import telebot
@@ -13,9 +12,7 @@ import pytz
 import logging
 import random
 import re
-# ========== 1. ဒီစာကြောင်းကို ထည့်ပါ ==========
-from myanmartools import convert
-# ==============================================
+from myanmar.converter import convert
 
 # ===============================
 # CONFIGURATION
@@ -32,9 +29,14 @@ print(f"🌐 Webhook URL: {WEBHOOK_URL}")
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
-# ========== 2. ဒီစာကြောင်းကို ဖျက်ပါ (ဘာမှမရေးပါနဲ့) ==========
-# converter = ZawgyiToUnicode() ဆိုတာ မရှိပါ
-# ====================================================
+
+# ===============================
+# RENDER FONT FIX
+# ===============================
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except:
+    pass
 
 # ===============================
 # BIRTHDAY IMAGES DATABASE (6 IMAGES ONLY)
@@ -79,7 +81,7 @@ BIRTHDAY_CAPTION_TEMPLATE = """<b>Birthday Wishes 💌</b>
 အနာဂတ်မှာ 🤍
 နားလည်မှု များစွာနဲ့ 🍒
 အရင်ကထက်ပိုပိုပြီး 💕
-ချစ်နိုင်ကြပါစေ 💞
+ချစ်ခင်နိုင်ကြပါစေ 💞
 
 ချစ်ရတဲ့မိသားစုနဲ့အတူ ပျော်ရွှင်ရသောနေ့ရက်တွေကို ထာဝရပိုင်ဆိုင်နိုင်ပါစေ အမြဲဆုတောင်းပေးပါတယ် 🎂
 
@@ -688,7 +690,7 @@ AUTHOR_LINKS = {
     "ဂျိမ်း(စ်)လှကျော်": "https://t.me/sharebykosoemoe/15193",
     "ဂျက်ကွမ်းခြံကုန်း": "https://t.me/sharebykosoemoe/15165",
     "ဂျာနယ်ကျော်မမလေး": "https://t.me/sharebykosoemoe/707",
-    "ဂီတနက်သံကိုစောညိန်း": "https://t.me/sharebykosoemoe/15235",
+    "ဂီတနက်သံ ကိုစောညိန်း": "https://t.me/sharebykosoemoe/15235",
     "ဂျူး": "https://t.me/sharebykosoemoe/716",
     "ဂျိမ်း": "https://t.me/sharebykosoemoe/15241",
     "ငွေဥဒေါင်း": "https://t.me/sharebykosoemoe/15324",
@@ -852,11 +854,11 @@ AUTHOR_LINKS = {
     "အထင်ကရ": "https://t.me/sharebykosoemoe/21126",
     "အလင်းသစ်": "https://t.me/sharebykosoemoe/21129",
     "အရှင်ပုညာနန္ဒ": "https://t.me/sharebykosoemoe/21131",
-    "အရှင်ဝါသေဌာဘိဝံသ": "https://t.me/sharebykosoemoe/21133",
+    "အရှင်ဝါသေဋ္ဌာဘိဝံသ": "https://t.me/sharebykosoemoe/21133",
     "အသင်": "https://t.me/sharebykosoemoe/21215",
     "အရိုး": "https://t.me/sharebykosoemoe/21217",
     "အရှင်နာဂသိန်": "https://t.me/sharebykosoemoe/21219",
-    "Mရှိန်မြင့်": "https://t.me/sharebykosoemoe/21223",
+    "M ရှိန်မြင့်": "https://t.me/sharebykosoemoe/21223",
     "အဏ္ဏဝါစိုးမိုး": "https://t.me/sharebykosoemoe/21225",
     "အရှင်အာစာရလင်္ကာရ": "https://t.me/sharebykosoemoe/21229",
     "အရှင်ဆန္ဒာဓိက": "https://t.me/sharebykosoemoe/21337",
@@ -956,7 +958,7 @@ AUTHOR_LINKS = {
     "နွေအိမ်မောင်ဝင်း": "https://t.me/sharebykosoemoe/9123",
     "နွယ်ဂျာသိုင်း": "https://t.me/sharebykosoemoe/9069",
     "နေဗလ်": "https://t.me/sharebykosoemoe/1130",
-    "နိုင်ဦး 119": "https://t.me/sharebykosoemoe/8344",
+    "နိုင်ဦး119": "https://t.me/sharebykosoemoe/8344",
     "နတ်သမီး": "https://t.me/sharebykosoemoe/1657",
     "ပုညခင်": "https://t.me/sharebykosoemoe/577",
     "ပါပီယွန်": "https://t.me/sharebykosoemoe/2495",
@@ -1073,19 +1075,8 @@ def detect_author(text):
     if not text:
         return None
     
-    user_input = text.strip()
-    
-    # 1. စကားလုံးအပြည့် တိုက်ရိုက်စစ်ဆေးပါ
-    if user_input in AUTHOR_LINKS:
-        return {
-            "name": user_input,
-            "link": AUTHOR_LINKS[user_input]
-        }
-    
-    # 2. စကားလုံးအပြည့် မတွေ့ရင်၊ စာသားထဲမှာ ပါဝင်နေသလား စစ်ဆေးပါ
     for author_name in AUTHOR_LINKS.keys():
-        # "တာတေ" ကို "တာတောင်" ထဲမှာ မတွေ့စေရန် exact word matching လုပ်ပါ
-        if f" {author_name} " in f" {user_input} " or user_input == author_name:
+        if author_name in text:
             return {
                 "name": author_name,
                 "link": AUTHOR_LINKS[author_name]
@@ -1110,7 +1101,7 @@ def get_author_reply(author_info):
 🔗 {author_link}
 
 🌸 စာဖတ်ချစ်သူလေးရေ... 
-ပျော်ရွှင်စရာစာဖတ်ချိန်လေးဖြစ်ပါစေ... 🥰
+ပျော်ရွှင်စရာ စာဖတ်ချိန်လေးဖြစ်ပါစေ... 🥰
 """
     
     return reply
@@ -1190,11 +1181,6 @@ def handle_group_messages(message):
     
     track_active_group(message.chat.id)
     
-    # ========== 3. ဒီစာကြောင်း (၃) ကြောင်းကို ထပ်ထည့်ပါ ==========
-    raw_message = message.text or message.caption or ""
-    clean_text = convert(raw_message)  # Zawgyi/Unicode ကွဲပြားမှုကို ဖြေရှင်း
-    # ====================================================
-    
     # Get chat info
     try:
         chat_info = bot.get_chat(message.chat.id)
@@ -1208,9 +1194,11 @@ def handle_group_messages(message):
         print(f"📝 Chat ID: {message.chat.id}")
     
     print(f"👤 From: {message.from_user.first_name if message.from_user else 'Unknown'}")
-    print(f"💬 Text: {clean_text[:100] if clean_text else 'Media'}")  # <-- clean_text ကိုပဲ print ထုတ်ပါ
+    print(f"💬 Text: {message.text[:100] if message.text else 'Media'}")
     
-    author_info = detect_author(clean_text)  # <-- clean_text ကိုပဲစစ်ပါ
+    user_message = message.text or message.caption or ""
+    
+    author_info = detect_author(user_message)
     
     if author_info:
         print(f"📚 Author detected: {author_info['name']}")
@@ -1227,7 +1215,7 @@ def handle_group_messages(message):
         except Exception as e:
             print(f"❌ Author reply error: {e}")
     
-    if 'စာအုပ်' in clean_text:  # <-- clean_text ကိုပဲစစ်ပါ
+    if 'စာအုပ်' in user_message:
         print(f"📚 'စာအုပ်' keyword detected")
         try:
             bot.reply_to(message, get_random_book_reply(), parse_mode="HTML")
@@ -1250,12 +1238,12 @@ def handle_group_messages(message):
     
     is_allowed = False
     for pattern in allowed_patterns:
-        if re.search(pattern, clean_text, re.IGNORECASE):  # <-- clean_text ကိုပဲစစ်ပါ
+        if re.search(pattern, user_message, re.IGNORECASE):
             print(f"✅ Allowed link: {pattern}")
             is_allowed = True
             break
     
-    if not is_allowed and is_link(clean_text):  # <-- clean_text ကိုပဲစစ်ပါ
+    if not is_allowed and is_link(user_message):
         print(f"🚫 BLOCKED LINK DETECTED - DELETING")
         try:
             bot.delete_message(message.chat.id, message.message_id)
@@ -1681,14 +1669,13 @@ def handle_private_messages(message):
     if message.text and message.text.startswith('/'):
         return
     
-    raw_message = message.text or ""
-    clean_text = convert(raw_text)  # Zawgyi/Unicode ကွဲပြားမှုကို ဖြေရှင်း
+    user_message = message.text or ""
     
     print(f"\n📱 PRIVATE MESSAGE")
     print(f"👤 From: {message.from_user.first_name}")
-    print(f"💬 Text: {clean_text}")  # <-- clean_text ကိုပဲ print ထုတ်ပါ
+    print(f"💬 Text: {user_message}")
     
-    author_info = detect_author(clean_text)  # <-- clean_text ကိုပဲစစ်ပါ
+    author_info = detect_author(user_message)
     
     if author_info:
         print(f"📚 Author detected in private: {author_info['name']}")
@@ -1705,7 +1692,7 @@ def handle_private_messages(message):
         except Exception as e:
             print(f"❌ Private author reply error: {e}")
     
-    if 'စာအုပ်' in clean_text:  # <-- clean_text ကိုပဲစစ်ပါ
+    if 'စာအုပ်' in user_message:
         print(f"📚 'စာအုပ်' keyword detected in private")
         try:
             bot.send_message(message.chat.id, get_random_book_reply(), parse_mode="HTML")
@@ -1793,22 +1780,22 @@ AUTHOR_LINKS_MENU = {
     "ဋ္ဌ": "https://t.me/oscarhelpservices/25",
     "တ": "https://t.me/oscarhelpservices/27",
     "ထ": "https://t.me/oscarhelpservices/33",
-    "ဒ": "https://t.me/sharebykosoemoe/35",
-    "ဓ": "https://t.me/sharebykosoemoe/37",
-    "န": "https://t.me/sharebykosoemoe/39",
-    "ပ": "https://t.me/sharebykosoemoe/41",
-    "ဖ": "https://t.me/sharebykosoemoe/43",
-    "ဗ": "https://t.me/sharebykosoemoe/45",
-    "ဘ": "https://t.me/sharebykosoemoe/47",
-    "မ": "https://t.me/sharebykosoemoe/58",
-    "ယ": "https://t.me/sharebykosoemoe/59",
-    "ရ": "https://t.me/sharebykosoemoe/61",
-    "လ": "https://t.me/sharebykosoemoe/63",
-    "ဝ": "https://t.me/sharebykosoemoe/65",
-    "သ": "https://t.me/sharebykosoemoe/67",
-    "ဟ": "https://t.me/sharebykosoemoe/69",
-    "အ": "https://t.me/sharebykosoemoe/30",
-    "ဥ": "https://t.me/sharebykosoemoe/10",
+    "ဒ": "https://t.me/oscarhelpservices/35",
+    "ဓ": "https://t.me/oscarhelpservices/37",
+    "န": "https://t.me/oscarhelpservices/39",
+    "ပ": "https://t.me/oscarhelpservices/41",
+    "ဖ": "https://t.me/oscarhelpservices/43",
+    "ဗ": "https://t.me/oscarhelpservices/45",
+    "ဘ": "https://t.me/oscarhelpservices/47",
+    "မ": "https://t.me/oscarhelpservices/58",
+    "ယ": "https://t.me/oscarhelpservices/59",
+    "ရ": "https://t.me/oscarhelpservices/61",
+    "လ": "https://t.me/oscarhelpservices/63",
+    "ဝ": "https://t.me/oscarhelpservices/65",
+    "သ": "https://t.me/oscarhelpservices/67",
+    "ဟ": "https://t.me/oscarhelpservices/69",
+    "အ": "https://t.me/oscarhelpservices/30",
+    "ဥ": "https://t.me/oscarhelpservices/10",
     "Eng": "https://t.me/sharebykosoemoe/920"
 }
 @bot.callback_query_handler(func=lambda c: c.data.startswith("author_"))
@@ -1899,14 +1886,12 @@ print(f"🖼️ Birthday Images: {len(BIRTHDAY_IMAGES)} images (ROTATION ENABLED
 print(f"📚 'စာအုပ်' Auto Reply: ENABLED")
 print(f"👑 Admin Check: By STATUS (not ID)")
 print(f"🔗 Link Blocker: ENABLED for non-admins")
-print(f"🔤 Zawgyi/Unicode Support: ✅ ENABLED")
 
 print("\n📖 AUTHOR AUTO-REPLY SYSTEM")
 print("="*60)
 print("✅ 'စာအုပ်' keyword: Random book reply")
 print("✅ 'ကလျာ(ဝိဇ္ဇာ၊သိပ္ပံ)': Link reply")
 print("✅ 'ကံချွန်': Link reply")
-print("✅ Zawgyi/Unicode 'ဥ' detection: ✅ FIXED")
 
 print("\n🎂 ULTIMATE BIRTHDAY POST SYSTEM")
 print("="*60)
