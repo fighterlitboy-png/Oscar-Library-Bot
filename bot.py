@@ -1074,13 +1074,33 @@ def detect_author(text):
     if not text:
         return None
     
+    # Debug log
+    print(f"🔍 AUTHOR DETECTION - Input: '{text[:100]}'")
+    
+    # Remove ALL spaces, punctuation and convert to lowercase for comparison
+    import re
+    
+    # Remove spaces, punctuation (၊။,()-) and convert to lowercase
+    def normalize_string(s):
+        # Remove spaces and common punctuation
+        s = re.sub(r'[၊။\s()\-]+', '', s)
+        return s.lower()
+    
+    normalized_text = normalize_string(text)
+    print(f"🔍 Normalized text: '{normalized_text[:100]}'")
+    
+    # Check each author
     for author_name in AUTHOR_LINKS.keys():
-        if author_name in text:
+        normalized_author = normalize_string(author_name)
+        
+        if normalized_author in normalized_text:
+            print(f"✅✅✅ AUTHOR FOUND: '{author_name}' in text")
             return {
                 "name": author_name,
                 "link": AUTHOR_LINKS[author_name]
             }
     
+    print(f"❌ No author found in text")
     return None
 
 # ======================================================
