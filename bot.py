@@ -2306,6 +2306,33 @@ def bot_status(message):
         bot.reply_to(message, f"❌ Error getting status: {e}")
 
 # ======================================================
+# CALLBACK HANDLER FOR REFRESH SCAN
+# ======================================================
+@bot.callback_query_handler(func=lambda c: c.data == "refresh_admin_scan")
+def refresh_admin_scan(call):
+    """Refresh admin scan"""
+    bot.answer_callback_query(call.id, "🔄 Refreshing admin scan...")
+    list_all_admin_command(call.message)
+
+@bot.callback_query_handler(func=lambda c: c.data == "test_birthday_post")
+def test_birthday_post_callback(call):
+    """Test birthday post from callback"""
+    bot.answer_callback_query(call.id, "🎂 Testing birthday post...")
+    test_birthday_command(call.message)
+
+@bot.callback_query_handler(func=lambda c: c.data == "bot_status")
+def bot_status_callback(call):
+    """Show bot status from callback"""
+    bot.answer_callback_query(call.id, "📊 Getting bot status...")
+    bot_status(call.message)
+
+@bot.callback_query_handler(func=lambda c: c.data == "show_all_posts")
+def show_all_posts_callback(call):
+    """Show all posts from callback"""
+    bot.answer_callback_query(call.id, "📋 Preparing posts preview...")
+    show_all_posts_preview(call.message)
+    
+# ======================================================
 # PRIVATE CHAT HANDLER
 # ======================================================
 @bot.message_handler(func=lambda m: m.chat.type == 'private')
