@@ -199,17 +199,21 @@ threading.Thread(target=keep_alive, daemon=True).start()
 # ACTIVE GROUPS TRACKING - IMPROVED
 # ===============================
 def track_active_group(chat_id):
-    if chat_id < 0:  # Only track groups/channels (negative IDs)
-        active_groups.add(chat_id)
-        print(f"📝 Added to active groups: {chat_id} (Total: {len(active_groups)})")
-        
-        # Keep only last 200 groups to avoid memory issues
-        if len(active_groups) > 200:
-            removed = active_groups.pop()
-            print(f"📝 Removed oldest group: {removed}")
+    """Track groups/channels where bot is active"""
+    try:
+        if chat_id < 0:  # Only track groups/channels (negative IDs)
+            active_groups.add(chat_id)
+            
+            # Keep only last 300 groups to avoid memory issues
+            if len(active_groups) > 300:
+                oldest = list(active_groups)[0]
+                active_groups.remove(oldest)
+                
+    except Exception as e:
+        print(f"❌ Error in track_active_group: {e}")
 
 # ===============================
-# FIXED TIME CHECK SYSTEM - UPDATED FOR ALL POSTS
+# FIXED TIME CHECK SYSTEM
 # ===============================
 def should_send_birthday_post():
     """Check if should send birthday post at exactly 8:00 AM"""
@@ -384,76 +388,78 @@ def send_post_to_channels(image_url, caption, reply_markup=None, is_video=False)
     return results
 
 # ===============================
-# AUTO DISCOVER AND SEND TO ALL ADMIN GROUPS
+# ULTIMATE ADMIN CHECK FUNCTION
 # ===============================
-def discover_all_admin_groups():
-    """Find ALL groups/channels where bot is admin"""
-    admin_groups = []
-    print("🔍 AUTO DISCOVERY: Finding all admin chats...")
-    
-    total_checked = 0
-    total_admin = 0
-    
-    if not active_groups:
-        print("⚠️ No active groups to check. Send messages in groups first.")
-        return admin_groups
-    
-    # Check all active groups
-    for chat_id in list(active_groups):
-        try:
-            total_checked += 1
-            
-            # Get chat info
-            chat_info = bot.get_chat(chat_id)
-            chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
-            chat_type = chat_info.type
-            
-            print(f"🔍 [{total_checked}] Checking: {chat_title} (Type: {chat_type})")
-            
-            # Check if bot is admin
-            chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
-            
-            if chat_member.status in ['administrator', 'creator']:
-                admin_groups.append(chat_id)
-                total_admin += 1
-                print(f"✅✅✅ ADMIN FOUND: {chat_title} (Type: {chat_type})")
-            else:
-                print(f"❌ NOT ADMIN: {chat_title} (Status: {chat_member.status})")
-                # Remove from active groups if not admin
-                active_groups.discard(chat_id)
-                
-        except Exception as e:
-            print(f"❌ Error checking chat {chat_id}: {str(e)[:100]}")
-    
-    print(f"🎯 DISCOVERY RESULTS:")
-    print(f"   Total chats checked: {total_checked}")
-    print(f"   Admin chats found: {total_admin}")
-    
-    return admin_groups
+def check_bot_admin(chat_id):
+    """Check if bot is admin in chat - ROBUST VERSION"""
+    try:
+        chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
+        return chat_member.status in ['administrator', 'creator']
+    except Exception as e:
+        error_msg = str(e).lower()
+        
+        # Check specific errors
+        if "chat not found" in error_msg:
+            print(f"❌ Chat not found: {chat_id}")
+            return False
+        elif "bot was kicked" in error_msg or "bot is not a member" in error_msg:
+            print(f"❌ Bot kicked/not member: {chat_id}")
+            return False
+        elif "not enough rights" in error_msg:
+            print(f"❌ No rights in chat: {chat_id}")
+            return False
+        elif "forbidden" in error_msg:
+            print(f"❌ Bot forbidden in chat: {chat_id}")
+            return False
+        else:
+            print(f"⚠️ Unknown error checking admin for {chat_id}: {error_msg[:50]}")
+            return False
 
-def send_to_all_admin_groups(admin_groups, image_url, caption, reply_markup=None, is_video=False):
-    """Send post to ALL admin groups"""
+# ===============================
+# ULTIMATE SEND TO ALL TARGETS
+# ===============================
+def send_to_all_targets_ultimate(image_url, caption, reply_markup=None, is_video=False):
+    """Send to ALL targets - ULTIMATE VERSION"""
+    print("🚀 ULTIMATE SEND TO ALL TARGETS")
+    
+    all_targets = []
+    
+    # 1. Add fixed channels
+    for channel_id in MANUAL_CHANNEL_IDS:
+        if check_bot_admin(channel_id):
+            all_targets.append(channel_id)
+    
+    print(f"✅ Fixed channels ready: {len(all_targets)}")
+    
+    # 2. Add active groups that are admin
+    admin_groups_count = 0
+    for chat_id in list(active_groups):
+        if chat_id not in all_targets:  # Avoid duplicates
+            if check_bot_admin(chat_id):
+                all_targets.append(chat_id)
+                admin_groups_count += 1
+    
+    print(f"✅ Active admin groups: {admin_groups_count}")
+    print(f"🎯 Total targets: {len(all_targets)}")
+    
+    # Send to all targets
     success_count = 0
-    failed_groups = []
+    failed_targets = []
     
-    if not admin_groups:
-        print("ℹ️ No admin groups found via auto discovery")
-        return 0, []
-    
-    print(f"🚀 SENDING TO {len(admin_groups)} AUTO-DISCOVERED ADMIN CHATS...")
-    
-    for i, chat_id in enumerate(admin_groups):
+    for i, chat_id in enumerate(all_targets):
         try:
-            # Delay to avoid flood limits
+            # Small delay to avoid flood
             if i > 0:
-                time.sleep(1.2)
+                time.sleep(0.3)
             
-            # Get chat info
-            chat_info = bot.get_chat(chat_id)
-            chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
-            chat_type = chat_info.type
+            # Get chat info for logging
+            try:
+                chat_info = bot.get_chat(chat_id)
+                chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
+            except:
+                chat_title = f"Chat {chat_id}"
             
-            print(f"📤 [{i+1}/{len(admin_groups)}] Sending to: {chat_title} (Type: {chat_type})")
+            print(f"📤 [{i+1}/{len(all_targets)}] Sending to: {chat_title}")
             
             # Send the post
             if is_video:
@@ -474,29 +480,21 @@ def send_to_all_admin_groups(admin_groups, image_url, caption, reply_markup=None
                 )
             
             success_count += 1
-            print(f"✅✅✅ [{i+1}/{len(admin_groups)}] SUCCESS: {chat_title}")
+            print(f"✅ SUCCESS: {chat_title}")
             
         except Exception as e:
             error_msg = str(e)
-            print(f"❌❌❌ [{i+1}/{len(admin_groups)}] FAILED: {error_msg}")
-            failed_groups.append((chat_id, error_msg))
-            
-            # Check if we should remove from active groups
-            error_lower = error_msg.lower()
-            remove_conditions = [
-                "forbidden", "blocked", "kicked", 
-                "chat not found", "no rights",
-                "not enough rights", "can't send"
-            ]
-            
-            if any(cond in error_lower for cond in remove_conditions):
-                print(f"🗑️ Removing {chat_id} from active groups")
-                active_groups.discard(chat_id)
+            print(f"❌ FAILED [{chat_id}]: {error_msg[:100]}")
+            failed_targets.append((chat_id, error_msg))
     
-    return success_count, failed_groups
+    print(f"\n📊 ULTIMATE RESULTS:")
+    print(f"✅ Success: {success_count}/{len(all_targets)}")
+    print(f"❌ Failed: {len(failed_targets)}")
+    
+    return success_count, failed_targets
 
 # ===============================
-# BIRTHDAY POSTING FUNCTION
+# BIRTHDAY POSTING FUNCTION - ULTIMATE
 # ===============================
 def send_birthday_to_all_chats():
     global post_in_progress
@@ -506,7 +504,7 @@ def send_birthday_to_all_chats():
     
     post_in_progress = True
     try:
-        print("🎂🎂🎂 BIRTHDAY POSTS STARTING 🎂🎂🎂")
+        print("🎂🎂🎂 ULTIMATE BIRTHDAY POSTS STARTING 🎂🎂🎂")
         
         myanmar_time = get_myanmar_time()
         current_time = myanmar_time.strftime("%H:%M:%S")
@@ -517,48 +515,21 @@ def send_birthday_to_all_chats():
         caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
         birthday_image = get_next_birthday_image()
         
-        total_success = 0
-        total_failed = 0
+        # Use ULTIMATE sending function
+        success_count, failed_targets = send_to_all_targets_ultimate(
+            birthday_image, 
+            caption,
+            is_video=False
+        )
         
-        # 1. Send to fixed channels
-        if MANUAL_CHANNEL_IDS:
-            print("📢 PHASE 1: Posting to fixed channels...")
-            channel_results = send_post_to_channels(birthday_image, caption)
-            
-            for channel_id, success, error in channel_results:
-                if success:
-                    total_success += 1
-                    print(f"✅ Channel {channel_id}: SUCCESS")
-                else:
-                    total_failed += 1
-                    print(f"❌ Channel {channel_id}: FAILED - {error}")
-        
-        # 2. AUTO DISCOVERY: Send to ALL admin groups
-        print("\n👥 PHASE 2: AUTO DISCOVERY...")
-        admin_groups = discover_all_admin_groups()
-        
-        if admin_groups:
-            print(f"👥 Found {len(admin_groups)} admin chats. Posting...")
-            groups_success, groups_failed = send_to_all_admin_groups(admin_groups, birthday_image, caption)
-            
-            total_success += groups_success
-            total_failed += len(groups_failed)
-            
-            print(f"👥 Auto-discovery results: {groups_success} successful, {len(groups_failed)} failed")
-        else:
-            print("ℹ️ No admin groups found via auto discovery")
-        
-        # Summary
-        total_targets = len(MANUAL_CHANNEL_IDS) + len(admin_groups)
-        print(f"\n🎉🎉🎉 BIRTHDAY POSTS COMPLETED 🎉🎉🎉")
+        print(f"\n🎉🎉🎉 ULTIMATE BIRTHDAY POSTS COMPLETED 🎉🎉🎉")
         print(f"📊 SUMMARY:")
-        print(f"   Fixed Channels: {len(MANUAL_CHANNEL_IDS)}")
-        print(f"   Auto-discovered Admin Chats: {len(admin_groups)}")
-        print(f"   Success: {total_success}")
-        print(f"   Failed: {total_failed}")
+        print(f"   Total Targets: {success_count + len(failed_targets)}")
+        print(f"   Success: {success_count}")
+        print(f"   Failed: {len(failed_targets)}")
         
     except Exception as e:
-        print(f"💥💥💥 BIRTHDAY SYSTEM ERROR: {e}")
+        print(f"💥💥💥 ULTIMATE BIRTHDAY SYSTEM ERROR: {e}")
         import traceback
         traceback.print_exc()
     finally:
@@ -588,35 +559,16 @@ def send_myanmar_music_to_all_chats():
             types.InlineKeyboardButton("Oscar's Music 🎶", url="https://t.me/oscarmyanmarmusic")
         )
         
-        total_success = 0
-        
-        # Send to fixed channels
-        if MANUAL_CHANNEL_IDS:
-            print("📢 Sending Myanmar Music to fixed channels...")
-            for channel_id in MANUAL_CHANNEL_IDS:
-                try:
-                    print(f"📡 Attempting to send to channel: {channel_id}")
-                    
-                    # Check if bot is admin
-                    chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
-                    if chat_member.status not in ['administrator', 'creator']:
-                        print(f"❌ Bot is not admin in channel {channel_id}")
-                        continue
-                    
-                    bot.send_photo(
-                        channel_id,
-                        MUSIC_MYANMAR_IMAGE,
-                        caption=MUSIC_MYANMAR_CAPTION,
-                        reply_markup=keyboard,
-                        parse_mode="HTML"
-                    )
-                    print(f"✅✅✅ Successfully posted to channel: {channel_id}")
-                    total_success += 1
-                except Exception as e:
-                    print(f"❌❌❌ Channel post failed for {channel_id}: {e}")
+        # Use ULTIMATE sending
+        success_count, failed_targets = send_to_all_targets_ultimate(
+            MUSIC_MYANMAR_IMAGE,
+            MUSIC_MYANMAR_CAPTION,
+            reply_markup=keyboard,
+            is_video=False
+        )
         
         print(f"\n🎉 MYANMAR MUSIC POSTS COMPLETED 🎉")
-        print(f"📊 SUMMARY: {total_success}/{len(MANUAL_CHANNEL_IDS)} channels successful")
+        print(f"📊 SUMMARY: {success_count} successful, {len(failed_targets)} failed")
         
     except Exception as e:
         print(f"💥💥💥 MYANMAR MUSIC SYSTEM ERROR: {e}")
@@ -646,35 +598,16 @@ def send_english_music_to_all_chats():
             types.InlineKeyboardButton("English Music 🎶", url="https://t.me/oscarenglishmusic")
         )
         
-        total_success = 0
-        
-        # Send to fixed channels
-        if MANUAL_CHANNEL_IDS:
-            print("📢 Sending English Music to fixed channels...")
-            for channel_id in MANUAL_CHANNEL_IDS:
-                try:
-                    print(f"📡 Attempting to send to channel: {channel_id}")
-                    
-                    # Check if bot is admin
-                    chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
-                    if chat_member.status not in ['administrator', 'creator']:
-                        print(f"❌ Bot is not admin in channel {channel_id}")
-                        continue
-                    
-                    bot.send_photo(
-                        channel_id,
-                        MUSIC_ENGLISH_IMAGE,
-                        caption=MUSIC_ENGLISH_CAPTION,
-                        reply_markup=keyboard,
-                        parse_mode="HTML"
-                    )
-                    print(f"✅✅✅ Successfully posted to channel: {channel_id}")
-                    total_success += 1
-                except Exception as e:
-                    print(f"❌❌❌ Channel post failed for {channel_id}: {e}")
+        # Use ULTIMATE sending
+        success_count, failed_targets = send_to_all_targets_ultimate(
+            MUSIC_ENGLISH_IMAGE,
+            MUSIC_ENGLISH_CAPTION,
+            reply_markup=keyboard,
+            is_video=False
+        )
         
         print(f"\n🎉 ENGLISH MUSIC POSTS COMPLETED 🎉")
-        print(f"📊 SUMMARY: {total_success}/{len(MANUAL_CHANNEL_IDS)} channels successful")
+        print(f"📊 SUMMARY: {success_count} successful, {len(failed_targets)} failed")
         
     except Exception as e:
         print(f"💥💥💥 ENGLISH MUSIC SYSTEM ERROR: {e}")
@@ -707,35 +640,16 @@ def send_poem_to_all_chats():
             types.InlineKeyboardButton("နှလုံးသားဒဿန 🍃", url="https://t.me/oscarpoem")
         )
         
-        total_success = 0
-        
-        # Send to fixed channels
-        if MANUAL_CHANNEL_IDS:
-            print("📢 Sending Poem to fixed channels...")
-            for channel_id in MANUAL_CHANNEL_IDS:
-                try:
-                    print(f"📡 Attempting to send to channel: {channel_id}")
-                    
-                    # Check if bot is admin
-                    chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
-                    if chat_member.status not in ['administrator', 'creator']:
-                        print(f"❌ Bot is not admin in channel {channel_id}")
-                        continue
-                    
-                    bot.send_photo(
-                        channel_id,
-                        poem_image,
-                        caption=POEM_CAPTION,
-                        reply_markup=keyboard,
-                        parse_mode="HTML"
-                    )
-                    print(f"✅✅✅ Successfully posted to channel: {channel_id}")
-                    total_success += 1
-                except Exception as e:
-                    print(f"❌❌❌ Channel post failed for {channel_id}: {e}")
+        # Use ULTIMATE sending
+        success_count, failed_targets = send_to_all_targets_ultimate(
+            poem_image,
+            POEM_CAPTION,
+            reply_markup=keyboard,
+            is_video=False
+        )
         
         print(f"\n🎉 POEM POSTS COMPLETED 🎉")
-        print(f"📊 SUMMARY: {total_success}/{len(MANUAL_CHANNEL_IDS)} channels successful")
+        print(f"📊 SUMMARY: {success_count} successful, {len(failed_targets)} failed")
         
     except Exception as e:
         print(f"💥💥💥 POEM SYSTEM ERROR: {e}")
@@ -768,35 +682,16 @@ def send_promo_to_all_chats():
             types.InlineKeyboardButton("စာအုပ်ရှာရန် 📚📖", url="https://t.me/oscar_libray_bot")
         )
         
-        total_success = 0
-        
-        # Send to fixed channels
-        if MANUAL_CHANNEL_IDS:
-            print("📢 Sending Promo Video to fixed channels...")
-            for channel_id in MANUAL_CHANNEL_IDS:
-                try:
-                    print(f"📡 Attempting to send to channel: {channel_id}")
-                    
-                    # Check if bot is admin
-                    chat_member = bot.get_chat_member(channel_id, bot.get_me().id)
-                    if chat_member.status not in ['administrator', 'creator']:
-                        print(f"❌ Bot is not admin in channel {channel_id}")
-                        continue
-                    
-                    bot.send_video(
-                        channel_id,
-                        PROMO_VIDEO,
-                        caption=PROMO_CAPTION,
-                        reply_markup=keyboard,
-                        parse_mode="HTML"
-                    )
-                    print(f"✅✅✅ Successfully posted to channel: {channel_id}")
-                    total_success += 1
-                except Exception as e:
-                    print(f"❌❌❌ Channel post failed for {channel_id}: {e}")
+        # Use ULTIMATE sending
+        success_count, failed_targets = send_to_all_targets_ultimate(
+            PROMO_VIDEO,
+            PROMO_CAPTION,
+            reply_markup=keyboard,
+            is_video=True
+        )
         
         print(f"\n🎉 PROMO VIDEO POSTS COMPLETED 🎉")
-        print(f"📊 SUMMARY: {total_success}/{len(MANUAL_CHANNEL_IDS)} channels successful")
+        print(f"📊 SUMMARY: {success_count} successful, {len(failed_targets)} failed")
         
     except Exception as e:
         print(f"💥💥💥 PROMO SYSTEM ERROR: {e}")
@@ -806,7 +701,7 @@ def send_promo_to_all_chats():
         post_in_progress = False
 
 # ===============================
-# UPDATED SCHEDULER SYSTEM FOR ALL POSTS
+# UPDATED SCHEDULER SYSTEM
 # ===============================
 def content_scheduler():
     print("🚀 ULTIMATE CONTENT SCHEDULER STARTED!")
@@ -817,6 +712,7 @@ def content_scheduler():
     print("   • Poem Posts: 4:00 PM & 8:00 PM")
     print("   • Promo Video: 12:00 AM & 12:00 PM")
     print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)}")
+    print(f"📊 Active Groups Tracked: {len(active_groups)}")
     
     last_minute = None
     
@@ -981,7 +877,7 @@ AUTHOR_LINKS = {
     "ကျော်ငြိမ်း": "https://t.me/sharebykosoemoe/11560",
     "ကျော်စိုးဗို": "https://t.me/sharebykosoemoe/11583",
     "ကျော်သက်ခိုင်": "https://t.me/sharebykosoemoe/11450",
-    "ကာတွန်း ကျော်သစ်": "https://t.me/sharebykosoemoe/11539",
+    "ကာတွန်းကျော်သစ်": "https://t.me/sharebykosoemoe/11539",
     "ကျော်ဝင်း": "https://t.me/sharebykosoemoe/11594",
     "ကျော်ဇေယျ": "https://t.me/sharebykosoemoe/11667",
     "ကြည်ရွှန်း": "https://t.me/sharebykosoemoe/11663",
@@ -989,7 +885,7 @@ AUTHOR_LINKS = {
     "ကြည်မင်း": "https://t.me/sharebykosoemoe/11682",
     "ကြည်နုခေတ်": "https://t.me/sharebykosoemoe/11695",
     "ကြည်ကြည်မာ": "https://t.me/sharebykosoemoe/11820",
-    "ကာတွန်း အောင်ရှိန်": "https://t.me/sharebykosoemoe/11795",
+    "ကာတွန်းအောင်ရှိန်": "https://t.me/sharebykosoemoe/11795",
     "ကြည်နိုင်": "https://t.me/sharebykosoemoe/11692",
     "ကြည်ဦး": "https://t.me/sharebykosoemoe/11702",
     "ကြူးနှစ်": "https://t.me/sharebykosoemoe/11996",
@@ -1255,7 +1151,7 @@ AUTHOR_LINKS = {
     "တိုက်စိုး": "https://t.me/sharebykosoemoe/20210",
     "တိုးတက်": "https://t.me/sharebykosoemoe/20254",
     "တွင်းကြီးဝမ်းမောင်": "https://t.me/sharebykosoemoe/20205",
-    "တွင်းကြီးသား တင်ဝင်းဦး": "https://t.me/sharebykosoemoe/20202",
+    "တွင်းကြီးသားတင်ဝင်းဦး": "https://t.me/sharebykosoemoe/20202",
     "တြိစက္က": "https://t.me/sharebykosoemoe/1557",
     "တြိသင်္ခ": "https://t.me/sharebykosoemoe/20460",
     "တင်မိုး": "https://t.me/sharebykosoemoe/20452",
@@ -1462,7 +1358,7 @@ AUTHOR_LINKS = {
     "လွန်းထားထား": "https://t.me/sharebykosoemoe/861",
     "လယ်တွင်းသားစောချစ်": "https://t.me/sharebykosoemoe/830",
     "လင်းရောင်စင်": "https://t.me/sharebykosoemoe/9805",
-    "လင်း�ယုန်မောင်မောင်": "https://t.me/sharebykosoemoe/3901",
+    "လင်းယုန်မောင်မောင်": "https://t.me/sharebykosoemoe/3901",
     "လမင်းမိုမို": "https://t.me/sharebykosoemoe/6159",
     "လင်းသိုက်ညွန့်": "https://t.me/sharebykosoemoe/741",
     "လရောင်ကျူးရင့်": "https://t.me/sharebykosoemoe/1256",
@@ -1506,22 +1402,16 @@ def detect_author(text):
     if not text:
         return None
     
-    # Debug log
     print(f"🔍 AUTHOR DETECTION - Input: '{text[:100]}'")
     
-    # Remove ALL spaces, punctuation and convert to lowercase for comparison
     import re
     
-    # Remove spaces, punctuation (၊။,()-) and convert to lowercase
     def normalize_string(s):
-        # Remove spaces and common punctuation
         s = re.sub(r'[၊။\s()\-]+', '', s)
         return s.lower()
     
     normalized_text = normalize_string(text)
-    print(f"🔍 Normalized text: '{normalized_text[:100]}'")
     
-    # Check each author
     for author_name in AUTHOR_LINKS.keys():
         normalized_author = normalize_string(author_name)
         
@@ -1567,14 +1457,6 @@ def welcome_new_member(message):
     print(f"👋 Welcome message for new member in chat: {message.chat.id}")
     track_active_group(message.chat.id)
     
-    # Get chat info
-    try:
-        chat_info = bot.get_chat(message.chat.id)
-        chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {message.chat.id}"
-        print(f"👋 Welcome in: {chat_title} (Type: {chat_info.type})")
-    except:
-        pass
-    
     for user in message.new_chat_members:
         caption = f"""<b>နွေးထွေးစွာကြိုဆိုပါတယ်...🧸</b>
 
@@ -1596,7 +1478,6 @@ def welcome_new_member(message):
         )
         
         try:
-            print(f"🖼️ Sending welcome image...")
             bot.send_photo(
                 message.chat.id, 
                 WELCOME_IMAGE_URL, 
@@ -1604,9 +1485,7 @@ def welcome_new_member(message):
                 reply_markup=welcome_kb,
                 parse_mode="HTML"
             )
-            print(f"✅ Welcome message sent")
         except Exception as e:
-            print(f"❌ Welcome image error: {e}")
             try:
                 bot.send_message(
                     message.chat.id,
@@ -1614,9 +1493,8 @@ def welcome_new_member(message):
                     reply_markup=welcome_kb,
                     parse_mode="HTML"
                 )
-                print(f"✅ Sent text-only welcome")
-            except Exception as e2:
-                print(f"❌ Failed to send welcome: {e2}")
+            except:
+                pass
 
 # ======================================================
 # MAIN GROUP MESSAGE HANDLER
@@ -1626,13 +1504,13 @@ def handle_group_messages(message):
     """Group messages handler"""
     
     if message.text and message.text.startswith('/'):
+        track_active_group(message.chat.id)
         return
     if message.new_chat_members:
         return
     
     track_active_group(message.chat.id)
     
-    # Get chat info
     try:
         chat_info = bot.get_chat(message.chat.id)
         chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {message.chat.id}"
@@ -1646,6 +1524,7 @@ def handle_group_messages(message):
     
     print(f"👤 From: {message.from_user.first_name if message.from_user else 'Unknown'}")
     print(f"💬 Text: {message.text[:100] if message.text else 'Media'}")
+    print(f"📊 Active Groups: {len(active_groups)}")
     
     user_message = message.text or message.caption or ""
     
@@ -1724,14 +1603,6 @@ def handle_group_messages(message):
 def start_message(message):
     print(f"🔄 /start command from user: {message.from_user.id}")
     
-    # Get chat info
-    try:
-        chat_info = bot.get_chat(message.chat.id)
-        if hasattr(chat_info, 'type'):
-            print(f"💬 Chat type: {chat_info.type}")
-    except:
-        pass
-    
     first = message.from_user.first_name or "Friend"
     text = f"""<b>သာယာသောနေ့လေးဖြစ်ပါစေ...🌸</b>
 <b>{first}</b> ...🥰
@@ -1773,18 +1644,16 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
 # ======================================================
 @bot.message_handler(commands=['showpost'])
 def show_all_posts_preview(message):
-    """Show preview of ALL posts (birthday and content posts)"""
+    """Show preview of ALL posts"""
     print(f"📊 /showpost command from user: {message.from_user.id}")
     
     try:
         print("🎨 Preparing ALL posts preview...")
         
-        # Get Myanmar time
         myanmar_time = get_myanmar_time()
         current_date = myanmar_time.strftime("%B %d")
         current_time = myanmar_time.strftime("%H:%M:%S")
         
-        # Send initial message
         status_msg = bot.send_message(
             message.chat.id,
             "<b>📊 PREPARING ALL POSTS PREVIEW...</b>\n\nPlease wait while I gather all post information...",
@@ -1792,26 +1661,22 @@ def show_all_posts_preview(message):
         )
         
         # 1. BIRTHDAY POST PREVIEW
-        print("🎂 Preparing birthday post preview...")
         birthday_caption = BIRTHDAY_CAPTION_TEMPLATE.format(current_date=current_date)
         birthday_image = get_next_birthday_image()
         
         # 2. MYANMAR MUSIC POST PREVIEW
-        print("🎶 Preparing Myanmar music post preview...")
         myanmar_music_keyboard = types.InlineKeyboardMarkup()
         myanmar_music_keyboard.row(
             types.InlineKeyboardButton("Oscar's Music 🎶", url="https://t.me/oscarmyanmarmusic")
         )
         
         # 3. ENGLISH MUSIC POST PREVIEW
-        print("🎧 Preparing English music post preview...")
         english_music_keyboard = types.InlineKeyboardMarkup()
         english_music_keyboard.row(
             types.InlineKeyboardButton("English Music 🎶", url="https://t.me/oscarenglishmusic")
         )
         
         # 4. POEM POST PREVIEW
-        print("🍃 Preparing poem post preview...")
         poem_image = get_next_poem_image()
         poem_keyboard = types.InlineKeyboardMarkup()
         poem_keyboard.row(
@@ -1819,7 +1684,6 @@ def show_all_posts_preview(message):
         )
         
         # 5. PROMO VIDEO PREVIEW
-        print("📚 Preparing promo video preview...")
         promo_keyboard = types.InlineKeyboardMarkup()
         promo_keyboard.row(
             types.InlineKeyboardButton("စာပေချစ်သူများအတွက် 🍓", url="https://t.me/bookbykosoemoe")
@@ -1828,7 +1692,7 @@ def show_all_posts_preview(message):
             types.InlineKeyboardButton("စာအုပ်ရှာရန် 📚📖", url="https://t.me/oscar_libray_bot")
         )
         
-        # First, send the overview/stats
+        # Stats
         stats_text = f"""
 <b>📊 ALL POSTS PREVIEW & SCHEDULE</b>
 
@@ -1843,15 +1707,13 @@ def show_all_posts_preview(message):
 5️⃣ <b>Promo Video:</b> 12:00 AM & 12:00 PM
 
 <b>📢 FIXED CHANNELS:</b> {len(MANUAL_CHANNEL_IDS)} channels
+<b>📊 ACTIVE GROUPS:</b> {len(active_groups)} groups
 
 <b>🖼️ IMAGE ROTATION:</b>
 • Birthday: {len(BIRTHDAY_IMAGES)} images
 • Poem: {len(POEM_IMAGES)} images
 
-<b>🎂 Next Birthday Image:</b> {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
-<b>🍃 Next Poem Image:</b> {current_poem_index + 1}/{len(POEM_IMAGES)}
-
-<i>Now showing previews of each post type...</i>
+<i>Now showing previews...</i>
 """
         
         bot.edit_message_text(
@@ -1863,105 +1725,29 @@ def show_all_posts_preview(message):
         
         time.sleep(1)
         
-        # 1. SHOW BIRTHDAY POST PREVIEW
-        print("🖼️ Sending birthday post preview...")
-        birthday_preview_msg = f"""
-<b>🎂 POST 1: BIRTHDAY POST</b>
-<b>Scheduled:</b> Daily at 8:00 AM
-<b>Channels:</b> {len(MANUAL_CHANNEL_IDS)} channels + All admin chats
-<b>Images:</b> {len(BIRTHDAY_IMAGES)} rotating images
-"""
-        bot.send_message(message.chat.id, birthday_preview_msg, parse_mode="HTML")
-        
-        bot.send_photo(
-            message.chat.id,
-            birthday_image,
-            caption=birthday_caption,
-            parse_mode="HTML"
-        )
+        # Send previews
+        bot.send_message(message.chat.id, "<b>🎂 POST 1: BIRTHDAY POST</b>", parse_mode="HTML")
+        bot.send_photo(message.chat.id, birthday_image, caption=birthday_caption, parse_mode="HTML")
         
         time.sleep(1)
         
-        # 2. SHOW MYANMAR MUSIC POST PREVIEW
-        print("🎶 Sending Myanmar music post preview...")
-        myanmar_music_preview_msg = f"""
-<b>🎶 POST 2: MYANMAR MUSIC</b>
-<b>Scheduled:</b> 10:00 AM & 6:00 PM Daily
-<b>Button:</b> Oscar's Music 🎶
-<b>Link:</b> https://t.me/oscarmyanmarmusic
-"""
-        bot.send_message(message.chat.id, myanmar_music_preview_msg, parse_mode="HTML")
-        
-        bot.send_photo(
-            message.chat.id,
-            MUSIC_MYANMAR_IMAGE,
-            caption=MUSIC_MYANMAR_CAPTION,
-            reply_markup=myanmar_music_keyboard,
-            parse_mode="HTML"
-        )
+        bot.send_message(message.chat.id, "<b>🎶 POST 2: MYANMAR MUSIC</b>", parse_mode="HTML")
+        bot.send_photo(message.chat.id, MUSIC_MYANMAR_IMAGE, caption=MUSIC_MYANMAR_CAPTION, reply_markup=myanmar_music_keyboard, parse_mode="HTML")
         
         time.sleep(1)
         
-        # 3. SHOW ENGLISH MUSIC POST PREVIEW
-        print("🎧 Sending English music post preview...")
-        english_music_preview_msg = f"""
-<b>🎧 POST 3: ENGLISH MUSIC</b>
-<b>Scheduled:</b> 2:00 PM & 10:00 PM Daily
-<b>Button:</b> English Music 🎶
-<b>Link:</b> https://t.me/oscarenglishmusic
-"""
-        bot.send_message(message.chat.id, english_music_preview_msg, parse_mode="HTML")
-        
-        bot.send_photo(
-            message.chat.id,
-            MUSIC_ENGLISH_IMAGE,
-            caption=MUSIC_ENGLISH_CAPTION,
-            reply_markup=english_music_keyboard,
-            parse_mode="HTML"
-        )
+        bot.send_message(message.chat.id, "<b>🎧 POST 3: ENGLISH MUSIC</b>", parse_mode="HTML")
+        bot.send_photo(message.chat.id, MUSIC_ENGLISH_IMAGE, caption=MUSIC_ENGLISH_CAPTION, reply_markup=english_music_keyboard, parse_mode="HTML")
         
         time.sleep(1)
         
-        # 4. SHOW POEM POST PREVIEW
-        print("🍃 Sending poem post preview...")
-        poem_preview_msg = f"""
-<b>🍃 POST 4: POEM POST</b>
-<b>Scheduled:</b> 4:00 PM & 8:00 PM Daily
-<b>Button:</b> နှလုံးသားဒဿန 🍃
-<b>Link:</b> https://t.me/oscarpoem
-<b>Images:</b> {len(POEM_IMAGES)} rotating images
-"""
-        bot.send_message(message.chat.id, poem_preview_msg, parse_mode="HTML")
-        
-        bot.send_photo(
-            message.chat.id,
-            poem_image,
-            caption=POEM_CAPTION,
-            reply_markup=poem_keyboard,
-            parse_mode="HTML"
-        )
+        bot.send_message(message.chat.id, "<b>🍃 POST 4: POEM POST</b>", parse_mode="HTML")
+        bot.send_photo(message.chat.id, poem_image, caption=POEM_CAPTION, reply_markup=poem_keyboard, parse_mode="HTML")
         
         time.sleep(1)
         
-        # 5. SHOW PROMO VIDEO PREVIEW
-        print("📚 Sending promo video preview...")
-        promo_preview_msg = f"""
-<b>📚 POST 5: PROMO VIDEO</b>
-<b>Scheduled:</b> 12:00 AM & 12:00 PM Daily
-<b>Button 1:</b> စာပေချစ်သူများအတွက် 🍓
-<b>Link 1:</b> https://t.me/bookbykosoemoe
-<b>Button 2:</b> စာအုပ်ရှာရန် 📚📖
-<b>Link 2:</b> https://t.me/oscar_libray_bot
-"""
-        bot.send_message(message.chat.id, promo_preview_msg, parse_mode="HTML")
-        
-        bot.send_video(
-            message.chat.id,
-            PROMO_VIDEO,
-            caption=PROMO_CAPTION,
-            reply_markup=promo_keyboard,
-            parse_mode="HTML"
-        )
+        bot.send_message(message.chat.id, "<b>📚 POST 5: PROMO VIDEO</b>", parse_mode="HTML")
+        bot.send_video(message.chat.id, PROMO_VIDEO, caption=PROMO_CAPTION, reply_markup=promo_keyboard, parse_mode="HTML")
         
         print("✅ All posts preview completed")
         
@@ -1971,106 +1757,168 @@ def show_all_posts_preview(message):
         bot.reply_to(message, error_msg)
 
 # ======================================================
-# /LISTALLADMIN COMMAND (SIMPLE VERSION)
+# /ALLADMINLIST COMMAND - WITH ACTIVE CHECK
 # ======================================================
-@bot.message_handler(commands=['listalladmin'])
+@bot.message_handler(commands=['alladminlist'])
 def list_all_admin_command(message):
-    """Find and list ALL chats where bot is admin"""
-    print(f"🔍 /listalladmin command from user: {message.from_user.id}")
+    """Find and list ALL chats where bot is admin - WITH ACTIVE CHECK"""
+    print(f"🔍 /alladminlist command from user: {message.from_user.id}")
     
     try:
         # Send initial message
-        status_msg = bot.reply_to(message, "🔍 <b>ADMIN SCAN STARTED</b>\n\nScanning all chats where bot is admin...\nThis may take a moment...", parse_mode="HTML")
+        status_msg = bot.reply_to(message, 
+            "🔍 <b>ADMIN SCAN STARTED</b>\n\n"
+            "Scanning all chats where bot is admin...\n"
+            "Checking active status...\n"
+            "This may take a moment...", 
+            parse_mode="HTML"
+        )
         
         admin_chats = []
-        total_scanned = 0
+        fixed_channels = []
+        active_admin_groups = []
         
-        print(f"🔍 Starting admin scan...")
+        print(f"🔍 Starting admin scan with active check...")
         
-        # Scan all active groups
-        for chat_id in list(active_groups):
+        # 1. Check fixed channels
+        print(f"📢 Checking {len(MANUAL_CHANNEL_IDS)} fixed channels...")
+        
+        for channel_id in MANUAL_CHANNEL_IDS:
             try:
-                total_scanned += 1
-                
-                # Get chat info
-                chat_info = bot.get_chat(chat_id)
-                chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Chat {chat_id}"
-                chat_type = chat_info.type
+                chat_info = bot.get_chat(channel_id)
+                chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Channel {channel_id}"
                 
                 # Check admin status
-                chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
+                if check_bot_admin(channel_id):
+                    fixed_channels.append({
+                        'id': channel_id,
+                        'title': chat_title,
+                        'type': 'channel',
+                        'active': True
+                    })
+                    print(f"✅ Fixed channel active: {chat_title}")
+                else:
+                    fixed_channels.append({
+                        'id': channel_id,
+                        'title': chat_title,
+                        'type': 'channel',
+                        'active': False
+                    })
+                    print(f"❌ Fixed channel not admin: {chat_title}")
+            except Exception as e:
+                print(f"⚠️ Error checking fixed channel {channel_id}: {e}")
+                fixed_channels.append({
+                    'id': channel_id,
+                    'title': f"Channel {channel_id}",
+                    'type': 'channel',
+                    'active': False,
+                    'error': str(e)[:100]
+                })
+        
+        # 2. Check active groups for admin status
+        print(f"\n👥 Checking {len(active_groups)} active groups...")
+        
+        for chat_id in list(active_groups):
+            try:
+                # Don't duplicate fixed channels
+                if chat_id in MANUAL_CHANNEL_IDS:
+                    continue
+                    
+                chat_info = bot.get_chat(chat_id)
+                chat_title = chat_info.title if hasattr(chat_info, 'title') else f"Group {chat_id}"
                 
-                if chat_member.status in ['administrator', 'creator']:
-                    admin_chats.append({
+                # Check admin status
+                if check_bot_admin(chat_id):
+                    active_admin_groups.append({
                         'id': chat_id,
                         'title': chat_title,
-                        'type': chat_type,
-                        'status': chat_member.status
+                        'type': chat_info.type,
+                        'active': True
                     })
-                    print(f"✅ ADMIN: {chat_title} ({chat_type})")
+                    print(f"✅ Active group admin: {chat_title}")
                 else:
-                    print(f"❌ NOT ADMIN: {chat_title} ({chat_type})")
-                    # Remove from active groups if not admin
+                    # Remove non-admin groups
                     active_groups.discard(chat_id)
+                    print(f"❌ Removed non-admin group: {chat_title}")
                     
             except Exception as e:
-                print(f"⚠️ ERROR: {chat_id} - {str(e)[:50]}")
-                # Remove errored chats from active groups
+                print(f"⚠️ Error checking active group {chat_id}: {e}")
+                # Remove errored groups
                 active_groups.discard(chat_id)
         
-        # Calculate total post locations
-        total_fixed_channels = len(MANUAL_CHANNEL_IDS)
-        total_admin_chats = len(admin_chats)
-        total_post_locations = total_fixed_channels + total_admin_chats
+        # Combine all admin chats
+        for chat in fixed_channels:
+            if chat['active']:
+                admin_chats.append(chat)
         
-        # Prepare simple response
+        for chat in active_admin_groups:
+            if chat['active']:
+                admin_chats.append(chat)
+        
+        # Prepare response
         response = f"""
 <b>🔍 ADMIN SCAN RESULTS</b>
 
 <b>📊 STATISTICS:</b>
-• Total chats scanned: {total_scanned}
-• Admin chats found: {total_admin_chats}
+• Total Admin Chats Found: <b>{len(admin_chats)}</b>
+• Fixed Channels: {len([c for c in fixed_channels if c['active']])}/{len(fixed_channels)} active
+• Active Admin Groups: {len(active_admin_groups)} groups
+• Total Active Groups Tracked: {len(active_groups)}
 
-<b>🎯 TOTAL POST LOCATIONS: {total_post_locations}</b>
-└─ Fixed Channels: {total_fixed_channels} channels
-└─ Auto-discovered Admin Chats: {total_admin_chats} chats
+<b>🎯 TOTAL POST TARGETS: {len(admin_chats)}</b>
+└─ Fixed Channels: {len([c for c in fixed_channels if c['active']])}
+└─ Auto-discovered Admin Groups: {len(active_admin_groups)}
 
-<b>📢 FIXED CHANNELS ({total_fixed_channels}):</b>
+<b>📢 FIXED CHANNELS ({len(fixed_channels)}):</b>
 """
         
-        # List fixed channels
-        for i, channel_id in enumerate(MANUAL_CHANNEL_IDS):
-            try:
-                channel_info = bot.get_chat(channel_id)
-                channel_title = channel_info.title if hasattr(channel_info, 'title') else f"Channel {channel_id}"
-                response += f"\n{i+1}. {channel_title} (ID: <code>{channel_id}</code>)"
-            except:
-                response += f"\n{i+1}. Channel ID: <code>{channel_id}</code>"
+        # List fixed channels with status
+        for i, chat in enumerate(fixed_channels):
+            status_icon = "✅" if chat['active'] else "❌"
+            response += f"\n{i+1}. {status_icon} {chat['title']}"
+            if not chat['active']:
+                response += f" (Not Admin)"
+            response += f" (ID: <code>{chat['id']}</code>)"
         
-        response += f"\n\n<b>✅ AUTO-DISCOVERED ADMIN CHATS ({total_admin_chats}):</b>"
+        response += f"\n\n<b>👥 AUTO-DISCOVERED ADMIN GROUPS ({len(active_admin_groups)}):</b>"
         
-        # List admin chats
-        if admin_chats:
-            for i, chat in enumerate(admin_chats):
-                response += f"\n{i+1}. {chat['title']} ({chat['type']}) - ID: <code>{chat['id']}</code>"
+        # List admin groups
+        if active_admin_groups:
+            for i, chat in enumerate(active_admin_groups[:20]):  # Show first 20
+                response += f"\n{i+1}. ✅ {chat['title']} ({chat['type']}) - ID: <code>{chat['id']}</code>"
+            
+            if len(active_admin_groups) > 20:
+                response += f"\n... and {len(active_admin_groups) - 20} more groups"
         else:
-            response += "\n❌ No admin chats found via auto-discovery!"
+            response += "\n❌ No admin groups found via auto-discovery!"
+            response += f"\n\n<b>💡 How to add groups:</b>"
+            response += f"\n1. Make bot admin in your group"
+            response += f"\n2. Send any message in that group"
+            response += f"\n3. Bot will automatically track it"
         
         response += f"""
         
-<b>🎂 NEXT BIRTHDAY POST:</b>
-• Time: Tomorrow at 8:00 AM (Myanmar Time)
-• Will be sent to ALL {total_post_locations} locations
-• Current image: {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
+<b>📈 SYSTEM STATUS:</b>
+• Active Groups in Memory: {len(active_groups)}
+• Will Receive Next Birthday Post: {len(admin_chats)} chats
+• Next Birthday Image: {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
 
-<b>📋 OTHER COMMANDS:</b>
-• /showpost - Preview ALL posts
-• /listalladmin - List all groups & admin status
-• /status - Bot status report
-• /myid - Show your Telegram ID
+<b>🔄 To refresh groups list:</b>
+• Send any message in each group where bot is admin
+• Bot will automatically track active groups
 """
         
-        # Update the message WITHOUT inline keyboard
+        # Add a note about missing groups
+        if len(active_groups) < 5:  # If very few groups tracked
+            response += f"""
+            
+<b>⚠️ WARNING: Few groups tracked ({len(active_groups)})</b>
+• Bot needs to receive messages in groups to track them
+• Visit each group and send a test message
+• Check /myid in each group to ensure bot is working
+"""
+        
+        # Update the message
         bot.edit_message_text(
             response,
             message.chat.id,
@@ -2078,13 +1926,13 @@ def list_all_admin_command(message):
             parse_mode="HTML"
         )
         
-        print(f"✅ /listalladmin completed:")
-        print(f"   - Fixed channels: {total_fixed_channels}")
-        print(f"   - Admin chats: {total_admin_chats}")
-        print(f"   - Total post locations: {total_post_locations}")
+        print(f"✅ /alladminlist completed:")
+        print(f"   - Admin chats found: {len(admin_chats)}")
+        print(f"   - Fixed channels: {len([c for c in fixed_channels if c['active']])}")
+        print(f"   - Active admin groups: {len(active_admin_groups)}")
         
     except Exception as e:
-        error_msg = f"❌ Error in listalladmin: {e}"
+        error_msg = f"❌ Error in alladminlist: {e}"
         print(error_msg)
         bot.reply_to(message, error_msg)
 
@@ -2096,13 +1944,6 @@ def show_my_id(message):
     """Show my user ID"""
     user_id = message.from_user.id if message.from_user else None
     
-    # Get chat info
-    chat_info = None
-    try:
-        chat_info = bot.get_chat(message.chat.id)
-    except:
-        pass
-    
     response = f"""
 <b>🔍 YOUR ID INFORMATION:</b>
 
@@ -2111,29 +1952,28 @@ def show_my_id(message):
 <b>Chat Type:</b> {message.chat.type}
 """
     
-    if chat_info:
-        if hasattr(chat_info, 'title'):
-            response += f"<b>Chat Title:</b> {chat_info.title}\n"
-        if hasattr(chat_info, 'type'):
-            response += f"<b>Chat Type (detailed):</b> {chat_info.type}\n"
-    
     # Check if bot is admin in this chat
     try:
-        chat_member = bot.get_chat_member(message.chat.id, bot.get_me().id)
-        is_admin = chat_member.status in ['administrator', 'creator']
+        is_admin = check_bot_admin(message.chat.id)
         response += f"<b>Bot Admin Status:</b> {'✅ YES' if is_admin else '❌ NO'}\n"
         response += f"<b>Will Receive Birthday Posts:</b> {'✅ YES' if is_admin else '❌ NO'}\n"
+        
+        # Add to active groups if admin
+        if is_admin and message.chat.id < 0:
+            active_groups.add(message.chat.id)
+            response += f"<b>Added to Active Groups:</b> ✅ YES\n"
     except:
         response += f"<b>Bot Admin Status:</b> ❓ Unknown\n"
     
-    response += """
+    response += f"""
+<b>Active Groups Tracking:</b> {len(active_groups)} groups
 <b>For link posting:</b>
 ✅ Admin users can post links
 ❌ Non-admin users cannot post links
 """
     
     bot.reply_to(message, response, parse_mode="HTML")
-    print(f"📊 User {user_id} checked their ID in chat {message.chat.id}")
+    print(f"📊 User {user_id} checked ID in chat {message.chat.id}")
 
 # ======================================================
 # /STATUS COMMAND
@@ -2150,12 +1990,8 @@ def bot_status(message):
         # Count admin groups
         admin_groups_count = 0
         for chat_id in list(active_groups):
-            try:
-                chat_member = bot.get_chat_member(chat_id, bot.get_me().id)
-                if chat_member.status in ['administrator', 'creator']:
-                    admin_groups_count += 1
-            except:
-                continue
+            if check_bot_admin(chat_id) and chat_id not in MANUAL_CHANNEL_IDS:
+                admin_groups_count += 1
         
         status_text = f"""
 <b>🤖 BOT STATUS REPORT</b>
@@ -2185,15 +2021,15 @@ def bot_status(message):
 <b>🔧 COMMANDS:</b>
 • /start - Bot start
 • /showpost - Preview ALL posts
-• /listalladmin - List all groups & admin status
+• /alladminlist - List all groups & admin status (with active check)
 • /status - This status report
 • /myid - Show your Telegram ID
 
 <b>🌟 AUTO DISCOVERY:</b>
 ✅ No manual adding needed
-✅ Automatically finds ALL admin chats
-✅ Includes groups, supergroups AND channels
-✅ Just make bot admin in any chat
+✅ Automatically tracks groups when messages received
+✅ Just make bot admin and send message in group
+✅ Admin status checked before each post
 """
         
         bot.reply_to(message, status_text, parse_mode="HTML")
@@ -2323,7 +2159,7 @@ AUTHOR_LINKS_MENU = {
     "ထ": "https://t.me/oscarhelpservices/33",
     "ဒ": "https://t.me/oscarhelpservices/35",
     "ဓ": "https://t.me/oscarhelpservices/37",
-    "န": "https://t.me/oscarhelpservices/39",
+    "န": "https://t.me/sharebykosoemoe/39",
     "ပ": "https://t.me/oscarhelpservices/41",
     "ဖ": "https://t.me/oscarhelpservices/43",
     "ဗ": "https://t.me/oscarhelpservices/45",
@@ -2423,6 +2259,7 @@ myanmar_time = get_myanmar_time()
 print(f"⏰ Current Myanmar Time: {myanmar_time.strftime('%H:%M:%S')}")
 print(f"📅 Current Date: {myanmar_time.strftime('%Y-%m-%d')}")
 print(f"📢 Fixed Channels: {len(MANUAL_CHANNEL_IDS)} channels")
+print(f"📊 Active Groups Tracked: {len(active_groups)}")
 
 print("\n📅 POSTING SCHEDULE:")
 print("="*60)
@@ -2432,24 +2269,11 @@ print("✅ English Music: 2:00 PM & 10:00 PM")
 print("✅ Poem Posts: 4:00 PM & 8:00 PM")
 print("✅ Promo Video: 12:00 AM & 12:00 PM")
 
-print("\n🎂 BIRTHDAY POST SYSTEM")
-print("="*60)
-print(f"✅ {len(BIRTHDAY_IMAGES)} rotating images")
-
-print("\n🍃 POEM POST SYSTEM")
-print("="*60)
-print(f"✅ {len(POEM_IMAGES)} rotating images")
-
-print("\n📖 AUTHOR AUTO-REPLY SYSTEM")
-print("="*60)
-print("✅ 'စာအုပ်' keyword: Random book reply")
-print(f"✅ {len(AUTHOR_LINKS)} authors with auto-reply")
-
 print("\n🔧 COMMANDS:")
 print("="*60)
 print("✅ /start - Bot start")
 print("✅ /showpost - Preview ALL posts")
-print("✅ /listalladmin - List all groups & admin status")
+print("✅ /alladminlist - List all groups & admin status (with active check)")
 print("✅ /status - Bot status report")
 print("✅ /myid - Show your Telegram ID")
 
