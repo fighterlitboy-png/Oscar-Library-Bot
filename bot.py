@@ -121,9 +121,9 @@ POEM_IMAGES = [
 
 POEM_CAPTION = """<b>စွယ်တော်ရွက်လေးများ၏အတ္ထုပ္ပတ္တိ 🍃</b>
 
-နှလုံးသား ဒဿနလေးတွေ 
-တဒင်္ဂ အချိန်လေးတစ်ခုအတွက်
-ကြည်နူးစိတ်လေးတွေ ခံစားမိပါစေ 🌸
+နှလုံးသားဒဿနလေးတွေ 
+တဒင်္ဂအချိန်လေးတစ်ခုအတွက်
+ကြည်နူးစိတ်လေးတွေခံစားမိပါစေ... 🌸
 
 🍂 ကဗျာ၊ စာတို၊ ဟာသလေးတွေကို
 react လေးပေးပြီး Best Friends 
@@ -139,9 +139,9 @@ PROMO_CAPTION = """<b>မင်းရဲ့စာဖတ်ခရီးကို
 
 မင်းရဲ့စိတ်ကူးထဲက စာအုပ်တွေ၊ 
 မင်းရင်ထဲကဖတ်ချင်တဲ့ ဝတ္ထုတွေကို 
-အတူရှာဖွေကြမယ်...📚🤓
+အတူရှာဖွေကြမယ်...📚
 
-မင်းရဲ့စာဖတ်သံကြားရဖို...🫠
+မင်းရဲ့စာဖတ်သံကြားရဖို...💕
 မင်းစာသားတွေကိုဖတ်ရင်း ပြုံးလာမယ့် မျက်နှာလေးကို မြင်ရဖို...😍
 
 <b>🌼 Oscar's Library 🌼</b> လေးထဲက
@@ -998,12 +998,12 @@ AUTHOR_LINKS = {
     "ကြူမွှေး": "https://t.me/sharebykosoemoe/11979",
     "ကြီးကြီးစော": "https://t.me/sharebykosoemoe/11971",
     "ကျွန်း": "https://t.me/sharebykosoemoe/11965",
-    "ကာတွန်း မောင်ဝဏ္ဏ": "https://t.me/sharebykosoemoe/12033",
-    "ကာတွန်း မိမန်းလေး": "https://t.me/sharebykosoemoe/11960",
-    "ကာတွန်း ကျော်ဦး": "https://t.me/sharebykosoemoe/11860",
-    "ကာတွန်း ငွေကြည်": "https://t.me/sharebykosoemoe/11952",
-    "ကာတွန်း ဦးဖေသိန်း": "https://t.me/sharebykosoemoe/11946",
-    "ကာတွန်း မောင်မောင်": "https://t.me/sharebykosoemoe/11890",
+    "ကာတွန်းမောင်ဝဏ္ဏ": "https://t.me/sharebykosoemoe/12033",
+    "ကာတွန်းမိမန်းလေး": "https://t.me/sharebykosoemoe/11960",
+    "ကာတွန်းကျော်ဦး": "https://t.me/sharebykosoemoe/11860",
+    "ကာတွန်းငွေကြည်": "https://t.me/sharebykosoemoe/11952",
+    "ကာတွန်းဦးဖေသိန်း": "https://t.me/sharebykosoemoe/11946",
+    "ကာတွန်းမောင်မောင်": "https://t.me/sharebykosoemoe/11890",
     "ကိုဆွေ": "https://t.me/sharebykosoemoe/11922",
     "ကောင်းဆက်နိုင်": "https://t.me/sharebykosoemoe/11900",
     "ကြည်စိုးထွန်း": "https://t.me/sharebykosoemoe/11882",
@@ -1462,7 +1462,7 @@ AUTHOR_LINKS = {
     "လွန်းထားထား": "https://t.me/sharebykosoemoe/861",
     "လယ်တွင်းသားစောချစ်": "https://t.me/sharebykosoemoe/830",
     "လင်းရောင်စင်": "https://t.me/sharebykosoemoe/9805",
-    "လင်းယုန်မောင်မောင်": "https://t.me/sharebykosoemoe/3901",
+    "လင်း�ယုန်မောင်မောင်": "https://t.me/sharebykosoemoe/3901",
     "လမင်းမိုမို": "https://t.me/sharebykosoemoe/6159",
     "လင်းသိုက်ညွန့်": "https://t.me/sharebykosoemoe/741",
     "လရောင်ကျူးရင့်": "https://t.me/sharebykosoemoe/1256",
@@ -1703,7 +1703,7 @@ def handle_group_messages(message):
             user_id = message.from_user.id if message.from_user else None
             
             if user_id:
-                warning_msg = f'⚠️ [{user_name}](tg://user?id={user_id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n✅ User link များကိုသာ သုံးပါ\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
+                warning_msg = f'⚠️ [{user_name}](tg://user?id={user_id}) 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
             else:
                 warning_msg = f'⚠️ {user_name} 💢\n\n**Link🔗 များကို ပိတ်ထားပါတယ်** 🙅🏻\n\n ❗လိုအပ်ချက်ရှိရင် **Admin** ကို ဆက်သွယ်ပါနော်...'
             
@@ -1769,7 +1769,7 @@ Fic၊ ကာတွန်း၊ သည်းထိပ်ရင်ဖို
     bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
 
 # ======================================================
-# UPDATED /SHOWPOST COMMAND - SHOWS ALL POSTS
+# /SHOWPOST COMMAND
 # ======================================================
 @bot.message_handler(commands=['showpost'])
 def show_all_posts_preview(message):
@@ -1971,38 +1971,7 @@ def show_all_posts_preview(message):
         bot.reply_to(message, error_msg)
 
 # ======================================================
-# /TESTPOST COMMAND - FOR TESTING BIRTHDAY
-# ======================================================
-@bot.message_handler(commands=['testpost'])
-def test_birthday_command(message):
-    """Manual test for birthday post"""
-    print(f"🧪 /testpost command from user: {message.from_user.id}")
-    
-    try:
-        print("🧪 BIRTHDAY TEST TRIGGERED!")
-        
-        # Send test message
-        test_msg = bot.reply_to(message, "🧪 Testing birthday post system...\n\nScanning admin chats...")
-        
-        # Trigger the birthday post
-        send_birthday_to_all_chats()
-        
-        # Update message
-        bot.edit_message_text(
-            "✅ Birthday post test completed!\n\n📢 Fixed channels: Checked\n👥 Auto-discovered admin chats: Checked",
-            message.chat.id,
-            test_msg.message_id
-        )
-        
-        print("✅ Birthday test completed")
-        
-    except Exception as e:
-        error_msg = f"❌ Test failed: {e}"
-        print(error_msg)
-        bot.reply_to(message, error_msg)
-
-# ======================================================
-# /LISTALLADMIN COMMAND
+# /LISTALLADMIN COMMAND (SIMPLE VERSION)
 # ======================================================
 @bot.message_handler(commands=['listalladmin'])
 def list_all_admin_command(message):
@@ -2014,8 +1983,6 @@ def list_all_admin_command(message):
         status_msg = bot.reply_to(message, "🔍 <b>ADMIN SCAN STARTED</b>\n\nScanning all chats where bot is admin...\nThis may take a moment...", parse_mode="HTML")
         
         admin_chats = []
-        non_admin_chats = []
-        error_chats = []
         total_scanned = 0
         
         print(f"🔍 Starting admin scan...")
@@ -2042,23 +2009,12 @@ def list_all_admin_command(message):
                     })
                     print(f"✅ ADMIN: {chat_title} ({chat_type})")
                 else:
-                    non_admin_chats.append({
-                        'id': chat_id,
-                        'title': chat_title,
-                        'type': chat_type,
-                        'status': chat_member.status
-                    })
                     print(f"❌ NOT ADMIN: {chat_title} ({chat_type})")
                     # Remove from active groups if not admin
                     active_groups.discard(chat_id)
                     
             except Exception as e:
-                error_msg = str(e)
-                error_chats.append({
-                    'id': chat_id,
-                    'error': error_msg[:100]
-                })
-                print(f"⚠️ ERROR: {chat_id} - {error_msg[:50]}")
+                print(f"⚠️ ERROR: {chat_id} - {str(e)[:50]}")
                 # Remove errored chats from active groups
                 active_groups.discard(chat_id)
         
@@ -2067,90 +2023,58 @@ def list_all_admin_command(message):
         total_admin_chats = len(admin_chats)
         total_post_locations = total_fixed_channels + total_admin_chats
         
-        # Prepare response
+        # Prepare simple response
         response = f"""
 <b>🔍 ADMIN SCAN RESULTS</b>
 
 <b>📊 STATISTICS:</b>
 • Total chats scanned: {total_scanned}
-• Admin chats found: {len(admin_chats)}
-• Non-admin chats: {len(non_admin_chats)}
-• Error chats: {len(error_chats)}
+• Admin chats found: {total_admin_chats}
 
 <b>🎯 TOTAL POST LOCATIONS: {total_post_locations}</b>
 └─ Fixed Channels: {total_fixed_channels} channels
 └─ Auto-discovered Admin Chats: {total_admin_chats} chats
-└─ <b>All {total_post_locations} locations will receive birthday posts</b>
 
 <b>📢 FIXED CHANNELS ({total_fixed_channels}):</b>
 """
         
         # List fixed channels
-        for i, channel_id in enumerate(MANUAL_CHANNEL_IDS[:5]):
+        for i, channel_id in enumerate(MANUAL_CHANNEL_IDS):
             try:
                 channel_info = bot.get_chat(channel_id)
                 channel_title = channel_info.title if hasattr(channel_info, 'title') else f"Channel {channel_id}"
-                response += f"\n{i+1}. {channel_title}"
-                response += f"\n   └ ID: <code>{channel_id}</code>"
+                response += f"\n{i+1}. {channel_title} (ID: <code>{channel_id}</code>)"
             except:
                 response += f"\n{i+1}. Channel ID: <code>{channel_id}</code>"
         
-        if len(MANUAL_CHANNEL_IDS) > 5:
-            response += f"\n... and {len(MANUAL_CHANNEL_IDS) - 5} more fixed channels"
-        
         response += f"\n\n<b>✅ AUTO-DISCOVERED ADMIN CHATS ({total_admin_chats}):</b>"
-        response += f"\n<i>These WILL receive birthday posts</i>"
         
         # List admin chats
         if admin_chats:
-            for i, chat in enumerate(admin_chats[:10]):  # Show first 10 only
-                response += f"\n\n{i+1}. {chat['title']}"
-                response += f"\n   └ Type: {chat['type']} | Status: {chat['status']}"
-                response += f"\n   └ ID: <code>{chat['id']}</code>"
-            
-            if len(admin_chats) > 10:
-                response += f"\n\n... and {len(admin_chats) - 10} more admin chats"
+            for i, chat in enumerate(admin_chats):
+                response += f"\n{i+1}. {chat['title']} ({chat['type']}) - ID: <code>{chat['id']}</code>"
         else:
-            response += "\n\n❌ No admin chats found via auto-discovery!"
+            response += "\n❌ No admin chats found via auto-discovery!"
         
-        # Bot activity info
         response += f"""
         
-<b>🤖 BOT ACTIVITY:</b>
-• Active groups tracked: {len(active_groups)}
-• Next auto-discovery: When messages are sent in groups
-• Groups added to tracking: Automatically when bot sees messages
-
 <b>🎂 NEXT BIRTHDAY POST:</b>
-• Will be sent to ALL {total_post_locations} locations
 • Time: Tomorrow at 8:00 AM (Myanmar Time)
-• Images in rotation: {len(BIRTHDAY_IMAGES)} images
-• Current image index: {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
+• Will be sent to ALL {total_post_locations} locations
+• Current image: {current_birthday_index + 1}/{len(BIRTHDAY_IMAGES)}
 
-<b>⚠️ IMPORTANT:</b>
-1. Make bot admin in any group/channel
-2. Send any message in that chat
-3. Bot will automatically detect and add to admin list
-4. No manual configuration needed!
+<b>📋 OTHER COMMANDS:</b>
+• /showpost - Preview ALL posts
+• /listalladmin - List all groups & admin status
+• /status - Bot status report
+• /myid - Show your Telegram ID
 """
         
-        # Add buttons for more actions
-        kb = types.InlineKeyboardMarkup()
-        kb.row(
-            types.InlineKeyboardButton("🔄 Refresh Scan", callback_data="refresh_admin_scan"),
-            types.InlineKeyboardButton("🎂 Test Birthday Post", callback_data="test_birthday_post")
-        )
-        kb.row(
-            types.InlineKeyboardButton("📊 Bot Status", callback_data="bot_status"),
-            types.InlineKeyboardButton("📋 Show All Posts", callback_data="show_all_posts")
-        )
-        
-        # Update the message
+        # Update the message WITHOUT inline keyboard
         bot.edit_message_text(
             response,
             message.chat.id,
             status_msg.message_id,
-            reply_markup=kb,
             parse_mode="HTML"
         )
         
@@ -2163,33 +2087,6 @@ def list_all_admin_command(message):
         error_msg = f"❌ Error in listalladmin: {e}"
         print(error_msg)
         bot.reply_to(message, error_msg)
-        
-# ======================================================
-# CALLBACK HANDLER FOR REFRESH SCAN
-# ======================================================
-@bot.callback_query_handler(func=lambda c: c.data == "refresh_admin_scan")
-def refresh_admin_scan(call):
-    """Refresh admin scan"""
-    bot.answer_callback_query(call.id, "🔄 Refreshing admin scan...")
-    list_all_admin_command(call.message)
-
-@bot.callback_query_handler(func=lambda c: c.data == "test_birthday_post")
-def test_birthday_post_callback(call):
-    """Test birthday post from callback"""
-    bot.answer_callback_query(call.id, "🎂 Testing birthday post...")
-    test_birthday_command(call.message)
-
-@bot.callback_query_handler(func=lambda c: c.data == "bot_status")
-def bot_status_callback(call):
-    """Show bot status from callback"""
-    bot.answer_callback_query(call.id, "📊 Getting bot status...")
-    bot_status(call.message)
-
-@bot.callback_query_handler(func=lambda c: c.data == "show_all_posts")
-def show_all_posts_callback(call):
-    """Show all posts from callback"""
-    bot.answer_callback_query(call.id, "📋 Preparing posts preview...")
-    show_all_posts_preview(call.message)
 
 # ======================================================
 # /MYID COMMAND
@@ -2239,7 +2136,7 @@ def show_my_id(message):
     print(f"📊 User {user_id} checked their ID in chat {message.chat.id}")
 
 # ======================================================
-# UPDATED /STATUS COMMAND
+# /STATUS COMMAND
 # ======================================================
 @bot.message_handler(commands=['status'])
 def bot_status(message):
@@ -2286,8 +2183,8 @@ def bot_status(message):
 <b>Total Auto-Post Targets:</b> {len(MANUAL_CHANNEL_IDS) + admin_groups_count}
 
 <b>🔧 COMMANDS:</b>
+• /start - Bot start
 • /showpost - Preview ALL posts
-• /testpost - Test birthday post immediately
 • /listalladmin - List all groups & admin status
 • /status - This status report
 • /myid - Show your Telegram ID
@@ -2305,33 +2202,6 @@ def bot_status(message):
     except Exception as e:
         bot.reply_to(message, f"❌ Error getting status: {e}")
 
-# ======================================================
-# CALLBACK HANDLER FOR REFRESH SCAN
-# ======================================================
-@bot.callback_query_handler(func=lambda c: c.data == "refresh_admin_scan")
-def refresh_admin_scan(call):
-    """Refresh admin scan"""
-    bot.answer_callback_query(call.id, "🔄 Refreshing admin scan...")
-    list_all_admin_command(call.message)
-
-@bot.callback_query_handler(func=lambda c: c.data == "test_birthday_post")
-def test_birthday_post_callback(call):
-    """Test birthday post from callback"""
-    bot.answer_callback_query(call.id, "🎂 Testing birthday post...")
-    test_birthday_command(call.message)
-
-@bot.callback_query_handler(func=lambda c: c.data == "bot_status")
-def bot_status_callback(call):
-    """Show bot status from callback"""
-    bot.answer_callback_query(call.id, "📊 Getting bot status...")
-    bot_status(call.message)
-
-@bot.callback_query_handler(func=lambda c: c.data == "show_all_posts")
-def show_all_posts_callback(call):
-    """Show all posts from callback"""
-    bot.answer_callback_query(call.id, "📋 Preparing posts preview...")
-    show_all_posts_preview(call.message)
-    
 # ======================================================
 # PRIVATE CHAT HANDLER
 # ======================================================
@@ -2577,10 +2447,10 @@ print(f"✅ {len(AUTHOR_LINKS)} authors with auto-reply")
 
 print("\n🔧 COMMANDS:")
 print("="*60)
-print("✅ /showpost - Preview ALL posts (5 types)")
-print("✅ /testpost - Test birthday post")
+print("✅ /start - Bot start")
+print("✅ /showpost - Preview ALL posts")
 print("✅ /listalladmin - List all groups & admin status")
-print("✅ /status - This status report")
+print("✅ /status - Bot status report")
 print("✅ /myid - Show your Telegram ID")
 
 print("\n🚀 Bot is now LIVE and READY!")
