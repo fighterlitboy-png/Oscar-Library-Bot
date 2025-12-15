@@ -762,7 +762,9 @@ def send_promo_to_all_chats():
         # Create inline keyboard
         keyboard = types.InlineKeyboardMarkup()
         keyboard.row(
-            types.InlineKeyboardButton("စာပေချစ်သူများအတွက် 🍓", url="https://t.me/bookbykosoemoe"),
+            types.InlineKeyboardButton("စာပေချစ်သူများအတွက် 🍓", url="https://t.me/bookbykosoemoe")
+        )
+        keyboard.row(
             types.InlineKeyboardButton("စာအုပ်ရှာရန် 📚📖", url="https://t.me/oscar_libray_bot")
         )
         
@@ -1820,7 +1822,9 @@ def show_all_posts_preview(message):
         print("📚 Preparing promo video preview...")
         promo_keyboard = types.InlineKeyboardMarkup()
         promo_keyboard.row(
-            types.InlineKeyboardButton("စာပေချစ်သူများအတွက် 🍓", url="https://t.me/bookbykosoemoe"),
+            types.InlineKeyboardButton("စာပေချစ်သူများအတွက် 🍓", url="https://t.me/bookbykosoemoe")
+        )
+        promo_keyboard.row(
             types.InlineKeyboardButton("စာအုပ်ရှာရန် 📚📖", url="https://t.me/oscar_libray_bot")
         )
         
