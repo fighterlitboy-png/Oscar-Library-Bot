@@ -1115,7 +1115,7 @@ AUTHOR_LINKS = {
     "ညောင်လေးပင်ဆရာတော်": "https://t.me/sharebykosoemoe/18048",
     "ညေး": "https://t.me/sharebykosoemoe/843",
     "ညီနောင်": "https://t.me/sharebykosoemoe/18198",
-    "ညီညီနိုင်": "https://t.me/bookbykosoemoe/10536",
+    "ညီညီနိုင်": "https://t.me/sharebykosoemoe/18156",
     "ညီပုလေး": "https://t.me/sharebykosoemoe/1154",
     "ညီသစ်": "https://t.me/sharebykosoemoe/638",
     "ညိုမြ": "https://t.me/sharebykosoemoe/804",
